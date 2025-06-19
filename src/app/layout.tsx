@@ -9,7 +9,7 @@ import AppInitializer from '@/components/AppInitializer';
 
 
 export const metadata: Metadata = {
-  title: 'حرفي ماهر (Skilled Artisan)',
+  title: 'خدماب KHIDMAP',
   description: 'Find skilled artisans or post your services for plumbing and electrical work.',
 };
 
@@ -39,3 +39,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+    

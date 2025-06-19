@@ -75,7 +75,7 @@ export type Translations = {
 
 export const translations: Record<'en' | 'ar', Translations> = {
   en: {
-    appName: "Skilled Artisan",
+    appName: "KHIDMAP",
     tagline: "Find the best local service providers",
     home: "Home",
     services: "Services",
@@ -148,7 +148,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     confirmPassword: "Confirm Password",
   },
   ar: {
-    appName: "حرفي ماهر",
+    appName: "خدماب",
     tagline: "ابحث عن أفضل مقدمي الخدمات المحليين",
     home: "الرئيسية",
     services: "الخدمات",
@@ -221,3 +221,5 @@ export const translations: Record<'en' | 'ar', Translations> = {
     confirmPassword: "تأكيد كلمة المرور",
   },
 };
+
+    
