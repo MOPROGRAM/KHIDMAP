@@ -5,8 +5,7 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // Your web app's Firebase configuration
-// IMPORTANT: Replace with your actual Firebase project configuration
-// You should store these in environment variables
+// These values are sourced from your .env file
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -17,8 +16,23 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Check if all required config values are present before initializing
+let app;
+if (
+  firebaseConfig.apiKey &&
+  firebaseConfig.authDomain &&
+  firebaseConfig.projectId
+) {
+  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+} else {
+  console.error(
+    'Firebase configuration is missing or incomplete. Please check your .env file and Firebase project settings.'
+  );
+  // You might want to throw an error here or handle this case appropriately
+  // For now, app will be undefined, and subsequent Firebase calls will fail
+}
+
+const auth = app ? getAuth(app) : undefined;
+const db = app ? getFirestore(app) : undefined;
 
 export { app, auth, db };
