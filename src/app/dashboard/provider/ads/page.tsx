@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/useTranslation';
-import { ServiceAd, getAdsByProviderId, deleteServiceAd } from '@/lib/data'; // Updated functions
+import { ServiceAd, getAdsByProviderId, deleteServiceAd } from '@/lib/data';
 import { Briefcase, PlusCircle, Edit3, Trash2, Wrench, Zap, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import {
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Timestamp } from 'firebase/firestore';
+import { auth } from '@/lib/firebase';
 
 export default function MyAdsPage() {
   const t = useTranslation();
@@ -35,7 +36,7 @@ export default function MyAdsPage() {
   const fetchAds = useCallback(async (id: string) => {
     setIsLoading(true);
     try {
-      const providerAds = await getAdsByProviderId(id); // Fetches from Firestore
+      const providerAds = await getAdsByProviderId(id);
       setAds(providerAds);
     } catch (error) {
       console.error("Error fetching ads:", error);
@@ -46,19 +47,21 @@ export default function MyAdsPage() {
   }, [toast]);
 
   useEffect(() => {
-    const id = localStorage.getItem('userId'); // Firebase UID
-    if (id) {
-      setProviderId(id);
-      fetchAds(id);
-    } else {
-      toast({ variant: "destructive", title: "Error", description: "User not identified. Please log in again." });
-      router.push('/auth/login');
-    }
+    const unsubscribe = auth?.onAuthStateChanged(user => {
+      if (user) {
+        setProviderId(user.uid);
+        fetchAds(user.uid);
+      } else {
+        toast({ variant: "destructive", title: "Error", description: "User not identified. Please log in again." });
+        router.push('/auth/login');
+      }
+    });
+    return () => unsubscribe?.();
   }, [router, toast, fetchAds]);
 
   const handleDeleteAd = async (adId: string) => {
     try {
-      await deleteServiceAd(adId); // Deletes from Firestore
+      await deleteServiceAd(adId); 
       setAds(prevAds => prevAds.filter(ad => ad.id !== adId));
       toast({ title: "Ad Deleted", description: "The advertisement has been successfully deleted." });
     } catch (error) {
@@ -69,17 +72,20 @@ export default function MyAdsPage() {
 
   const formatDate = (dateValue: Timestamp | string | undefined): string => {
     if (!dateValue) return 'N/A';
+    let date: Date;
     if (typeof dateValue === 'string') {
-      return new Date(dateValue).toLocaleDateString();
+      date = new Date(dateValue);
+    } else if (dateValue instanceof Timestamp) {
+      date = dateValue.toDate();
+    } else {
+       return 'Invalid Date';
     }
-    if (dateValue instanceof Timestamp) {
-      return dateValue.toDate().toLocaleDateString();
-    }
-    return 'Invalid Date';
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    return date.toLocaleDateString();
   };
 
 
-  if (isLoading && !ads.length) { // Show loader only if ads are not yet loaded
+  if (isLoading && !ads.length) { 
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -106,7 +112,7 @@ export default function MyAdsPage() {
         </Button>
       </div>
 
-      {ads.length === 0 && !isLoading ? ( // Ensure loading is false before showing "No ads"
+      {ads.length === 0 && !isLoading ? ( 
         <Card className="text-center py-12">
           <CardHeader>
             <Briefcase className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
@@ -148,8 +154,10 @@ export default function MyAdsPage() {
                 <p className="text-sm text-foreground line-clamp-3">{ad.description}</p>
               </CardContent>
               <div className="p-4 border-t flex gap-2 justify-end">
-                <Button variant="outline" size="sm" onClick={() => alert(`Edit functionality for ad ${ad.id} (not implemented yet). This would navigate to an edit page.`)}>
-                  <Edit3 className="ltr:mr-1 rtl:ml-1 h-4 w-4" /> {t.editAd}
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/dashboard/provider/ads/edit/${ad.id}`}>
+                    <Edit3 className="ltr:mr-1 rtl:ml-1 h-4 w-4" /> {t.editAd}
+                  </Link>
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
