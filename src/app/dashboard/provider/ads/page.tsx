@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/useTranslation';
-import { ServiceAd, getAdsByProviderId } from '@/lib/data';
-import { Briefcase, PlusCircle, Edit3, Trash2, Wrench, Zap } from 'lucide-react';
+import { ServiceAd, getAdsByProviderId, deleteServiceAd } from '@/lib/data'; // Updated functions
+import { Briefcase, PlusCircle, Edit3, Trash2, Wrench, Zap, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import {
   AlertDialog,
@@ -22,6 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { Timestamp } from 'firebase/firestore';
 
 export default function MyAdsPage() {
   const t = useTranslation();
@@ -31,28 +32,60 @@ export default function MyAdsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [providerId, setProviderId] = useState<string | null>(null);
 
+  const fetchAds = useCallback(async (id: string) => {
+    setIsLoading(true);
+    try {
+      const providerAds = await getAdsByProviderId(id); // Fetches from Firestore
+      setAds(providerAds);
+    } catch (error) {
+      console.error("Error fetching ads:", error);
+      toast({ variant: "destructive", title: "Error", description: "Failed to load your ads." });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
   useEffect(() => {
-    const id = localStorage.getItem('userId');
+    const id = localStorage.getItem('userId'); // Firebase UID
     if (id) {
       setProviderId(id);
-      const providerAds = getAdsByProviderId(id);
-      setAds(providerAds);
+      fetchAds(id);
     } else {
-      // Handle case where providerId is not found, e.g., redirect to login
+      toast({ variant: "destructive", title: "Error", description: "User not identified. Please log in again." });
       router.push('/auth/login');
     }
-    setIsLoading(false);
-  }, [router]);
+  }, [router, toast, fetchAds]);
 
-  const handleDeleteAd = (adId: string) => {
-    // In a real app, this would be an API call
-    // For mock, filter out the ad
-    setAds(prevAds => prevAds.filter(ad => ad.id !== adId));
-    toast({ title: "Ad Deleted", description: "The advertisement has been successfully deleted." });
+  const handleDeleteAd = async (adId: string) => {
+    try {
+      await deleteServiceAd(adId); // Deletes from Firestore
+      setAds(prevAds => prevAds.filter(ad => ad.id !== adId));
+      toast({ title: "Ad Deleted", description: "The advertisement has been successfully deleted." });
+    } catch (error) {
+      console.error("Error deleting ad:", error);
+      toast({ variant: "destructive", title: "Error", description: "Failed to delete ad." });
+    }
   };
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center h-full"><p>{t.loading}</p></div>;
+  const formatDate = (dateValue: Timestamp | string | undefined): string => {
+    if (!dateValue) return 'N/A';
+    if (typeof dateValue === 'string') {
+      return new Date(dateValue).toLocaleDateString();
+    }
+    if (dateValue instanceof Timestamp) {
+      return dateValue.toDate().toLocaleDateString();
+    }
+    return 'Invalid Date';
+  };
+
+
+  if (isLoading && !ads.length) { // Show loader only if ads are not yet loaded
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="ml-2">{t.loading}</p>
+      </div>
+    );
   }
 
   return (
@@ -73,7 +106,7 @@ export default function MyAdsPage() {
         </Button>
       </div>
 
-      {ads.length === 0 ? (
+      {ads.length === 0 && !isLoading ? ( // Ensure loading is false before showing "No ads"
         <Card className="text-center py-12">
           <CardHeader>
             <Briefcase className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
@@ -108,14 +141,14 @@ export default function MyAdsPage() {
               <CardHeader>
                 <CardTitle className="text-xl font-semibold font-headline">{ad.title}</CardTitle>
                 <CardDescription className="text-sm text-muted-foreground">
-                  {t.zipCode}: {ad.zipCode} &bull; Posted: {new Date(ad.postedDate).toLocaleDateString()}
+                  {t.zipCode}: {ad.zipCode} &bull; Posted: {formatDate(ad.postedDate)}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
                 <p className="text-sm text-foreground line-clamp-3">{ad.description}</p>
               </CardContent>
               <div className="p-4 border-t flex gap-2 justify-end">
-                <Button variant="outline" size="sm" onClick={() => alert(`Edit functionality for ad ${ad.id} (not implemented)`)}> {/* Replace with actual edit page navigation */}
+                <Button variant="outline" size="sm" onClick={() => alert(`Edit functionality for ad ${ad.id} (not implemented yet). This would navigate to an edit page.`)}>
                   <Edit3 className="ltr:mr-1 rtl:ml-1 h-4 w-4" /> {t.editAd}
                 </Button>
                 <AlertDialog>

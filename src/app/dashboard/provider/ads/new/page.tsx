@@ -12,13 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { categorizeAd, CategorizeAdOutput } from '@/ai/flows/categorize-ad';
-import { ServiceCategory, addServiceAd } from '@/lib/data';
+import { ServiceCategory, addServiceAd } from '@/lib/data'; // addServiceAd now points to Firestore version
 import { Loader2, Wand2, PlusCircle } from 'lucide-react';
 import { z } from 'zod';
 
 const AdFormSchema = z.object({
   title: z.string().min(1, { message: "requiredField" }),
-  description: z.string().min(10, { message: "Description must be at least 10 characters." }), // Example of a different message
+  description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   zipCode: z.string().min(1, { message: "requiredField" }),
   category: z.enum(['Plumbing', 'Electrical'], { errorMap: () => ({ message: "requiredField" }) }),
 });
@@ -40,7 +40,7 @@ export default function NewAdPage() {
   const [providerId, setProviderId] = useState<string | null>(null);
 
   useEffect(() => {
-    const id = localStorage.getItem('userId');
+    const id = localStorage.getItem('userId'); // This should be the Firebase UID
     if (id) {
       setProviderId(id);
     } else {
@@ -60,8 +60,6 @@ export default function NewAdPage() {
     try {
       const result: CategorizeAdOutput = await categorizeAd({ description });
       setDetectedCategory(result.category);
-      // Optionally auto-select the category
-      // setCategory(result.category); 
       toast({ title: t.detectedCategory, description: `${t.serviceCategory}: ${t[result.category.toLowerCase() as keyof typeof t]}` });
     } catch (error) {
       console.error("Error detecting category:", error);
@@ -88,7 +86,7 @@ export default function NewAdPage() {
       const fieldErrors: Record<string, string> = {};
       validationResult.error.errors.forEach(err => {
         if (err.path[0]) {
-           // @ts-ignore
+          // @ts-ignore
           fieldErrors[err.path[0] as string] = t[err.message as keyof typeof t] || err.message;
         }
       });
@@ -97,20 +95,20 @@ export default function NewAdPage() {
       return;
     }
     
-    // Simulate API call
     try {
-      addServiceAd({
+      await addServiceAd({ // This now calls the Firestore version
         providerId,
         title: validationResult.data.title,
         description: validationResult.data.description,
         category: validationResult.data.category,
         zipCode: validationResult.data.zipCode,
+        // imageUrl can be added here if an upload mechanism exists
       });
       toast({ title: t.adPostedSuccessfully });
       router.push('/dashboard/provider/ads'); 
     } catch (error) {
       console.error("Error posting ad:", error);
-      toast({ variant: "destructive", title: t.errorOccurred, description: "Failed to post ad." });
+      toast({ variant: "destructive", title: t.errorOccurred, description: (error as Error).message || "Failed to post ad." });
     } finally {
       setIsLoading(false);
     }
@@ -171,6 +169,8 @@ export default function NewAdPage() {
               <Input id="zipCode" value={zipCode} onChange={(e) => setZipCode(e.target.value)} />
               {errors.zipCode && <p className="text-sm text-destructive">{errors.zipCode}</p>}
             </div>
+
+            {/* TODO: Add image upload functionality here */}
 
             <Button type="submit" className="w-full text-lg py-3" disabled={isLoading}>
               {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : t.postAd}
