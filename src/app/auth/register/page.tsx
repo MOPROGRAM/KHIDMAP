@@ -1,0 +1,223 @@
+
+"use client";
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useToast } from "@/hooks/use-toast";
+import { UserPlus, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { auth, db } from '@/lib/firebase'; // auth can be undefined
+import { createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { z } from "zod";
+
+const RegisterSchema = z.object({
+  name: z.string().min(1, { message: "requiredField" }),
+  email: z.string().email({ message: "invalidEmail" }),
+  password: z.string().min(6, { message: "passwordTooShort" }),
+  confirmPassword: z.string().min(6, { message: "passwordTooShort" }),
+  role: z.enum(['provider', 'seeker'], { errorMap: () => ({ message: "requiredField" }) })
+}).refine(data => data.password === data.confirmPassword, {
+  message: "passwordsDoNotMatch",
+  path: ["confirmPassword"],
+});
+
+
+export default function RegisterPage() {
+  const t = useTranslation();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState<'provider' | 'seeker' | ''>(searchParams.get('role') as 'provider' | 'seeker' || '');
+  
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isAuthInitialized, setIsAuthInitialized] = useState(false);
+
+
+  useEffect(() => {
+    const initialRole = searchParams.get('role');
+    if (initialRole === 'provider' || initialRole === 'seeker') {
+      setRole(initialRole);
+    }
+    if (auth) {
+      setIsAuthInitialized(true);
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          // router.push('/dashboard'); // Optional: redirect if already logged in
+        }
+      });
+      return () => unsubscribe();
+    } else {
+      setIsAuthInitialized(false);
+      console.warn("Firebase Auth is not initialized in RegisterPage.");
+    }
+  }, [searchParams, router]);
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auth || !db) {
+       toast({
+        variant: "destructive",
+        title: "Service Unavailable",
+        description: "Authentication or database service is not configured. Please contact support.",
+      });
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    setErrors({});
+
+    const validationResult = RegisterSchema.safeParse({ name, email, password, confirmPassword, role });
+
+    if (!validationResult.success) {
+      const fieldErrors: Record<string, string> = {};
+      validationResult.error.errors.forEach(err => {
+        if (err.path[0]) {
+          // @ts-ignore
+          fieldErrors[err.path[0] as string] = t[err.message as keyof typeof t] || err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, validationResult.data.email, validationResult.data.password);
+      const firebaseUser = userCredential.user;
+
+      await updateProfile(firebaseUser, { displayName: validationResult.data.name });
+      
+      const userDocRef = doc(db, "users", firebaseUser.uid);
+      await setDoc(userDocRef, {
+        uid: firebaseUser.uid,
+        name: validationResult.data.name,
+        email: firebaseUser.email,
+        role: validationResult.data.role,
+        createdAt: new Date().toISOString(),
+      });
+
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userId', firebaseUser.uid);
+      localStorage.setItem('userName', validationResult.data.name);
+      localStorage.setItem('userEmail', firebaseUser.email || '');
+      localStorage.setItem('userRole', validationResult.data.role);
+
+      toast({
+        title: "Registration Successful",
+        description: `Welcome, ${validationResult.data.name}! Your account has been created.`,
+      });
+      router.push(validationResult.data.role === 'provider' ? '/dashboard/provider/profile' : '/dashboard');
+
+    } catch (error: any) {
+      console.error("Firebase registration error:", error);
+      let errorMessage = "Registration Failed. Please try again.";
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "This email is already registered. Please login or use a different email.";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "Invalid email format.";
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = "Password is too weak. Please choose a stronger password.";
+      } else if (error.code === 'auth/network-request-failed'){
+        errorMessage = "Network error. Please check your internet connection.";
+      }
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+
+  return (
+    <div className="flex items-center justify-center py-12 min-h-[calc(100vh-15rem)]">
+      <Card className="w-full max-w-lg shadow-xl">
+        <CardHeader className="text-center">
+          <UserPlus className="mx-auto h-12 w-12 text-primary mb-4" />
+          <CardTitle className="text-3xl font-headline">{t.register}</CardTitle>
+          <CardDescription>{t.createAccount} {t.appName}</CardDescription>
+        </CardHeader>
+        <CardContent>
+           {!isAuthInitialized && !auth && (
+             <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md text-center">
+                Authentication service is currently unavailable. Please try again later or contact support.
+            </div>
+          )}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="name">{t.name}</Label>
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+              {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">{t.email}</Label>
+              <Input id="email" type="email" placeholder="m@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">{t.password}</Label>
+              <div className="relative">
+                <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </Button>
+              </div>
+              {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="confirmPassword">{t.confirmPassword}</Label>
+              <div className="relative">
+                <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </Button>
+              </div>
+              {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
+            </div>
+            <div className="space-y-3">
+              <Label>{t.registerAs}</Label>
+              <RadioGroup value={role} onValueChange={(value) => setRole(value as 'provider' | 'seeker')} className="flex gap-4">
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                  <RadioGroupItem value="provider" id="role-provider" />
+                  <Label htmlFor="role-provider" className="font-normal">{t.provider}</Label>
+                </div>
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                  <RadioGroupItem value="seeker" id="role-seeker" />
+                  <Label htmlFor="role-seeker" className="font-normal">{t.seeker}</Label>
+                </div>
+              </RadioGroup>
+              {errors.role && <p className="text-sm text-destructive">{errors.role}</p>}
+            </div>
+            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !isAuthInitialized}>
+              {isLoading ?  <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : t.register}
+            </Button>
+          </form>
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            {t.alreadyHaveAccount}{' '}
+            <Link href="/auth/login" className="font-medium text-primary hover:underline">
+              {t.login}
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
