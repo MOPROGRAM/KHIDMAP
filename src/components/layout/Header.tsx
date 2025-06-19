@@ -8,43 +8,52 @@ import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import Logo from '@/components/shared/Logo';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, UserCircle, LogIn, UserPlus } from 'lucide-react';
+import { Menu, UserCircle, LogIn, UserPlus, LogOutIcon } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
-
-// Mock authentication state
-const useAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  useEffect(() => {
-    // Replace with actual auth check if available
-    const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    setIsAuthenticated(loggedIn);
-  }, []);
-  return { isAuthenticated };
-};
-
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 export default function Header() {
   const t = useTranslation();
-  const { isAuthenticated } = useAuth(); // Mock auth
+  const router = useRouter();
+  const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setAuthUser(user);
+        localStorage.setItem('isLoggedIn', 'true'); // Keep this for other components that might still use it
+      } else {
+        setAuthUser(null);
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userRole');
+      }
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+    try {
+      await signOut(auth);
+      router.push('/auth/login');
+    } catch (error) {
+      console.error("Error signing out: ", error);
+      // Handle error, e.g., show a toast
+    }
+  };
 
   const navLinks = [
     { href: '/', label: t.home },
     { href: '/services/search', label: t.services },
   ];
-
-  const authLinks = isAuthenticated
-    ? [
-        { href: '/dashboard', label: t.dashboard, icon: <UserCircle className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> },
-        { href: '/logout', label: t.logout, icon: <LogIn className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> }, // Mock logout, should be an action
-      ]
-    : [
-        { href: '/auth/login', label: t.login, icon: <LogIn className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> },
-        { href: '/auth/register', label: t.register, icon: <UserPlus className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> },
-      ];
-
-  const allLinks = [...navLinks, ...authLinks];
-
 
   const NavLinkItems = ({ mobile = false }: { mobile?: boolean }) => (
     <>
@@ -53,45 +62,60 @@ export default function Header() {
           <Link href={link.href} onClick={() => mobile && setIsMobileMenuOpen(false)}>{link.label}</Link>
         </Button>
       ))}
-      {isAuthenticated ? (
+      {authUser ? (
         <>
           <Button variant="ghost" asChild className={mobile ? "w-full justify-start" : ""}>
-            <Link href="/dashboard" onClick={() => mobile && setIsMobileMenuOpen(false)}>{t.dashboard}</Link>
+            <Link href="/dashboard" onClick={() => mobile && setIsMobileMenuOpen(false)}>
+             <UserCircle className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t.dashboard}
+            </Link>
           </Button>
-          <Button variant="ghost" asChild className={mobile ? "w-full justify-start" : ""}>
-            {/* This should be an action, not a link for real logout */}
-            <Link href="/auth/login" onClick={() => { 
-              localStorage.removeItem('isLoggedIn');
-              if (mobile) setIsMobileMenuOpen(false);
-              // For a real app, you'd redirect or call an API endpoint
-              window.location.href = '/auth/login';
-            }}>{t.logout}</Link>
+          <Button variant="ghost" onClick={handleLogout} className={mobile ? "w-full justify-start" : ""}>
+            <LogOutIcon className="h-4 w-4 ltr:mr-2 rtl:ml-2" /> {t.logout}
           </Button>
         </>
       ) : (
         <>
           <Button variant="ghost" asChild className={mobile ? "w-full justify-start" : ""}>
-            <Link href="/auth/login" onClick={() => mobile && setIsMobileMenuOpen(false)}>{t.login}</Link>
+            <Link href="/auth/login" onClick={() => mobile && setIsMobileMenuOpen(false)}>
+              <LogIn className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t.login}
+            </Link>
           </Button>
           <Button variant="default" asChild className={mobile ? "w-full" : ""}>
-            <Link href="/auth/register" onClick={() => mobile && setIsMobileMenuOpen(false)}>{t.register}</Link>
+            <Link href="/auth/register" onClick={() => mobile && setIsMobileMenuOpen(false)}>
+              <UserPlus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t.register}
+            </Link>
           </Button>
         </>
       )}
     </>
   );
 
+  if (isLoading) {
+    // Optional: return a slimmed-down header or a loading indicator
+    return (
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center justify-between">
+          <Logo />
+          {/* Basic controls during load */}
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <ThemeSwitcher />
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <Logo />
-        <nav className="hidden items-center gap-2 md:flex">
+        <nav className="hidden items-center gap-1 md:flex">
           <NavLinkItems />
           <LanguageSwitcher />
           <ThemeSwitcher />
         </nav>
-        <div className="flex items-center gap-2 md:hidden">
+        <div className="flex items-center gap-1 md:hidden">
           <LanguageSwitcher />
           <ThemeSwitcher />
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -105,7 +129,7 @@ export default function Header() {
               <div className="mb-6">
                 <Logo />
               </div>
-              <nav className="flex flex-col gap-4">
+              <nav className="flex flex-col gap-2">
                 <NavLinkItems mobile />
               </nav>
             </SheetContent>

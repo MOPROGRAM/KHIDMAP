@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -10,8 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, LogInIcon } from 'lucide-react';
-import { mockLogin } from '@/lib/data'; // Mock login function
+import { Eye, EyeOff, LogInIcon, Loader2 } from 'lucide-react';
+import { auth } from '@/lib/firebase'; // Import Firebase auth
+import { signInWithEmailAndPassword, onAuthStateChanged, User } from 'firebase/auth';
 
 export default function LoginPage() {
   const t = useTranslation();
@@ -21,39 +22,62 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [authUser, setAuthUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setAuthUser(user);
+        // If user is already logged in, redirect to dashboard
+        // This can prevent flicker or briefly showing login page
+        // router.push('/dashboard'); 
+      } else {
+        setAuthUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call for login
-    // In a real app, this would be an API call
-    // For now, we'll use a mock login and assume 'provider' for simplicity or check email domain
-    // This is a very basic mock, enhance as needed
-    const user = mockLogin(email, email.includes('provider') ? 'provider' : 'seeker');
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
 
-    setTimeout(() => {
-      if (user) {
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userRole', user.role);
-        localStorage.setItem('userId', user.id);
-        localStorage.setItem('userName', user.name);
-        localStorage.setItem('userEmail', user.email);
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userId', firebaseUser.uid);
+      localStorage.setItem('userName', firebaseUser.displayName || email.split('@')[0]); // Use email part if display name is not set
+      localStorage.setItem('userEmail', firebaseUser.email || '');
+      
+      // HACK: Role derivation. This should be replaced by fetching role from Firestore.
+      const userRole = email.includes('provider') ? 'provider' : (email.includes('seeker') ? 'seeker' : 'seeker'); // Default to seeker if not provider
+      localStorage.setItem('userRole', userRole);
 
-        toast({
-          title: "Login Successful",
-          description: `Welcome back, ${user.name}!`,
-        });
-        router.push('/dashboard');
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Login Failed",
-          description: "Invalid email or password. Please try again.",
-        });
+
+      toast({
+        title: "Login Successful",
+        description: `Welcome back, ${firebaseUser.displayName || email.split('@')[0]}!`,
+      });
+      router.push('/dashboard');
+    } catch (error: any) {
+      console.error("Firebase login error:", error);
+      let errorMessage = "Login Failed. Please check your credentials.";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        errorMessage = "Invalid email or password. Please try again.";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "Invalid email format.";
       }
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: errorMessage,
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -102,7 +126,7 @@ export default function LoginPage() {
               </div>
             </div>
             <Button type="submit" className="w-full text-lg py-3" disabled={isLoading}>
-              {isLoading ? t.loading : t.login}
+              {isLoading ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : t.login}
             </Button>
           </form>
           <p className="mt-6 text-center text-sm text-muted-foreground">

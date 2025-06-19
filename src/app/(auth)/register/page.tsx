@@ -11,9 +11,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Eye, EyeOff } from 'lucide-react';
-import { mockRegister } from '@/lib/data'; // Mock registration function
+import { UserPlus, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { auth } from '@/lib/firebase'; // Import Firebase auth
+import { createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { z } from "zod";
+// We will integrate Firestore for storing user profiles (including roles) in a later step.
+// For now, we'll continue to use localStorage for role after Firebase auth.
 
 const RegisterSchema = z.object({
   name: z.string().min(1, { message: "requiredField" }),
@@ -43,13 +46,24 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
+
 
   useEffect(() => {
     const initialRole = searchParams.get('role');
     if (initialRole === 'provider' || initialRole === 'seeker') {
       setRole(initialRole);
     }
-  }, [searchParams]);
+     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setAuthUser(user);
+        // router.push('/dashboard'); // Optional: redirect if already logged in
+      } else {
+        setAuthUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, [searchParams, router]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,32 +86,47 @@ export default function RegisterPage() {
       return;
     }
     
-    // Simulate API call for registration
-    const registeredUser = mockRegister({name, email, role: validationResult.data.role});
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, validationResult.data.email, validationResult.data.password);
+      const firebaseUser = userCredential.user;
 
-    setTimeout(() => {
-      if (registeredUser) {
-        // Mock login after registration
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userRole', registeredUser.role);
-        localStorage.setItem('userId', registeredUser.id);
-        localStorage.setItem('userName', registeredUser.name);
-        localStorage.setItem('userEmail', registeredUser.email);
+      // Update Firebase user's display name
+      await updateProfile(firebaseUser, { displayName: validationResult.data.name });
+      
+      // Store user info in localStorage (temporary, to be replaced by Firestore for role)
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userId', firebaseUser.uid);
+      localStorage.setItem('userName', validationResult.data.name);
+      localStorage.setItem('userEmail', firebaseUser.email || '');
+      localStorage.setItem('userRole', validationResult.data.role);
 
-        toast({
-          title: "Registration Successful",
-          description: `Welcome, ${registeredUser.name}! Your account has been created.`,
-        });
-        router.push(registeredUser.role === 'provider' ? '/dashboard/provider/profile' : '/dashboard');
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Registration Failed",
-          description: "An error occurred during registration. Please try again.",
-        });
+      // TODO: Create user profile document in Firestore with UID, name, email, role.
+
+      toast({
+        title: "Registration Successful",
+        description: `Welcome, ${validationResult.data.name}! Your account has been created.`,
+      });
+      // Redirect based on role, provider to profile setup, seeker to dashboard
+      router.push(validationResult.data.role === 'provider' ? '/dashboard/provider/profile' : '/dashboard');
+
+    } catch (error: any) {
+      console.error("Firebase registration error:", error);
+      let errorMessage = "Registration Failed. Please try again.";
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "This email is already registered. Please login or use a different email.";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "Invalid email format.";
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = "Password is too weak. Please choose a stronger password.";
       }
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: errorMessage,
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
   
 
@@ -156,7 +185,7 @@ export default function RegisterPage() {
               {errors.role && <p className="text-sm text-destructive">{errors.role}</p>}
             </div>
             <Button type="submit" className="w-full text-lg py-3" disabled={isLoading}>
-              {isLoading ? t.loading : t.register}
+              {isLoading ?  <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : t.register}
             </Button>
           </form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
