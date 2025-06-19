@@ -12,11 +12,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { auth } from '@/lib/firebase'; // Import Firebase auth
+import { auth, db } from '@/lib/firebase'; // Import Firebase auth and db
 import { createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore'; // Import Firestore functions
 import { z } from "zod";
-// We will integrate Firestore for storing user profiles (including roles) in a later step.
-// For now, we'll continue to use localStorage for role after Firebase auth.
 
 const RegisterSchema = z.object({
   name: z.string().min(1, { message: "requiredField" }),
@@ -93,14 +92,23 @@ export default function RegisterPage() {
       // Update Firebase user's display name
       await updateProfile(firebaseUser, { displayName: validationResult.data.name });
       
-      // Store user info in localStorage (temporary, to be replaced by Firestore for role)
+      // Create user profile document in Firestore
+      const userDocRef = doc(db, "users", firebaseUser.uid);
+      await setDoc(userDocRef, {
+        uid: firebaseUser.uid,
+        name: validationResult.data.name,
+        email: firebaseUser.email,
+        role: validationResult.data.role,
+        createdAt: new Date().toISOString(), // Optional: timestamp
+      });
+
+      // Store user info in localStorage (some can be phased out as app uses Firestore more)
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('userId', firebaseUser.uid);
       localStorage.setItem('userName', validationResult.data.name);
       localStorage.setItem('userEmail', firebaseUser.email || '');
       localStorage.setItem('userRole', validationResult.data.role);
 
-      // TODO: Create user profile document in Firestore with UID, name, email, role.
 
       toast({
         title: "Registration Successful",

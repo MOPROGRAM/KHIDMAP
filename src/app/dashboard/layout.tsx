@@ -10,14 +10,17 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import Logo from '@/components/shared/Logo';
 import { Separator } from '@/components/ui/separator';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase'; // Import db
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore'; // Import Firestore functions
+
+type UserRole = 'provider' | 'seeker';
 
 interface NavItem {
   href: string;
   labelKey: keyof ReturnType<typeof useTranslation>;
   icon: React.ReactElement;
-  roles: ('provider' | 'seeker')[];
+  roles: UserRole[];
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -26,26 +29,54 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
-  const [userRole, setUserRole] = useState<'provider' | 'seeker' | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setAuthUser(user);
-        const roleFromStorage = localStorage.getItem('userRole') as 'provider' | 'seeker' | null;
-        setUserRole(roleFromStorage); // Still relying on localStorage for role initially
-        // TODO: Fetch role from Firestore in the future
-        if (!roleFromStorage) {
-            // If role isn't in localStorage (e.g. direct navigation after login),
-            // this is a temporary issue. A proper solution involves fetching role from DB.
-            console.warn("User role not found in localStorage. Dashboard may not display correctly.");
-            // For now, we might redirect or show a limited view.
+        // Attempt to get role from localStorage first for quicker UI update
+        const roleFromStorage = localStorage.getItem('userRole') as UserRole | null;
+        if (roleFromStorage) {
+            setUserRole(roleFromStorage);
+        }
+
+        // Fetch user role from Firestore to ensure accuracy and update localStorage
+        try {
+          const userDocRef = doc(db, "users", user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            const roleFromFirestore = userData.role as UserRole;
+            setUserRole(roleFromFirestore);
+            localStorage.setItem('userRole', roleFromFirestore); // Update localStorage with Firestore data
+            localStorage.setItem('userName', userData.name || user.displayName || '');
+            localStorage.setItem('userEmail', userData.email || user.email || '');
+          } else {
+            console.warn("User profile not found in Firestore for UID:", user.uid, ". Redirecting to login.");
+            // If profile doesn't exist, critical data like role is missing.
+            // Clear potentially stale local storage and redirect.
+            await signOut(auth); // Sign out user as their data is incomplete
+            router.replace('/auth/login');
+            return; // Stop further processing for this user
+          }
+        } catch (error) {
+          console.error("Error fetching user role from Firestore:", error);
+          // Handle error, maybe sign out user or set a default state
+          setUserRole(null); // Or some error state
+          // Potentially redirect if role is critical and fetch failed
         }
       } else {
         setAuthUser(null);
         setUserRole(null);
+        // Clear localStorage on logout
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userRole');
         router.replace('/auth/login');
       }
       setIsLoading(false);
@@ -66,7 +97,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      // localStorage items are cleared by the onAuthStateChanged listener in Header/elsewhere
+      // localStorage items are cleared by the onAuthStateChanged listener above
       router.push('/auth/login');
     } catch (error) {
       console.error("Error signing out from dashboard: ", error);
@@ -83,8 +114,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
   
   if (!authUser) {
-     // This case should ideally be handled by the redirect in onAuthStateChanged,
-     // but as a fallback:
+    // This case should ideally be handled by the redirect in onAuthStateChanged
     return (
       <div className="flex h-screen items-center justify-center">
         <p>Redirecting to login...</p>
@@ -92,10 +122,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
   
-  // If authUser exists but role is still null, it means localStorage didn't have it.
-  // This is a temporary state until Firestore role fetching is implemented.
-  // For now, we allow access but some role-specific UI might not render correctly.
-  const filteredNavItems = userRole ? navItems.filter(item => item.roles.includes(userRole)) : navItems.filter(item => item.href === '/dashboard'); // Show only dashboard link if role is unknown
+  const filteredNavItems = userRole ? navItems.filter(item => item.roles.includes(userRole)) : navItems.filter(item => item.href === '/dashboard');
 
   return (
     <div className="flex min-h-[calc(100vh-8rem)]">
@@ -118,8 +145,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Link>
             </Button>
           ))}
-           {!userRole && (
-            <p className="text-xs text-muted-foreground p-2">Role information pending. Some links may be hidden.</p>
+           {!userRole && authUser && ( // Show if user is authenticated but role is still being fetched or missing
+            <p className="text-xs text-muted-foreground p-2">Verifying user role... Some links may be hidden temporarily.</p>
           )}
         </nav>
         <Separator />

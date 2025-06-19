@@ -11,8 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, LogInIcon, Loader2 } from 'lucide-react';
-import { auth } from '@/lib/firebase'; // Import Firebase auth
+import { auth, db } from '@/lib/firebase'; // Import Firebase auth and db
 import { signInWithEmailAndPassword, onAuthStateChanged, User } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore'; // Import Firestore functions
 
 export default function LoginPage() {
   const t = useTranslation();
@@ -28,9 +29,6 @@ export default function LoginPage() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setAuthUser(user);
-        // If user is already logged in, redirect to dashboard
-        // This can prevent flicker or briefly showing login page
-        // router.push('/dashboard'); 
       } else {
         setAuthUser(null);
       }
@@ -47,19 +45,39 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
+      // Fetch user role from Firestore
+      const userDocRef = doc(db, "users", firebaseUser.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      let userRole: 'provider' | 'seeker' | null = null;
+      let userNameFromDb: string | null = firebaseUser.displayName;
+      let userEmailFromDb: string | null = firebaseUser.email;
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        userRole = userData.role as 'provider' | 'seeker';
+        userNameFromDb = userData.name || userNameFromDb;
+        userEmailFromDb = userData.email || userEmailFromDb;
+      } else {
+        // Fallback or error if user document doesn't exist in Firestore
+        // This might happen for users created before Firestore integration
+        console.warn("User document not found in Firestore. Role might be missing.");
+        // For now, we won't set a role, dashboard layout will handle fetching or redirect.
+      }
+
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('userId', firebaseUser.uid);
-      localStorage.setItem('userName', firebaseUser.displayName || email.split('@')[0]); // Use email part if display name is not set
-      localStorage.setItem('userEmail', firebaseUser.email || '');
+      localStorage.setItem('userName', userNameFromDb || email.split('@')[0]);
+      localStorage.setItem('userEmail', userEmailFromDb || '');
+      if (userRole) {
+        localStorage.setItem('userRole', userRole);
+      } else {
+        localStorage.removeItem('userRole'); // Ensure no stale role
+      }
       
-      // HACK: Role derivation. This should be replaced by fetching role from Firestore.
-      const userRole = email.includes('provider') ? 'provider' : (email.includes('seeker') ? 'seeker' : 'seeker'); // Default to seeker if not provider
-      localStorage.setItem('userRole', userRole);
-
-
       toast({
         title: "Login Successful",
-        description: `Welcome back, ${firebaseUser.displayName || email.split('@')[0]}!`,
+        description: `Welcome back, ${userNameFromDb || email.split('@')[0]}!`,
       });
       router.push('/dashboard');
     } catch (error: any) {
