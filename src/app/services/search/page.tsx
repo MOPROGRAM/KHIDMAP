@@ -1,61 +1,135 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/useTranslation';
-import { ServiceAd, mockServiceAds, ServiceProvider, getProviderById } from '@/lib/data';
+import { ServiceAd, getAllServiceAds, UserProfile, getUserProfileById } from '@/lib/data';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search as SearchIcon, MapPin, Briefcase, Wrench, Zap, ArrowRight, Loader2 } from 'lucide-react';
+import { Search as SearchIcon, MapPin, Briefcase, Wrench, Zap, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
+
+interface SearchHistoryItem {
+  query: string;
+  date: string; // ISO string
+}
 
 export default function ServiceSearchPage() {
   const t = useTranslation();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<ServiceAd[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentSearch, setCurrentSearch] = useState('');
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // Mock search history handling
-  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
+  const [allAds, setAllAds] = useState<ServiceAd[]>([]);
+  const [filteredAds, setFilteredAds] = useState<ServiceAd[]>([]);
+  const [providerDetails, setProviderDetails] = useState<Record<string, UserProfile>>({});
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentSearchQuery, setCurrentSearchQuery] = useState('');
+
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
 
   useEffect(() => {
-    const storedHistory = localStorage.getItem('searchHistory');
+    const storedHistory = localStorage.getItem('fullSearchHistory'); // Changed from 'searchHistory'
     if (storedHistory) {
       setSearchHistory(JSON.parse(storedHistory));
     }
   }, []);
 
   const updateSearchHistory = (query: string) => {
-    const newHistory = [query, ...searchHistory.filter(item => item !== query)].slice(0, 5); // Keep last 5 unique searches
+    if (!query.trim()) return;
+    const newItem: SearchHistoryItem = { query, date: new Date().toISOString() };
+    const newHistory = [newItem, ...searchHistory.filter(item => item.query.toLowerCase() !== query.toLowerCase())].slice(0, 5);
     setSearchHistory(newHistory);
-    localStorage.setItem('searchHistory', JSON.stringify(newHistory));
+    localStorage.setItem('fullSearchHistory', JSON.stringify(newHistory)); // Changed key
   };
 
-
-  const handleSearch = (query: string) => {
-    if (!query.trim()) return;
-    setCurrentSearch(query);
+  const fetchInitialAdsAndProviders = useCallback(async () => {
     setIsLoading(true);
-    setSearchResults([]); // Clear previous results
+    setError(null);
+    try {
+      const ads = await getAllServiceAds();
+      setAllAds(ads);
+      
+      // Fetch provider details for all unique provider IDs
+      const providerIds = [...new Set(ads.map(ad => ad.providerId))];
+      const providerPromises = providerIds.map(id => getUserProfileById(id));
+      const providersArray = await Promise.all(providerPromises);
+      
+      const providerMap: Record<string, UserProfile> = {};
+      providersArray.forEach(provider => {
+        if (provider) {
+          providerMap[provider.uid] = provider;
+        }
+      });
+      setProviderDetails(providerMap);
 
-    // Simulate API call
-    setTimeout(() => {
-      const lowerCaseQuery = query.toLowerCase();
-      const results = mockServiceAds.filter(ad => 
+      // Apply initial search term if present in URL
+      const initialQuery = searchParams.get('q');
+      if (initialQuery) {
+        setSearchTerm(initialQuery);
+        filterAds(initialQuery, ads, providerMap);
+        setCurrentSearchQuery(initialQuery);
+      } else {
+        setFilteredAds(ads); // Show all ads initially if no query
+      }
+
+    } catch (err) {
+      console.error("Error fetching ads or providers:", err);
+      setError((err as Error).message || "Failed to load services.");
+      setAllAds([]);
+      setFilteredAds([]);
+    } finally {
+      setIsLoading(false);
+      setInitialLoad(false);
+    }
+  }, [searchParams]); // Include searchParams in dependencies
+
+  useEffect(() => {
+    fetchInitialAdsAndProviders();
+  }, [fetchInitialAdsAndProviders]);
+
+  const filterAds = (query: string, adsToFilter: ServiceAd[], currentProviderDetails: Record<string, UserProfile>) => {
+    if (!query.trim()) {
+      setFilteredAds(adsToFilter);
+      return;
+    }
+    const lowerCaseQuery = query.toLowerCase();
+    const results = adsToFilter.filter(ad => {
+      const providerName = currentProviderDetails[ad.providerId]?.name.toLowerCase() || '';
+      return (
         ad.title.toLowerCase().includes(lowerCaseQuery) ||
         ad.description.toLowerCase().includes(lowerCaseQuery) ||
-        ad.zipCode.includes(lowerCaseQuery) ||
-        ad.category.toLowerCase().includes(lowerCaseQuery)
+        ad.zipCode.includes(lowerCaseQuery) || // Zip code is usually exact match
+        t[ad.category.toLowerCase() as keyof typeof t].toLowerCase().includes(lowerCaseQuery) || // Search localized category
+        providerName.includes(lowerCaseQuery)
       );
-      setSearchResults(results);
-      setIsLoading(false);
-      if (query) { // Add to history only if it's a new search by user
+    });
+    setFilteredAds(results);
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchTerm(query);
+    setCurrentSearchQuery(query); // Keep track of what was actually searched
+    if (!initialLoad) setIsLoading(true); // Show loader for subsequent searches
+
+    // Simulate search delay for better UX, filtering is client-side
+    setTimeout(() => {
+      filterAds(query, allAds, providerDetails);
+      if (query.trim()) {
         updateSearchHistory(query);
+        // Update URL query parameter
+        router.push(`/services/search?q=${encodeURIComponent(query)}`, { scroll: false });
+      } else {
+         router.push(`/services/search`, { scroll: false }); // Clear query from URL
       }
-    }, 1000);
+      if (!initialLoad) setIsLoading(false);
+    }, 500); 
   };
   
   const onSearchSubmit = (e: React.FormEvent) => {
@@ -64,8 +138,8 @@ export default function ServiceSearchPage() {
   };
 
   const handleHistorySearch = (term: string) => {
-    setSearchTerm(term);
-    handleSearch(term);
+    setSearchTerm(term); // Set input field
+    handleSearch(term); // Perform search
   }
 
   return (
@@ -88,53 +162,78 @@ export default function ServiceSearchPage() {
               className="flex-grow text-lg p-3"
               aria-label={t.searchPlaceholder}
             />
-            <Button type="submit" size="lg" className="text-lg" disabled={isLoading}>
-              {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <SearchIcon className="ltr:mr-2 rtl:ml-2 h-5 w-5" />}
+            <Button type="submit" size="lg" className="text-lg py-3" disabled={isLoading && !initialLoad}>
+              {(isLoading && !initialLoad) ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <SearchIcon className="ltr:mr-2 rtl:ml-2 h-5 w-5" />}
               {t.search}
             </Button>
           </form>
         </CardContent>
       </Card>
 
-      {searchHistory.length > 0 && (
+      {searchHistory.length > 0 && !initialLoad && (
         <Card>
           <CardHeader>
             <CardTitle className="text-xl font-headline">{t.recentSearches}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
-            {searchHistory.map((term, index) => (
-              <Button key={index} variant="outline" size="sm" onClick={() => handleHistorySearch(term)}>
-                {term}
+            {searchHistory.map((item, index) => (
+              <Button key={index} variant="outline" size="sm" onClick={() => handleHistorySearch(item.query)}>
+                {item.query}
               </Button>
             ))}
           </CardContent>
         </Card>
       )}
 
-
-      {isLoading && (
-        <div className="flex justify-center items-center py-10">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="ml-4 text-lg text-muted-foreground">{t.loading}</p>
+      {initialLoad && isLoading && (
+        <div className="flex flex-col justify-center items-center py-10 min-h-[300px]">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+          <p className="text-lg text-muted-foreground">{t.loading} {t.services}...</p>
         </div>
       )}
-
-      {!isLoading && currentSearch && searchResults.length === 0 && (
-        <Card className="text-center py-12">
+      
+      {error && !initialLoad && (
+         <Card className="text-center py-12 bg-destructive/10 border-destructive">
           <CardHeader>
-             <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-            <CardTitle>{t.noResultsFound}</CardTitle>
-            <CardDescription>
-              Try searching with different keywords or zip codes.
+            <AlertTriangle className="mx-auto h-16 w-16 text-destructive mb-4" />
+            <CardTitle className="text-destructive">{t.errorOccurred}</CardTitle>
+            <CardDescription className="text-destructive/80">
+              {error}
             </CardDescription>
           </CardHeader>
         </Card>
       )}
 
-      {!isLoading && searchResults.length > 0 && (
+      {!initialLoad && !isLoading && !error && currentSearchQuery && filteredAds.length === 0 && (
+        <Card className="text-center py-12">
+          <CardHeader>
+             <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+            <CardTitle>{t.noResultsFound}</CardTitle>
+            <CardDescription>
+              Try searching with different keywords or check your spelling.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+      
+      {!initialLoad && !isLoading && !error && filteredAds.length === 0 && !currentSearchQuery && allAds.length === 0 && (
+         <Card className="text-center py-12">
+          <CardHeader>
+             <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+            <CardTitle>No Services Available Yet</CardTitle>
+            <CardDescription>
+              There are currently no service ads posted. Check back later!
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+
+      {!isLoading && !error && filteredAds.length > 0 && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {searchResults.map((ad) => {
-            const provider = getProviderById(ad.providerId);
+          {filteredAds.map((ad) => {
+            const provider = providerDetails[ad.providerId];
+            const providerName = ad.providerName || provider?.name || t.provider;
             return (
               <Card key={ad.id} className="overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col">
                 <div className="relative w-full h-48">
@@ -152,21 +251,20 @@ export default function ServiceSearchPage() {
                 </div>
                 <CardHeader>
                   <CardTitle className="text-xl font-semibold font-headline truncate" title={ad.title}>{ad.title}</CardTitle>
-                  {provider && (
+                  
                     <CardDescription className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Briefcase className="h-4 w-4" /> {provider.name}
+                      <Briefcase className="h-4 w-4" /> {providerName}
                     </CardDescription>
-                  )}
+                  
                 </CardHeader>
                 <CardContent className="flex-grow">
-                  <p className="text-sm text-foreground line-clamp-3 mb-2">{ad.description}</p>
+                  <p className="text-sm text-foreground line-clamp-3 mb-2 whitespace-pre-wrap">{ad.description}</p>
                   <div className="flex items-center text-sm text-muted-foreground gap-1">
                     <MapPin className="h-4 w-4" /> {ad.zipCode}
                   </div>
                 </CardContent>
                 <CardFooter>
                   <Button asChild className="w-full">
-                    {/* In a real app, this link would go to a dynamic page like /services/[ad.id] */}
                     <Link href={`/services/ad/${ad.id}`}> 
                       {t.viewDetails} <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4" />
                     </Link>
@@ -180,4 +278,3 @@ export default function ServiceSearchPage() {
     </div>
   );
 }
-

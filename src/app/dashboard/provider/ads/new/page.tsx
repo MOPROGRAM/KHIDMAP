@@ -12,15 +12,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { categorizeAd, CategorizeAdOutput } from '@/ai/flows/categorize-ad';
-import { ServiceCategory, addServiceAd } from '@/lib/data'; // addServiceAd now points to Firestore version
+import { ServiceCategory, addServiceAd, UserProfile } from '@/lib/data'; // addServiceAd now points to Firestore version
 import { Loader2, Wand2, PlusCircle } from 'lucide-react';
 import { z } from 'zod';
+import { auth, db } from '@/lib/firebase'; // Import auth for current user
+import { doc, getDoc } from 'firebase/firestore';
 
 const AdFormSchema = z.object({
   title: z.string().min(1, { message: "requiredField" }),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   zipCode: z.string().min(1, { message: "requiredField" }),
-  category: z.enum(['Plumbing', 'Electrical'], { errorMap: () => ({ message: "requiredField" }) }),
+  category: z.enum(['Plumbing', 'Electrical'], { errorMap: (issue, ctx) => ({ message: issue.code === 'invalid_enum_value' ? ctx.data || "requiredField" : "requiredField" }) }),
 });
 
 export default function NewAdPage() {
@@ -38,15 +40,27 @@ export default function NewAdPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [providerId, setProviderId] = useState<string | null>(null);
+  const [providerName, setProviderName] = useState<string | null>(null); // For denormalization
 
   useEffect(() => {
-    const id = localStorage.getItem('userId'); // This should be the Firebase UID
-    if (id) {
-      setProviderId(id);
-    } else {
-      toast({ variant: "destructive", title: "Error", description: "User not identified. Please log in again." });
-      router.push('/auth/login');
-    }
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        setProviderId(user.uid);
+        // Fetch provider's name for denormalization
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data() as UserProfile;
+          setProviderName(userData.name);
+        } else {
+           setProviderName(user.displayName || "Anonymous Provider"); // Fallback
+        }
+      } else {
+        toast({ variant: "destructive", title: "Error", description: "User not identified. Please log in again." });
+        router.push('/auth/login');
+      }
+    });
+     return () => unsubscribe();
   }, [router, toast]);
 
   const handleDetectCategory = async () => {
@@ -74,8 +88,8 @@ export default function NewAdPage() {
     setIsLoading(true);
     setErrors({});
 
-    if (!providerId) {
-      toast({ variant: "destructive", title: "Error", description: "Provider ID is missing." });
+    if (!providerId || !providerName) {
+      toast({ variant: "destructive", title: "Error", description: "Provider information is missing. Please try again." });
       setIsLoading(false);
       return;
     }
@@ -85,10 +99,9 @@ export default function NewAdPage() {
     if (!validationResult.success) {
       const fieldErrors: Record<string, string> = {};
       validationResult.error.errors.forEach(err => {
-        if (err.path[0]) {
-          // @ts-ignore
-          fieldErrors[err.path[0] as string] = t[err.message as keyof typeof t] || err.message;
-        }
+        const fieldName = err.path[0] as string;
+        // @ts-ignore
+        fieldErrors[fieldName] = t[err.message as keyof typeof t] || err.message;
       });
       setErrors(fieldErrors);
       setIsLoading(false);
@@ -96,8 +109,9 @@ export default function NewAdPage() {
     }
     
     try {
-      await addServiceAd({ // This now calls the Firestore version
+      await addServiceAd({
         providerId,
+        providerName, // Pass provider name for denormalization
         title: validationResult.data.title,
         description: validationResult.data.description,
         category: validationResult.data.category,
@@ -172,7 +186,7 @@ export default function NewAdPage() {
 
             {/* TODO: Add image upload functionality here */}
 
-            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading}>
+            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !providerId}>
               {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : t.postAd}
             </Button>
           </form>

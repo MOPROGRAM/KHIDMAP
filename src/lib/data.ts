@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, doc, deleteDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, doc, deleteDoc, serverTimestamp, Timestamp, getDoc } from 'firebase/firestore';
 
 export type ServiceCategory = 'Plumbing' | 'Electrical';
 export type UserRole = 'provider' | 'seeker';
@@ -15,8 +15,8 @@ export interface UserProfile {
   serviceCategories?: ServiceCategory[];
   zipCodesServed?: string[];
   profilePictureUrl?: string;
-  searchHistory?: { query: string; date: string }[];
-  createdAt?: string | Timestamp; // Allow Firestore Timestamp for creation
+  searchHistory?: { query: string; date: string }[]; // ISO string for date
+  createdAt?: Timestamp | string;
 }
 
 export interface ServiceAd {
@@ -28,70 +28,84 @@ export interface ServiceAd {
   zipCode: string;
   imageUrl?: string;
   postedDate: Timestamp | string; // Firestore Timestamp or ISO string after conversion
-  // Add new fields like createdAt if needed for sorting, Firestore serverTimestamp() can be used
   createdAt?: Timestamp;
+  providerName?: string; // Optional: denormalized for easier display on search
 }
 
+// This interface can be phased out as UserProfile covers provider details.
+// Kept for any component still relying on its specific structure, will be gradually removed.
 export interface ServiceProvider {
-  id: string;
+  id: string; // This is the UserProfile UID
   name: string;
-  email: string; 
-  phoneNumber: string;
-  qualifications: string;
-  serviceCategories: ServiceCategory[];
-  zipCodesServed: string[];
+  email: string;
+  phoneNumber?: string;
+  qualifications?: string;
+  serviceCategories?: ServiceCategory[];
+  zipCodesServed?: string[];
   profilePictureUrl?: string;
 }
 
 export interface ServiceSeeker {
   id: string;
   name: string;
-  email: string; 
+  email: string;
   searchHistory: { query: string; date: string }[];
 }
 
-// Mock Data for providers and seekers can be phased out or used for fields not yet in UserProfile
-export let mockProviders: ServiceProvider[] = [
-  {
-    id: 'provider1_mock_uid', 
-    name: 'John Doe Plumbing',
-    email: 'john.provider@example.com',
-    phoneNumber: '555-1234',
-    qualifications: 'Licensed Master Plumber, 10 years experience',
-    serviceCategories: ['Plumbing'],
-    zipCodesServed: ['90210', '90211'],
-    profilePictureUrl: 'https://placehold.co/150x150.png',
-  },
-  {
-    id: 'provider2_mock_uid',
-    name: 'Jane Spark Electrical',
-    email: 'jane.provider@example.com',
-    phoneNumber: '555-5678',
-    qualifications: 'Certified Electrician, Specialized in residential wiring',
-    serviceCategories: ['Electrical'],
-    zipCodesServed: ['90210', '90001'],
-    profilePictureUrl: 'https://placehold.co/150x150.png',
-  },
-];
 
-export let mockSeekers: ServiceSeeker[] = [
-    {
-        id: 'seeker1_mock_uid',
-        name: 'Alice Wonderland',
-        email: 'alice.seeker@example.com',
-        searchHistory: [
-            { query: 'plumber 90210', date: new Date(Date.now() - 86400000).toISOString() },
-            { query: 'electrical repair', date: new Date(Date.now() - 2 * 86400000).toISOString() },
-        ],
+// --- UserProfile Firestore Functions ---
+export const getUserProfileById = async (uid: string): Promise<UserProfile | null> => {
+  if (!uid) return null;
+  try {
+    const userDocRef = doc(db, "users", uid);
+    const docSnap = await getDoc(userDocRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      // Convert Timestamps to ISO strings if they exist
+      const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt;
+      
+      // Ensure searchHistory dates are strings
+      const searchHistory = (data.searchHistory || []).map((item: any) => ({
+        ...item,
+        date: item.date instanceof Timestamp ? item.date.toDate().toISOString() : item.date,
+      }));
+
+      return {
+        uid: docSnap.id,
+        ...data,
+        createdAt,
+        searchHistory,
+      } as UserProfile;
+    } else {
+      console.log(`No user profile found for UID: ${uid}`);
+      return null;
     }
-];
-
-export const getProviderById = (id: string): ServiceProvider | undefined => {
-  // This function will also need to be updated to fetch from 'users' collection in Firestore
-  // For now, if it's used by ad details page, it might return mock data or be part of UserProfile fetch
-  console.warn("getProviderById is using mock data. Transition to Firestore 'users' collection pending for full provider profile.");
-  return mockProviders.find(p => p.id === id);
+  } catch (error) {
+    console.error("Error fetching user profile from Firestore: ", error);
+    // throw new Error("Failed to fetch user profile."); // Avoid throwing, return null
+    return null;
+  }
 };
+
+
+// Updated to use Firestore, but ideally, components should fetch UserProfile directly
+export const getProviderById = async (id: string): Promise<ServiceProvider | null> => {
+  const userProfile = await getUserProfileById(id);
+  if (userProfile && userProfile.role === 'provider') {
+    return {
+      id: userProfile.uid,
+      name: userProfile.name,
+      email: userProfile.email,
+      phoneNumber: userProfile.phoneNumber,
+      qualifications: userProfile.qualifications,
+      serviceCategories: userProfile.serviceCategories,
+      zipCodesServed: userProfile.zipCodesServed,
+      profilePictureUrl: userProfile.profilePictureUrl,
+    };
+  }
+  return null;
+};
+
 
 // --- ServiceAd Firestore Functions ---
 
@@ -102,13 +116,15 @@ export const addServiceAd = async (adData: {
   category: ServiceCategory;
   zipCode: string;
   imageUrl?: string;
+  providerName?: string; // Denormalized provider name
 }): Promise<string> => {
   try {
     const adDocRef = await addDoc(collection(db, "serviceAds"), {
       ...adData,
-      postedDate: serverTimestamp(), // Use serverTimestamp for consistent dates
-      createdAt: serverTimestamp(),   // Also good for sorting/tracking
-      imageUrl: adData.imageUrl || 'https://placehold.co/600x400.png'
+      postedDate: serverTimestamp(),
+      createdAt: serverTimestamp(),
+      imageUrl: adData.imageUrl || 'https://placehold.co/600x400.png',
+      providerName: adData.providerName || 'N/A' // Store provider name
     });
     return adDocRef.id;
   } catch (error) {
@@ -122,18 +138,15 @@ export const getAdsByProviderId = async (providerId: string): Promise<ServiceAd[
     const adsQuery = query(collection(db, "serviceAds"), where("providerId", "==", providerId));
     const querySnapshot = await getDocs(adsQuery);
     const ads: ServiceAd[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
       ads.push({
-        id: doc.id,
+        id: docSnap.id,
         ...data,
-        // Convert Firestore Timestamp to ISO string for easier handling in components if needed
-        // Or handle Timestamp object directly in component
         postedDate: (data.postedDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-        createdAt: data.createdAt as Timestamp, // Keep as Timestamp or convert
+        createdAt: data.createdAt as Timestamp,
       } as ServiceAd);
     });
-    // Sort by creation date, newest first
     ads.sort((a, b) => {
         const dateA = (a.createdAt instanceof Timestamp ? a.createdAt.toDate() : new Date(0)).getTime();
         const dateB = (b.createdAt instanceof Timestamp ? b.createdAt.toDate() : new Date(0)).getTime();
@@ -157,16 +170,15 @@ export const deleteServiceAd = async (adId: string): Promise<void> => {
   }
 };
 
-// Function to fetch a single ad by ID (will be used by ad details page)
 export const getAdById = async (adId: string): Promise<ServiceAd | null> => {
   try {
     const adDocRef = doc(db, "serviceAds", adId);
-    const docSnap = await getDocs(query(collection(db, "serviceAds"), where("__name__", "==", adId))); // A bit verbose way to get a single doc by ID
+    const docSnap = await getDoc(adDocRef);
     
-    if (!docSnap.empty) {
-      const adData = docSnap.docs[0].data();
+    if (docSnap.exists()) {
+      const adData = docSnap.data();
       return {
-        id: docSnap.docs[0].id,
+        id: docSnap.id,
         ...adData,
         postedDate: (adData.postedDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
         createdAt: adData.createdAt as Timestamp,
@@ -181,25 +193,34 @@ export const getAdById = async (adId: string): Promise<ServiceAd | null> => {
   }
 };
 
-// Function to fetch all ads (will be used by search page)
 export const getAllServiceAds = async (): Promise<ServiceAd[]> => {
   try {
-    const adsQuery = query(collection(db, "serviceAds")); // Consider adding orderBy and limits for pagination later
+    // Order by creation date, newest first
+    const adsQuery = query(collection(db, "serviceAds")/*, orderBy("createdAt", "desc")*/); // orderBy needs composite index
     const querySnapshot = await getDocs(adsQuery);
     const ads: ServiceAd[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
+    for (const docSnap of querySnapshot.docs) {
+      const data = docSnap.data();
+      
+      // Fetch provider name if not already denormalized
+      let providerName = data.providerName;
+      if (!providerName && data.providerId) {
+        const providerProfile = await getUserProfileById(data.providerId);
+        providerName = providerProfile?.name || 'N/A';
+      }
+
       ads.push({
-        id: doc.id,
+        id: docSnap.id,
         ...data,
         postedDate: (data.postedDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
         createdAt: data.createdAt as Timestamp,
+        providerName: providerName, // Add providerName here
       } as ServiceAd);
-    });
-     // Sort by creation date, newest first
-    ads.sort((a, b) => {
-        const dateA = (a.createdAt instanceof Timestamp ? a.createdAt.toDate() : new Date(0)).getTime();
-        const dateB = (b.createdAt instanceof Timestamp ? b.createdAt.toDate() : new Date(0)).getTime();
+    }
+    // Sort client-side if orderBy in query is problematic without index
+     ads.sort((a, b) => {
+        const dateA = (a.createdAt instanceof Timestamp ? a.createdAt.toDate() : new Date(a.createdAt || 0)).getTime();
+        const dateB = (b.createdAt instanceof Timestamp ? b.createdAt.toDate() : new Date(b.createdAt || 0)).getTime();
         return dateB - dateA;
     });
     return ads;
