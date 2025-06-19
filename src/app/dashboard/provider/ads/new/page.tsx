@@ -12,10 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { categorizeAd, CategorizeAdOutput } from '@/ai/flows/categorize-ad';
-import { ServiceCategory, addServiceAd, UserProfile } from '@/lib/data'; // addServiceAd now points to Firestore version
+import { ServiceCategory, addServiceAd, UserProfile } from '@/lib/data';
 import { Loader2, Wand2, PlusCircle } from 'lucide-react';
 import { z } from 'zod';
-import { auth, db } from '@/lib/firebase'; // Import auth for current user
+import { auth, db } from '@/lib/firebase'; // auth, db can be undefined
 import { doc, getDoc } from 'firebase/firestore';
 
 const AdFormSchema = z.object({
@@ -40,27 +40,34 @@ export default function NewAdPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [providerId, setProviderId] = useState<string | null>(null);
-  const [providerName, setProviderName] = useState<string | null>(null); // For denormalization
+  const [providerName, setProviderName] = useState<string | null>(null);
+  const [isFirebaseReady, setIsFirebaseReady] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        setProviderId(user.uid);
-        // Fetch provider's name for denormalization
-        const userDocRef = doc(db, "users", user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-          const userData = userDocSnap.data() as UserProfile;
-          setProviderName(userData.name);
+    if (auth && db) {
+      setIsFirebaseReady(true);
+      const unsubscribe = auth.onAuthStateChanged(async (user) => {
+        if (user) {
+          setProviderId(user.uid);
+          const userDocRef = doc(db, "users", user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data() as UserProfile;
+            setProviderName(userData.name);
+          } else {
+             setProviderName(user.displayName || "Anonymous Provider"); 
+          }
         } else {
-           setProviderName(user.displayName || "Anonymous Provider"); // Fallback
+          toast({ variant: "destructive", title: "Error", description: "User not identified. Please log in again." });
+          router.push('/auth/login');
         }
-      } else {
-        toast({ variant: "destructive", title: "Error", description: "User not identified. Please log in again." });
-        router.push('/auth/login');
-      }
-    });
-     return () => unsubscribe();
+      });
+       return () => unsubscribe();
+    } else {
+      setIsFirebaseReady(false);
+      console.warn("Firebase Auth or DB not initialized in NewAdPage.");
+      toast({ variant: "destructive", title: "Service Unavailable", description: "Core services are not ready." });
+    }
   }, [router, toast]);
 
   const handleDetectCategory = async () => {
@@ -85,6 +92,10 @@ export default function NewAdPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFirebaseReady || !db) {
+      toast({ variant: "destructive", title: "Service Unavailable", description: "Cannot post ad. Core services are not ready." });
+      return;
+    }
     setIsLoading(true);
     setErrors({});
 
@@ -109,14 +120,13 @@ export default function NewAdPage() {
     }
     
     try {
-      await addServiceAd({
+      await addServiceAd({ // This function should now use db
         providerId,
-        providerName, // Pass provider name for denormalization
+        providerName, 
         title: validationResult.data.title,
         description: validationResult.data.description,
         category: validationResult.data.category,
         zipCode: validationResult.data.zipCode,
-        // imageUrl can be added here if an upload mechanism exists
       });
       toast({ title: t.adPostedSuccessfully });
       router.push('/dashboard/provider/ads'); 
@@ -139,20 +149,25 @@ export default function NewAdPage() {
           <CardDescription>{t.fillYourProfile} {t.appName}</CardDescription>
         </CardHeader>
         <CardContent>
+          {!isFirebaseReady && (
+            <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md text-center">
+              Posting ads is currently unavailable. Core services are not configured.
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="title">{t.adTitle}</Label>
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={!isFirebaseReady} />
               {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="description">{t.adDescription}</Label>
-              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={5} />
+              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={5} disabled={!isFirebaseReady}/>
               {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
             </div>
             
-            <Button type="button" variant="outline" onClick={handleDetectCategory} disabled={isCategorizing || !description} className="w-full sm:w-auto">
+            <Button type="button" variant="outline" onClick={handleDetectCategory} disabled={isCategorizing || !description || !isFirebaseReady} className="w-full sm:w-auto">
               {isCategorizing ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Wand2 className="ltr:mr-2 rtl:ml-2 h-4 w-4" />}
               {t.detectedCategory} AI
             </Button>
@@ -166,7 +181,7 @@ export default function NewAdPage() {
 
             <div className="space-y-2">
               <Label htmlFor="category">{t.category}</Label>
-              <Select value={category} onValueChange={(value) => setCategory(value as ServiceCategory)}>
+              <Select value={category} onValueChange={(value) => setCategory(value as ServiceCategory)} disabled={!isFirebaseReady}>
                 <SelectTrigger id="category">
                   <SelectValue placeholder={t.selectCategory} />
                 </SelectTrigger>
@@ -180,13 +195,11 @@ export default function NewAdPage() {
 
             <div className="space-y-2">
               <Label htmlFor="zipCode">{t.zipCode}</Label>
-              <Input id="zipCode" value={zipCode} onChange={(e) => setZipCode(e.target.value)} />
+              <Input id="zipCode" value={zipCode} onChange={(e) => setZipCode(e.target.value)} disabled={!isFirebaseReady} />
               {errors.zipCode && <p className="text-sm text-destructive">{errors.zipCode}</p>}
             </div>
 
-            {/* TODO: Add image upload functionality here */}
-
-            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !providerId}>
+            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !providerId || !isFirebaseReady}>
               {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : t.postAd}
             </Button>
           </form>

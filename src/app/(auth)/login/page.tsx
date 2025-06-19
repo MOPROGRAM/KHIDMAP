@@ -11,9 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, LogInIcon, Loader2 } from 'lucide-react';
-import { auth, db } from '@/lib/firebase'; // Import Firebase auth and db
+import { auth, db } from '@/lib/firebase'; // auth can be undefined
 import { signInWithEmailAndPassword, onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore'; // Import Firestore functions
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function LoginPage() {
   const t = useTranslation();
@@ -23,29 +23,43 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [isAuthInitialized, setIsAuthInitialized] = useState(false);
+
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setAuthUser(user);
-      } else {
-        setAuthUser(null);
-      }
-    });
-    return () => unsubscribe();
+    if (auth) {
+      setIsAuthInitialized(true);
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          // User is signed in, redirect to dashboard or relevant page
+          // router.push('/dashboard'); // Avoid redirecting if already on a page that requires auth state check
+        }
+      });
+      return () => unsubscribe();
+    } else {
+      setIsAuthInitialized(false);
+      console.warn("Firebase Auth is not initialized in LoginPage.");
+    }
   }, [router]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth || !db) {
+      toast({
+        variant: "destructive",
+        title: "Service Unavailable",
+        description: "Authentication or database service is not configured. Please contact support.",
+      });
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
-      // Fetch user role from Firestore
       const userDocRef = doc(db, "users", firebaseUser.uid);
       const userDocSnap = await getDoc(userDocRef);
 
@@ -59,10 +73,9 @@ export default function LoginPage() {
         userNameFromDb = userData.name || userNameFromDb;
         userEmailFromDb = userData.email || userEmailFromDb;
       } else {
-        // Fallback or error if user document doesn't exist in Firestore
-        // This might happen for users created before Firestore integration
         console.warn("User document not found in Firestore. Role might be missing.");
-        // For now, we won't set a role, dashboard layout will handle fetching or redirect.
+        // This is a critical issue if Firestore setup is expected
+        // For now, let user log in, dashboard will handle redirect if role is missing from Firestore
       }
 
       localStorage.setItem('isLoggedIn', 'true');
@@ -72,7 +85,7 @@ export default function LoginPage() {
       if (userRole) {
         localStorage.setItem('userRole', userRole);
       } else {
-        localStorage.removeItem('userRole'); // Ensure no stale role
+        localStorage.removeItem('userRole'); 
       }
       
       toast({
@@ -87,6 +100,8 @@ export default function LoginPage() {
         errorMessage = "Invalid email or password. Please try again.";
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = "Invalid email format.";
+      } else if (error.code === 'auth/network-request-failed'){
+        errorMessage = "Network error. Please check your internet connection.";
       }
       toast({
         variant: "destructive",
@@ -107,6 +122,11 @@ export default function LoginPage() {
           <CardDescription>{t.welcomeTo} {t.appName}! {t.tagline}</CardDescription>
         </CardHeader>
         <CardContent>
+          {!isAuthInitialized && !auth && (
+             <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md text-center">
+                Authentication service is currently unavailable. Please try again later or contact support.
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email">{t.email}</Label>
@@ -143,7 +163,7 @@ export default function LoginPage() {
                 </Button>
               </div>
             </div>
-            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading}>
+            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !isAuthInitialized}>
               {isLoading ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : t.login}
             </Button>
           </form>

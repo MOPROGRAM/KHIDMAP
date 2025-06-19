@@ -12,9 +12,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { auth, db } from '@/lib/firebase'; // Import Firebase auth and db
+import { auth, db } from '@/lib/firebase'; // auth can be undefined
 import { createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore'; // Import Firestore functions
+import { doc, setDoc } from 'firebase/firestore';
 import { z } from "zod";
 
 const RegisterSchema = z.object({
@@ -45,7 +45,7 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
+  const [isAuthInitialized, setIsAuthInitialized] = useState(false);
 
 
   useEffect(() => {
@@ -53,20 +53,32 @@ export default function RegisterPage() {
     if (initialRole === 'provider' || initialRole === 'seeker') {
       setRole(initialRole);
     }
-     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setAuthUser(user);
-        // router.push('/dashboard'); // Optional: redirect if already logged in
-      } else {
-        setAuthUser(null);
-      }
-    });
-    return () => unsubscribe();
+    if (auth) {
+      setIsAuthInitialized(true);
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          // router.push('/dashboard'); // Optional: redirect if already logged in
+        }
+      });
+      return () => unsubscribe();
+    } else {
+      setIsAuthInitialized(false);
+      console.warn("Firebase Auth is not initialized in RegisterPage.");
+    }
   }, [searchParams, router]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth || !db) {
+       toast({
+        variant: "destructive",
+        title: "Service Unavailable",
+        description: "Authentication or database service is not configured. Please contact support.",
+      });
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setErrors({});
 
@@ -89,32 +101,27 @@ export default function RegisterPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, validationResult.data.email, validationResult.data.password);
       const firebaseUser = userCredential.user;
 
-      // Update Firebase user's display name
       await updateProfile(firebaseUser, { displayName: validationResult.data.name });
       
-      // Create user profile document in Firestore
       const userDocRef = doc(db, "users", firebaseUser.uid);
       await setDoc(userDocRef, {
         uid: firebaseUser.uid,
         name: validationResult.data.name,
         email: firebaseUser.email,
         role: validationResult.data.role,
-        createdAt: new Date().toISOString(), // Optional: timestamp
+        createdAt: new Date().toISOString(),
       });
 
-      // Store user info in localStorage (some can be phased out as app uses Firestore more)
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('userId', firebaseUser.uid);
       localStorage.setItem('userName', validationResult.data.name);
       localStorage.setItem('userEmail', firebaseUser.email || '');
       localStorage.setItem('userRole', validationResult.data.role);
 
-
       toast({
         title: "Registration Successful",
         description: `Welcome, ${validationResult.data.name}! Your account has been created.`,
       });
-      // Redirect based on role, provider to profile setup, seeker to dashboard
       router.push(validationResult.data.role === 'provider' ? '/dashboard/provider/profile' : '/dashboard');
 
     } catch (error: any) {
@@ -126,6 +133,8 @@ export default function RegisterPage() {
         errorMessage = "Invalid email format.";
       } else if (error.code === 'auth/weak-password') {
         errorMessage = "Password is too weak. Please choose a stronger password.";
+      } else if (error.code === 'auth/network-request-failed'){
+        errorMessage = "Network error. Please check your internet connection.";
       }
       toast({
         variant: "destructive",
@@ -147,6 +156,11 @@ export default function RegisterPage() {
           <CardDescription>{t.createAccount} {t.appName}</CardDescription>
         </CardHeader>
         <CardContent>
+           {!isAuthInitialized && !auth && (
+             <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md text-center">
+                Authentication service is currently unavailable. Please try again later or contact support.
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="name">{t.name}</Label>
@@ -192,7 +206,7 @@ export default function RegisterPage() {
               </RadioGroup>
               {errors.role && <p className="text-sm text-destructive">{errors.role}</p>}
             </div>
-            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading}>
+            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !isAuthInitialized}>
               {isLoading ?  <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : t.register}
             </Button>
           </form>

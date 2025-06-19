@@ -11,23 +11,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
-import { UserProfile, ServiceCategory } from '@/lib/data'; // UserProfile now covers provider data
-import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore'; // Removed unused updateDoc
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { UserProfile, ServiceCategory } from '@/lib/data'; 
+import { auth, db } from '@/lib/firebase'; // auth, db can be undefined
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore'; 
+import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
 import { Loader2, UserCircle, Save } from 'lucide-react';
 import Image from 'next/image';
 import { z } from 'zod';
 
-// Updated Zod schema to align with UserProfile fields used in the form
 const ProfileFormSchema = z.object({
   name: z.string().min(1, { message: "requiredField" }),
-  email: z.string().email({ message: "invalidEmail" }), // Email might be read-only or managed via Firebase Auth profile
+  email: z.string().email({ message: "invalidEmail" }), 
   phoneNumber: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')),
   qualifications: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')),
-  zipCodesServedString: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')), // For UI input
-  serviceCategories: z.array(z.enum(['Plumbing', 'Electrical'])).min(0).optional(), // Allow empty array if nothing selected
-  // profilePictureUrl is managed separately
+  zipCodesServedString: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')), 
+  serviceCategories: z.array(z.enum(['Plumbing', 'Electrical'])).min(0).optional(), 
 });
 
 
@@ -37,53 +35,60 @@ export default function ProviderProfilePage() {
   const { toast } = useToast();
 
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
-  // profileData state removed as individual states are sufficient and directly used
   
   const [name, setName] = useState('');
-  const [email, setEmail] = useState(''); // Typically from authUser, potentially display-only
+  const [email, setEmail] = useState(''); 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [qualifications, setQualifications] = useState('');
-  const [zipCodesServedString, setZipCodesServedString] = useState(''); // UI state for comma-separated zips
+  const [zipCodesServedString, setZipCodesServedString] = useState(''); 
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined>(undefined);
   
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isFirebaseReady, setIsFirebaseReady] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setAuthUser(user);
-        setEmail(user.email || ''); 
-        setName(user.displayName || ''); 
+    if (auth && db) {
+      setIsFirebaseReady(true);
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          setAuthUser(user);
+          setEmail(user.email || ''); 
+          setName(user.displayName || ''); 
 
-        const userDocRef = doc(db, "users", user.uid);
-        try {
-          const docSnap = await getDoc(userDocRef);
-          if (docSnap.exists()) {
-            const firestoreProfile = docSnap.data() as UserProfile;
-            // setProfileData(firestoreProfile); // Not needed if setting individual states
-            setName(firestoreProfile.name || user.displayName || ''); 
-            setPhoneNumber(firestoreProfile.phoneNumber || '');
-            setQualifications(firestoreProfile.qualifications || '');
-            setZipCodesServedString((firestoreProfile.zipCodesServed || []).join(', '));
-            setServiceCategories(firestoreProfile.serviceCategories || []);
-            setProfilePictureUrl(firestoreProfile.profilePictureUrl);
-          } else {
-            toast({ variant: "default", title: "Welcome!", description: "Please complete your provider profile." });
+          const userDocRef = doc(db, "users", user.uid);
+          try {
+            const docSnap = await getDoc(userDocRef);
+            if (docSnap.exists()) {
+              const firestoreProfile = docSnap.data() as UserProfile;
+              setName(firestoreProfile.name || user.displayName || ''); 
+              setPhoneNumber(firestoreProfile.phoneNumber || '');
+              setQualifications(firestoreProfile.qualifications || '');
+              setZipCodesServedString((firestoreProfile.zipCodesServed || []).join(', '));
+              setServiceCategories(firestoreProfile.serviceCategories || []);
+              setProfilePictureUrl(firestoreProfile.profilePictureUrl);
+            } else {
+              toast({ variant: "default", title: "Welcome!", description: "Please complete your provider profile." });
+            }
+          } catch (error) {
+            console.error("Error fetching profile:", error);
+            toast({ variant: "destructive", title: t.errorOccurred, description: "Could not fetch profile data." });
           }
-        } catch (error) {
-          console.error("Error fetching profile:", error);
-          toast({ variant: "destructive", title: t.errorOccurred, description: "Could not fetch profile data." });
+        } else {
+          toast({ variant: "destructive", title: "Authentication Error", description: "User not identified. Please log in again." });
+          router.push('/auth/login');
         }
-      } else {
-        toast({ variant: "destructive", title: "Authentication Error", description: "User not identified. Please log in again." });
-        router.push('/auth/login');
-      }
+        setIsFetching(false);
+      });
+      return () => unsubscribe();
+    } else {
+      setIsFirebaseReady(false);
       setIsFetching(false);
-    });
-    return () => unsubscribe();
+      console.warn("Firebase Auth or DB not initialized in ProviderProfilePage.");
+      toast({ variant: "destructive", title: "Service Unavailable", description: "Profile service is not ready." });
+    }
   }, [router, t, toast]);
 
   const handleServiceCategoriesChange = (value: string) => {
@@ -97,8 +102,9 @@ export default function ProviderProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!authUser) {
-      toast({ variant: "destructive", title: "Error", description: "User not authenticated." });
+    if (!isFirebaseReady || !auth || !db || !authUser) {
+      toast({ variant: "destructive", title: "Error", description: "User not authenticated or service unavailable." });
+      setIsLoading(false);
       return;
     }
     setIsLoading(true);
@@ -127,24 +133,31 @@ export default function ProviderProfilePage() {
     }
     
     const { data } = validationResult;
-    const updatedProfile: Partial<UserProfile> = {
-      uid: authUser.uid,
+    const updatedProfileData: Partial<UserProfile> = {
       name: data.name,
+      // email is managed by auth, but can be stored for consistency
       email: authUser.email, 
-      role: 'provider', 
       phoneNumber: data.phoneNumber,
       qualifications: data.qualifications,
       zipCodesServed: data.zipCodesServedString ? data.zipCodesServedString.split(',').map(zip => zip.trim()).filter(Boolean) : [],
       serviceCategories: data.serviceCategories || [], 
-      profilePictureUrl: profilePictureUrl, 
-      // Consider adding/updating an 'updatedAt' timestamp here
+      profilePictureUrl: profilePictureUrl,
+      // role should already be set during registration, merge to preserve it
+      // uid: authUser.uid, // Not needed in setDoc data if merging
     };
 
     try {
+      // Update Firebase Auth display name if it changed
+      if (authUser.displayName !== data.name) {
+        await updateAuthProfile(authUser, { displayName: data.name });
+      }
+
       const userDocRef = doc(db, "users", authUser.uid);
-      await setDoc(userDocRef, updatedProfile, { merge: true }); 
+      // Use setDoc with merge:true to update or create if it doesn't exist (though it should)
+      // and to avoid overwriting fields not in updatedProfileData (like 'role' or 'createdAt')
+      await setDoc(userDocRef, { ...updatedProfileData, updatedAt: Timestamp.now() }, { merge: true }); 
       
-      localStorage.setItem('userName', data.name);
+      localStorage.setItem('userName', data.name); // Update localStorage
 
       toast({ title: t.profileUpdatedSuccessfully });
     } catch (error) {
@@ -180,15 +193,19 @@ export default function ProviderProfilePage() {
               className="rounded-full border-4 border-primary shadow-md"
               data-ai-hint="profile avatar"
             />
-            {/* TODO: Add profile picture upload functionality */}
           </div>
         </CardHeader>
         <CardContent>
+           {!isFirebaseReady && (
+            <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md text-center">
+              Profile editing is currently unavailable. Core services are not configured.
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="name">{t.name}</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} disabled={!isFirebaseReady} />
                 {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
               </div>
               <div className="space-y-2">
@@ -200,13 +217,13 @@ export default function ProviderProfilePage() {
 
             <div className="space-y-2">
               <Label htmlFor="phoneNumber">{t.phoneNumber}</Label>
-              <Input id="phoneNumber" type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+              <Input id="phoneNumber" type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} disabled={!isFirebaseReady}/>
               {errors.phoneNumber && <p className="text-sm text-destructive">{errors.phoneNumber}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="qualifications">{t.qualifications}</Label>
-              <Textarea id="qualifications" value={qualifications} onChange={(e) => setQualifications(e.target.value)} rows={4} />
+              <Textarea id="qualifications" value={qualifications} onChange={(e) => setQualifications(e.target.value)} rows={4} disabled={!isFirebaseReady}/>
               {errors.qualifications && <p className="text-sm text-destructive">{errors.qualifications}</p>}
             </div>
             
@@ -215,6 +232,7 @@ export default function ProviderProfilePage() {
               <Select
                 value={serviceCategories.length > 0 ? serviceCategories[0] : ""} 
                 onValueChange={handleServiceCategoriesChange}
+                disabled={!isFirebaseReady}
               >
                 <SelectTrigger id="serviceCategoriesTrigger">
                   <SelectValue placeholder={`${t.selectCategory}`} />
@@ -230,11 +248,11 @@ export default function ProviderProfilePage() {
 
             <div className="space-y-2">
               <Label htmlFor="zipCodesServed">{t.zipCode} Served (comma-separated)</Label>
-              <Input id="zipCodesServed" value={zipCodesServedString} onChange={(e) => setZipCodesServedString(e.target.value)} placeholder="e.g., 90210, 90001" />
+              <Input id="zipCodesServed" value={zipCodesServedString} onChange={(e) => setZipCodesServedString(e.target.value)} placeholder="e.g., 90210, 90001" disabled={!isFirebaseReady}/>
               {errors.zipCodesServedString && <p className="text-sm text-destructive">{errors.zipCodesServedString}</p>}
             </div>
 
-            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading}>
+            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !isFirebaseReady}>
               {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Save className="ltr:mr-2 rtl:ml-2 h-4 w-4"/>}
               {t.saveChanges}
             </Button>

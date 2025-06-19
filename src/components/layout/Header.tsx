@@ -10,22 +10,31 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, UserCircle, LogIn, UserPlus, LogOutIcon } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
-import { auth } from '@/lib/firebase';
+import { auth } from '@/lib/firebase'; // auth can be undefined
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { useToast } from "@/hooks/use-toast";
 
 export default function Header() {
   const t = useTranslation();
   const router = useRouter();
+  const { toast } = useToast();
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    if (!auth) {
+      console.warn("Firebase Auth is not initialized. User authentication will not work.");
+      setIsLoading(false);
+      // Optionally, show a global error to the user if auth is critical for the app
+      // toast({ variant: "destructive", title: "Configuration Error", description: "Authentication service is unavailable." });
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setAuthUser(user);
-        localStorage.setItem('isLoggedIn', 'true'); // Keep this for other components that might still use it
+        localStorage.setItem('isLoggedIn', 'true'); 
       } else {
         setAuthUser(null);
         localStorage.removeItem('isLoggedIn');
@@ -41,12 +50,16 @@ export default function Header() {
 
   const handleLogout = async () => {
     if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+    if (!auth) {
+      toast({ variant: "destructive", title: "Error", description: "Authentication service is unavailable." });
+      return;
+    }
     try {
       await signOut(auth);
       router.push('/auth/login');
     } catch (error) {
       console.error("Error signing out: ", error);
-      // Handle error, e.g., show a toast
+      toast({ variant: "destructive", title: "Logout Failed", description: (error as Error).message });
     }
   };
 
@@ -90,13 +103,11 @@ export default function Header() {
     </>
   );
 
-  if (isLoading) {
-    // Optional: return a slimmed-down header or a loading indicator
-    return (
+  if (isLoading && !auth) { // Show basic header if auth is not even defined
+     return (
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <Logo />
-          {/* Basic controls during load */}
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
             <ThemeSwitcher />
@@ -105,6 +116,7 @@ export default function Header() {
       </header>
     );
   }
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

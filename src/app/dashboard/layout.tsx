@@ -10,9 +10,10 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import Logo from '@/components/shared/Logo';
 import { Separator } from '@/components/ui/separator';
-import { auth, db } from '@/lib/firebase'; // Import db
+import { auth, db } from '@/lib/firebase'; // auth can be undefined
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore'; // Import Firestore functions
+import { doc, getDoc } from 'firebase/firestore';
+import { useToast } from "@/hooks/use-toast";
 
 type UserRole = 'provider' | 'seeker';
 
@@ -27,6 +28,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const t = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
+  const { toast } = useToast();
   
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
@@ -34,16 +36,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
 
   useEffect(() => {
+    if (!auth || !db) {
+      console.warn("Firebase Auth or DB is not initialized. Dashboard layout may not function correctly.");
+      setIsLoading(false);
+      // If auth is critical for dashboard, redirect to login or show error
+      // toast({ variant: "destructive", title: "Configuration Error", description: "Core services are unavailable." });
+      // router.replace('/auth/login'); // Potentially too aggressive, depends on app logic
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setAuthUser(user);
-        // Attempt to get role from localStorage first for quicker UI update
         const roleFromStorage = localStorage.getItem('userRole') as UserRole | null;
         if (roleFromStorage) {
             setUserRole(roleFromStorage);
         }
 
-        // Fetch user role from Firestore to ensure accuracy and update localStorage
         try {
           const userDocRef = doc(db, "users", user.uid);
           const userDocSnap = await getDoc(userDocRef);
@@ -51,27 +60,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             const userData = userDocSnap.data();
             const roleFromFirestore = userData.role as UserRole;
             setUserRole(roleFromFirestore);
-            localStorage.setItem('userRole', roleFromFirestore); // Update localStorage with Firestore data
+            localStorage.setItem('userRole', roleFromFirestore);
             localStorage.setItem('userName', userData.name || user.displayName || '');
             localStorage.setItem('userEmail', userData.email || user.email || '');
           } else {
             console.warn("User profile not found in Firestore for UID:", user.uid, ". Redirecting to login.");
-            // If profile doesn't exist, critical data like role is missing.
-            // Clear potentially stale local storage and redirect.
-            await signOut(auth); // Sign out user as their data is incomplete
+            if(auth) await signOut(auth); 
             router.replace('/auth/login');
-            return; // Stop further processing for this user
+            return; 
           }
         } catch (error) {
           console.error("Error fetching user role from Firestore:", error);
-          // Handle error, maybe sign out user or set a default state
-          setUserRole(null); // Or some error state
+          setUserRole(null); 
           // Potentially redirect if role is critical and fetch failed
+          // toast({ variant: "destructive", title: "Error", description: "Failed to fetch user details." });
         }
       } else {
         setAuthUser(null);
         setUserRole(null);
-        // Clear localStorage on logout
         localStorage.removeItem('isLoggedIn');
         localStorage.removeItem('userId');
         localStorage.removeItem('userName');
@@ -82,7 +88,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [router]);
+  }, [router, toast]);
 
 
   const navItems: NavItem[] = [
@@ -95,12 +101,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ];
   
   const handleLogout = async () => {
+    if (!auth) {
+      toast({ variant: "destructive", title: "Error", description: "Authentication service is unavailable." });
+      return;
+    }
     try {
       await signOut(auth);
-      // localStorage items are cleared by the onAuthStateChanged listener above
       router.push('/auth/login');
     } catch (error) {
       console.error("Error signing out from dashboard: ", error);
+      toast({ variant: "destructive", title: "Logout Failed", description: (error as Error).message });
     }
   };
 
@@ -113,8 +123,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
   
-  if (!authUser) {
-    // This case should ideally be handled by the redirect in onAuthStateChanged
+  if (!auth && !isLoading) { // If auth is definitely not available after initial check
+    return (
+      <div className="flex h-screen flex-col items-center justify-center text-center p-4">
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        <h1 className="text-2xl font-bold mb-2">Service Unavailable</h1>
+        <p className="text-muted-foreground mb-6">Core authentication services are not configured. Please contact support.</p>
+        <Button onClick={() => router.push('/')}>Go to Homepage</Button>
+      </div>
+    );
+  }
+
+  if (!authUser && !isLoading) { // Should be redirected by onAuthStateChanged, but as a fallback
     return (
       <div className="flex h-screen items-center justify-center">
         <p>Redirecting to login...</p>
@@ -145,7 +165,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Link>
             </Button>
           ))}
-           {!userRole && authUser && ( // Show if user is authenticated but role is still being fetched or missing
+           {!userRole && authUser && ( 
             <p className="text-xs text-muted-foreground p-2">Verifying user role... Some links may be hidden temporarily.</p>
           )}
         </nav>

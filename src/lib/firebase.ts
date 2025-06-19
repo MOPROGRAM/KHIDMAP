@@ -1,12 +1,12 @@
 
 // src/lib/firebase.ts
-import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app';
+import { getAuth, type Auth } from 'firebase/auth';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
 // Your web app's Firebase configuration
 // These values are sourced from your .env file
-const firebaseConfig = {
+const firebaseConfigValues = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -15,24 +15,44 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-// Check if all required config values are present before initializing
-let app;
+let app: FirebaseApp | undefined = undefined;
+let auth: Auth | undefined = undefined;
+let db: Firestore | undefined = undefined;
+
 if (
-  firebaseConfig.apiKey &&
-  firebaseConfig.authDomain &&
-  firebaseConfig.projectId
+  firebaseConfigValues.apiKey &&
+  firebaseConfigValues.authDomain &&
+  firebaseConfigValues.projectId
 ) {
-  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  if (!getApps().length) {
+    try {
+      app = initializeApp(firebaseConfigValues);
+    } catch (e) {
+      console.error("Error initializing Firebase app:", e);
+    }
+  } else {
+    app = getApp();
+  }
+
+  if (app) {
+    try {
+      auth = getAuth(app);
+      db = getFirestore(app);
+    } catch (e) {
+      console.error("Error getting Firebase auth or firestore instance:", e);
+      // auth and db will remain undefined
+    }
+  } else {
+     console.error(
+      'CRITICAL: Firebase app could not be initialized. Firebase services will not be available.'
+    );
+  }
+
 } else {
   console.error(
-    'Firebase configuration is missing or incomplete. Please check your .env file and Firebase project settings.'
+    'CRITICAL: Firebase configuration is missing or incomplete (apiKey, authDomain, or projectId). Firebase services will not be available. Please check your environment variables.'
   );
-  // You might want to throw an error here or handle this case appropriately
-  // For now, app will be undefined, and subsequent Firebase calls will fail
+  // app, auth, and db will remain undefined
 }
-
-const auth = app ? getAuth(app) : undefined;
-const db = app ? getFirestore(app) : undefined;
 
 export { app, auth, db };
