@@ -13,7 +13,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, ServiceCategory } from '@/lib/data'; // UserProfile now covers provider data
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore'; // Removed unused updateDoc
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { Loader2, UserCircle, Save } from 'lucide-react';
 import Image from 'next/image';
@@ -37,7 +37,7 @@ export default function ProviderProfilePage() {
   const { toast } = useToast();
 
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
-  const [profileData, setProfileData] = useState<Partial<UserProfile>>({});
+  // profileData state removed as individual states are sufficient and directly used
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState(''); // Typically from authUser, potentially display-only
@@ -55,25 +55,22 @@ export default function ProviderProfilePage() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setAuthUser(user);
-        setEmail(user.email || ''); // Set email from auth user
-        setName(user.displayName || ''); // Set name from auth user initially
+        setEmail(user.email || ''); 
+        setName(user.displayName || ''); 
 
-        // Fetch profile from Firestore
         const userDocRef = doc(db, "users", user.uid);
         try {
           const docSnap = await getDoc(userDocRef);
           if (docSnap.exists()) {
             const firestoreProfile = docSnap.data() as UserProfile;
-            setProfileData(firestoreProfile);
-            setName(firestoreProfile.name || user.displayName || ''); // Prioritize Firestore name
-            // Email is usually managed by auth provider, but if stored, can be displayed
+            // setProfileData(firestoreProfile); // Not needed if setting individual states
+            setName(firestoreProfile.name || user.displayName || ''); 
             setPhoneNumber(firestoreProfile.phoneNumber || '');
             setQualifications(firestoreProfile.qualifications || '');
             setZipCodesServedString((firestoreProfile.zipCodesServed || []).join(', '));
             setServiceCategories(firestoreProfile.serviceCategories || []);
             setProfilePictureUrl(firestoreProfile.profilePictureUrl);
           } else {
-            // No profile yet, initialize with auth data or defaults
             toast({ variant: "default", title: "Welcome!", description: "Please complete your provider profile." });
           }
         } catch (error) {
@@ -90,10 +87,6 @@ export default function ProviderProfilePage() {
   }, [router, t, toast]);
 
   const handleServiceCategoriesChange = (value: string) => {
-    // This Select component is single-select by default with ShadCN
-    // For true multi-select, a different component or UI pattern is needed.
-    // Current behavior: it will store the selected value as an array of one.
-    // If an empty string is passed (e.g. placeholder selected), it results in an empty array.
     if (value) {
       setServiceCategories([value as ServiceCategory]);
     } else {
@@ -113,7 +106,7 @@ export default function ProviderProfilePage() {
 
     const validationResult = ProfileFormSchema.safeParse({ 
       name, 
-      email, // email is from auth, not typically user-editable here
+      email, 
       phoneNumber, 
       qualifications, 
       zipCodesServedString,
@@ -137,22 +130,20 @@ export default function ProviderProfilePage() {
     const updatedProfile: Partial<UserProfile> = {
       uid: authUser.uid,
       name: data.name,
-      email: authUser.email, // Keep email from auth
-      role: 'provider', // Ensure role is set
+      email: authUser.email, 
+      role: 'provider', 
       phoneNumber: data.phoneNumber,
       qualifications: data.qualifications,
       zipCodesServed: data.zipCodesServedString ? data.zipCodesServedString.split(',').map(zip => zip.trim()).filter(Boolean) : [],
-      serviceCategories: data.serviceCategories || [], // Ensure it's an array
-      profilePictureUrl: profilePictureUrl, // Preserve existing or handle upload logic elsewhere
-      // createdAt can be set on initial creation, updatedAt for updates
+      serviceCategories: data.serviceCategories || [], 
+      profilePictureUrl: profilePictureUrl, 
+      // Consider adding/updating an 'updatedAt' timestamp here
     };
 
     try {
       const userDocRef = doc(db, "users", authUser.uid);
-      // Use setDoc with merge:true to create or update, or updateDoc if sure doc exists
       await setDoc(userDocRef, updatedProfile, { merge: true }); 
       
-      // Update localStorage for userName as other components might still rely on it for quick display
       localStorage.setItem('userName', data.name);
 
       toast({ title: t.profileUpdatedSuccessfully });
@@ -222,7 +213,7 @@ export default function ProviderProfilePage() {
             <div className="space-y-2">
               <Label htmlFor="serviceCategories">{t.serviceCategory}</Label>
               <Select
-                value={serviceCategories.length > 0 ? serviceCategories[0] : ""} // Show first category or empty for single select
+                value={serviceCategories.length > 0 ? serviceCategories[0] : ""} 
                 onValueChange={handleServiceCategoriesChange}
               >
                 <SelectTrigger id="serviceCategoriesTrigger">
@@ -253,4 +244,3 @@ export default function ProviderProfilePage() {
     </div>
   );
 }
-
