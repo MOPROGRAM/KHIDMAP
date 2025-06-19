@@ -11,18 +11,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
-import { ServiceProvider, ServiceCategory, getProviderById, updateProviderProfile } from '@/lib/data';
+import { UserProfile, ServiceCategory } from '@/lib/data'; // UserProfile now covers provider data
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { Loader2, UserCircle, Save } from 'lucide-react';
 import Image from 'next/image';
 import { z } from 'zod';
 
-const ProfileSchema = z.object({
+// Updated Zod schema to align with UserProfile fields used in the form
+const ProfileFormSchema = z.object({
   name: z.string().min(1, { message: "requiredField" }),
-  email: z.string().email({ message: "invalidEmail" }),
-  phoneNumber: z.string().min(1, { message: "requiredField" }),
-  qualifications: z.string().min(1, { message: "requiredField" }),
-  zipCodesServed: z.string().min(1, { message: "requiredField" }), // Assuming comma-separated string for simplicity
-  serviceCategories: z.array(z.enum(['Plumbing', 'Electrical'])).min(1, { message: "requiredField" })
+  email: z.string().email({ message: "invalidEmail" }), // Email might be read-only or managed via Firebase Auth profile
+  phoneNumber: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')),
+  qualifications: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')),
+  zipCodesServedString: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')), // For UI input
+  serviceCategories: z.array(z.enum(['Plumbing', 'Electrical'])).min(0).optional(), // Allow empty array if nothing selected
+  // profilePictureUrl is managed separately
 });
 
 
@@ -31,62 +36,88 @@ export default function ProviderProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const [profile, setProfile] = useState<Partial<ServiceProvider>>({});
+  const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
+  const [profileData, setProfileData] = useState<Partial<UserProfile>>({});
+  
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(''); // Typically from authUser, potentially display-only
   const [phoneNumber, setPhoneNumber] = useState('');
   const [qualifications, setQualifications] = useState('');
-  const [zipCodesServed, setZipCodesServed] = useState(''); // Storing as comma-separated string
+  const [zipCodesServedString, setZipCodesServedString] = useState(''); // UI state for comma-separated zips
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined>(undefined);
   
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [providerId, setProviderId] = useState<string | null>(null);
 
   useEffect(() => {
-    const id = localStorage.getItem('userId');
-    if (id) {
-      setProviderId(id);
-      const providerData = getProviderById(id);
-      if (providerData) {
-        setProfile(providerData);
-        setName(providerData.name);
-        setEmail(providerData.email);
-        setPhoneNumber(providerData.phoneNumber);
-        setQualifications(providerData.qualifications);
-        setZipCodesServed(providerData.zipCodesServed.join(', '));
-        setServiceCategories(providerData.serviceCategories);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setAuthUser(user);
+        setEmail(user.email || ''); // Set email from auth user
+        setName(user.displayName || ''); // Set name from auth user initially
+
+        // Fetch profile from Firestore
+        const userDocRef = doc(db, "users", user.uid);
+        try {
+          const docSnap = await getDoc(userDocRef);
+          if (docSnap.exists()) {
+            const firestoreProfile = docSnap.data() as UserProfile;
+            setProfileData(firestoreProfile);
+            setName(firestoreProfile.name || user.displayName || ''); // Prioritize Firestore name
+            // Email is usually managed by auth provider, but if stored, can be displayed
+            setPhoneNumber(firestoreProfile.phoneNumber || '');
+            setQualifications(firestoreProfile.qualifications || '');
+            setZipCodesServedString((firestoreProfile.zipCodesServed || []).join(', '));
+            setServiceCategories(firestoreProfile.serviceCategories || []);
+            setProfilePictureUrl(firestoreProfile.profilePictureUrl);
+          } else {
+            // No profile yet, initialize with auth data or defaults
+            toast({ variant: "default", title: "Welcome!", description: "Please complete your provider profile." });
+          }
+        } catch (error) {
+          console.error("Error fetching profile:", error);
+          toast({ variant: "destructive", title: t.errorOccurred, description: "Could not fetch profile data." });
+        }
       } else {
-         toast({ variant: "destructive", title: "Error", description: "Provider data not found." });
+        toast({ variant: "destructive", title: "Authentication Error", description: "User not identified. Please log in again." });
+        router.push('/auth/login');
       }
+      setIsFetching(false);
+    });
+    return () => unsubscribe();
+  }, [router, t, toast]);
+
+  const handleServiceCategoriesChange = (value: string) => {
+    // This Select component is single-select by default with ShadCN
+    // For true multi-select, a different component or UI pattern is needed.
+    // Current behavior: it will store the selected value as an array of one.
+    // If an empty string is passed (e.g. placeholder selected), it results in an empty array.
+    if (value) {
+      setServiceCategories([value as ServiceCategory]);
     } else {
-      toast({ variant: "destructive", title: "Error", description: "User not identified. Please log in again." });
-      router.push('/auth/login');
+      setServiceCategories([]);
     }
-    setIsFetching(false);
-  }, [router, toast]);
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!authUser) {
+      toast({ variant: "destructive", title: "Error", description: "User not authenticated." });
+      return;
+    }
     setIsLoading(true);
     setErrors({});
 
-    if (!providerId) {
-      toast({ variant: "destructive", title: "Error", description: "Provider ID is missing." });
-      setIsLoading(false);
-      return;
-    }
-    
-    const currentServiceCategories = (document.getElementById('serviceCategoriesTrigger') as HTMLButtonElement)?.dataset.value?.split(',') as ServiceCategory[] || [];
-
-    const validationResult = ProfileSchema.safeParse({ 
+    const validationResult = ProfileFormSchema.safeParse({ 
       name, 
-      email, 
+      email, // email is from auth, not typically user-editable here
       phoneNumber, 
       qualifications, 
-      zipCodesServed,
-      serviceCategories: currentServiceCategories.filter(Boolean) // Ensure no empty strings if select is not touched
+      zipCodesServedString,
+      serviceCategories 
     });
 
     if (!validationResult.success) {
@@ -101,20 +132,29 @@ export default function ProviderProfilePage() {
       setIsLoading(false);
       return;
     }
+    
+    const { data } = validationResult;
+    const updatedProfile: Partial<UserProfile> = {
+      uid: authUser.uid,
+      name: data.name,
+      email: authUser.email, // Keep email from auth
+      role: 'provider', // Ensure role is set
+      phoneNumber: data.phoneNumber,
+      qualifications: data.qualifications,
+      zipCodesServed: data.zipCodesServedString ? data.zipCodesServedString.split(',').map(zip => zip.trim()).filter(Boolean) : [],
+      serviceCategories: data.serviceCategories || [], // Ensure it's an array
+      profilePictureUrl: profilePictureUrl, // Preserve existing or handle upload logic elsewhere
+      // createdAt can be set on initial creation, updatedAt for updates
+    };
 
     try {
-      const updatedProfileData = {
-        id: providerId,
-        name: validationResult.data.name,
-        email: validationResult.data.email,
-        phoneNumber: validationResult.data.phoneNumber,
-        qualifications: validationResult.data.qualifications,
-        zipCodesServed: validationResult.data.zipCodesServed.split(',').map(zip => zip.trim()).filter(Boolean),
-        serviceCategories: validationResult.data.serviceCategories,
-        // profilePictureUrl: profile.profilePictureUrl // keep existing or handle upload
-      };
+      const userDocRef = doc(db, "users", authUser.uid);
+      // Use setDoc with merge:true to create or update, or updateDoc if sure doc exists
+      await setDoc(userDocRef, updatedProfile, { merge: true }); 
       
-      updateProviderProfile(updatedProfileData); // Mock update
+      // Update localStorage for userName as other components might still rely on it for quick display
+      localStorage.setItem('userName', data.name);
+
       toast({ title: t.profileUpdatedSuccessfully });
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -140,16 +180,16 @@ export default function ProviderProfilePage() {
               <CardDescription>{t.fillYourProfile} {t.appName}</CardDescription>
             </div>
           </div>
-          {/* Placeholder for profile picture */}
           <div className="flex justify-center">
             <Image 
-              src={profile.profilePictureUrl || "https://placehold.co/150x150.png"} 
+              src={profilePictureUrl || "https://placehold.co/150x150.png"} 
               alt="Profile Picture" 
               width={120} 
               height={120} 
               className="rounded-full border-4 border-primary shadow-md"
               data-ai-hint="profile avatar"
             />
+            {/* TODO: Add profile picture upload functionality */}
           </div>
         </CardHeader>
         <CardContent>
@@ -162,7 +202,7 @@ export default function ProviderProfilePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">{t.email}</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Input id="email" type="email" value={email} readOnly disabled className="bg-muted/50"/>
                 {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
               </div>
             </div>
@@ -181,27 +221,26 @@ export default function ProviderProfilePage() {
             
             <div className="space-y-2">
               <Label htmlFor="serviceCategories">{t.serviceCategory}</Label>
-              {/* This is a simplified multi-select. A better component might be needed for UX. */}
               <Select
-                value={serviceCategories.join(',')}
-                onValueChange={(value) => setServiceCategories(value.split(',') as ServiceCategory[])}
+                value={serviceCategories.length > 0 ? serviceCategories[0] : ""} // Show first category or empty for single select
+                onValueChange={handleServiceCategoriesChange}
               >
-                <SelectTrigger id="serviceCategoriesTrigger" data-value={serviceCategories.join(',')}>
-                  <SelectValue placeholder={`${t.selectCategory} (Multiple)`} />
+                <SelectTrigger id="serviceCategoriesTrigger">
+                  <SelectValue placeholder={`${t.selectCategory}`} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Plumbing">{t.plumbing}</SelectItem>
                   <SelectItem value="Electrical">{t.electrical}</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">Ctrl/Cmd + click to select multiple (or use a proper multi-select component for better UX).</p>
+              <p className="text-xs text-muted-foreground">Select your primary service category. For multiple categories, future updates will enhance this section.</p>
               {errors.serviceCategories && <p className="text-sm text-destructive">{errors.serviceCategories}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="zipCodesServed">{t.zipCode} Served (comma-separated)</Label>
-              <Input id="zipCodesServed" value={zipCodesServed} onChange={(e) => setZipCodesServed(e.target.value)} placeholder="e.g., 90210, 90001" />
-              {errors.zipCodesServed && <p className="text-sm text-destructive">{errors.zipCodesServed}</p>}
+              <Input id="zipCodesServed" value={zipCodesServedString} onChange={(e) => setZipCodesServedString(e.target.value)} placeholder="e.g., 90210, 90001" />
+              {errors.zipCodesServedString && <p className="text-sm text-destructive">{errors.zipCodesServedString}</p>}
             </div>
 
             <Button type="submit" className="w-full text-lg py-3" disabled={isLoading}>
@@ -214,3 +253,4 @@ export default function ProviderProfilePage() {
     </div>
   );
 }
+
