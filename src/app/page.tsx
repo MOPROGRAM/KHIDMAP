@@ -20,12 +20,25 @@ export default function HomePage() {
     { icon: <GripVertical className="h-8 w-8 text-primary" />, titleKey: 'other', descriptionKey: 'otherServicesDescription' },
   ];
   
+  const renderServiceCards = () => serviceCards.map((service, index) => (
+    <li 
+        key={index} 
+        className="flex-shrink-0 w-[300px] h-[220px] flex flex-col items-start text-left p-6 rounded-2xl border bg-card/80 backdrop-blur-sm transition-all"
+    >
+      <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 mb-5">
+        {service.icon}
+      </div>
+      <h3 className="text-lg font-bold text-foreground mb-2">{t[service.titleKey as keyof Translations]}</h3>
+      <p className="text-sm text-muted-foreground">{t[service.descriptionKey as keyof Translations]}</p>
+    </li>
+  ));
+
   return (
     <div className="flex flex-col items-center overflow-x-hidden">
       
       {/* Hero Section */}
       <section 
-        className="w-full flex flex-col items-center text-center pt-24 pb-20 md:pt-40 md:pb-32 space-y-8"
+        className="w-full flex flex-col items-center text-center pt-24 pb-20 md:pt-40 md:pb-32 space-y-6"
       >
         <div 
             className="animate-fade-in-up" 
@@ -40,7 +53,7 @@ export default function HomePage() {
             style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}
         >
             <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-                {t.tagline} {t.orPostYourServices}
+                {t.findSkilledArtisans} {t.orPostYourServices}
             </p>
         </div>
         <div className="flex flex-wrap justify-center items-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
@@ -59,33 +72,26 @@ export default function HomePage() {
       </section>
 
       {/* Services Section */}
-      <section className="w-full max-w-6xl px-4 py-24 md:py-32">
-        <div className="animate-fade-in-up" style={{ animationFillMode: 'backwards' }}>
-            <h2 className="text-4xl md:text-5xl font-bold font-headline mb-16 text-foreground text-center tracking-tighter">
+      <section className="w-full py-24 md:py-32">
+        <div className="animate-fade-in-up text-center" style={{ animationFillMode: 'backwards' }}>
+            <h2 className="text-4xl md:text-5xl font-bold font-headline mb-16 text-foreground tracking-tighter">
                 {t.services}
             </h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {serviceCards.map((service, index) => (
-            <div 
-                key={index} 
-                className="flex flex-col items-start text-left animate-fade-in-up p-6 rounded-xl border border-transparent hover:border-border hover:bg-card/50 transition-all"
-                style={{ animationDelay: `${0.2 + index * 0.05}s`, animationFillMode: 'backwards' }}
-            >
-              <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 mb-5">
-                {service.icon}
-              </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">{t[service.titleKey as keyof Translations]}</h3>
-              <p className="text-sm text-muted-foreground">{t[service.descriptionKey as keyof Translations]}</p>
-            </div>
-          ))}
+        <div className="w-full inline-flex flex-nowrap overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]">
+            <ul className="flex items-center justify-center md:justify-start animate-scroll [animation-play-state:running] hover:[animation-play-state:paused] gap-8">
+                {renderServiceCards()}
+            </ul>
+            <ul className="flex items-center justify-center md:justify-start animate-scroll [animation-play-state:running] hover:[animation-play-state:paused] gap-8 ml-8" aria-hidden="true">
+                {renderServiceCards()}
+            </ul>
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="w-full bg-muted/50 py-24">
           <div className="container max-w-4xl px-4 text-center">
-            <div className="animate-fade-in-up" style={{ animationFillMode: 'backwards' }}>
+            <div className="animate-fade-in-up text-center" style={{ animationFillMode: 'backwards' }}>
               <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-6">{t.joinAsProvider}</h2>
               <p className="text-base text-muted-foreground mb-8 max-w-2xl mx-auto">{t.orPostYourServices}</p>
               <Button asChild size="lg" className="text-base px-8">
