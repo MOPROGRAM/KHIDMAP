@@ -57,22 +57,10 @@ export default function HomePage() {
       </section>
 
       <section className="w-full max-w-5xl px-4 animate-fadeIn animation-delay-600">
-         <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="relative aspect-video rounded-xl overflow-hidden shadow-2xl group transform transition-all duration-500 hover:scale-105">
-              <Image
-                src="https://images.unsplash.com/photo-1672512263515-d1fefa4a1db6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx0ZWNobmljaWFuJTIwd29ya3xlbnwwfHx8fDE3NTA0MDcyMjN8MA&ixlib=rb-4.1.0&q=80&w=1080"
-                alt="Technician working"
-                layout="fill"
-                objectFit="cover"
-                className="group-hover:brightness-90 transition-all duration-500"
-                data-ai-hint="technician work"
-              />
-               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
-               <h3 className="absolute bottom-5 left-5 text-3xl font-semibold text-white drop-shadow-lg">{t.serviceProviders}</h3>
-            </div>
-            <div className="space-y-4 text-left rtl:text-right">
+         <div className="grid md:grid-cols-1 gap-8 items-center text-center md:text-center"> {/* Centered text */}
+            <div className="space-y-4">
               <h2 className="text-3xl font-headline font-semibold text-foreground">{t.joinAsProvider}</h2>
-              <p className="text-muted-foreground text-lg">
+              <p className="text-muted-foreground text-lg max-w-xl mx-auto">
                 {t.orPostYourServices}
               </p>
               <Button asChild size="lg" className="shadow-md hover:shadow-lg hover:scale-105 transform transition-all duration-300 group">
@@ -83,27 +71,15 @@ export default function HomePage() {
       </section>
 
       <section className="w-full max-w-5xl px-4 animate-fadeIn animation-delay-800">
-         <div className="grid md:grid-cols-2 gap-8 items-center">
-           <div className="space-y-4 text-left rtl:text-right md:order-last">
+         <div className="grid md:grid-cols-1 gap-8 items-center text-center md:text-center"> {/* Centered text */}
+           <div className="space-y-4">
               <h2 className="text-3xl font-headline font-semibold text-foreground">{t.joinAsSeeker}</h2>
-              <p className="text-muted-foreground text-lg">
+              <p className="text-muted-foreground text-lg max-w-xl mx-auto">
                 {t.findSkilledArtisans}
               </p>
               <Button asChild size="lg" className="shadow-md hover:shadow-lg hover:scale-105 transform transition-all duration-300 group">
                 <Link href="/auth/register?role=seeker">{t.joinAsSeeker} <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-300"/></Link>
               </Button>
-            </div>
-            <div className="relative aspect-video rounded-xl overflow-hidden shadow-2xl group transform transition-all duration-500 hover:scale-105 md:order-first">
-              <Image
-                src="https://images.unsplash.com/photo-1608752503578-52f35965e3d9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxob21lJTIwaW1wcm92ZW1lbnR8ZW58MHx8fHwxNzUwNDA3MjIyfDA&ixlib=rb-4.1.0&q=80&w=1080"
-                alt="Home improvement"
-                layout="fill"
-                objectFit="cover"
-                className="group-hover:brightness-90 transition-all duration-500"
-                data-ai-hint="home improvement"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
-              <h3 className="absolute bottom-5 left-5 text-3xl font-semibold text-white drop-shadow-lg">{t.serviceSeekers}</h3>
             </div>
           </div>
       </section>
