@@ -50,6 +50,7 @@ export default function HomePage() {
              <h1 className="text-5xl md:text-6xl font-extrabold font-headline tracking-tighter text-foreground">
                 {t.appName}
             </h1>
+            <div className="absolute bottom-0 left-0 h-[4px] w-full bg-primary"></div>
           </div>
         </div>
         <div 
