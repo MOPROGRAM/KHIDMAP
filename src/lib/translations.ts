@@ -214,7 +214,7 @@ export type Translations = {
 
 export const translations: Record<'en' | 'ar', Translations> = {
   en: {
-    appName: "KHIDMAP",
+    appName: "Khidmap",
     tagline: "Find the best local service providers",
     home: "Home",
     services: "Services",

@@ -9,7 +9,7 @@ import AppInitializer from '@/components/AppInitializer';
 
 
 export const metadata: Metadata = {
-  title: 'خدماب KHIDMAP',
+  title: 'Khidmap | خدماپ',
   description: 'Find skilled artisans or post your services for plumbing and electrical work.',
 };
 

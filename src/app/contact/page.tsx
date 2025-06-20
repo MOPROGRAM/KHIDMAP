@@ -71,7 +71,7 @@ export default function ContactPage() {
         },
         body: JSON.stringify({
             ...validationResult.data,
-            _subject: `KHIDMAP Contact: ${validationResult.data.subject}`,
+            _subject: `Khidmap Contact: ${validationResult.data.subject}`,
             _replyto: validationResult.data.email,
         }),
       });
@@ -107,7 +107,7 @@ export default function ContactPage() {
       <Card className="shadow-xl">
         <CardHeader className="text-center">
           <Mail className="mx-auto h-12 w-12 text-primary mb-4" />
-          <CardTitle className="text-2xl font-headline">{t.contactUs}</CardTitle>
+          <CardTitle className="text-xl font-headline">{t.contactUs}</CardTitle>
           <CardDescription>{t.contactPageDescription}</CardDescription>
         </CardHeader>
         <CardContent>
