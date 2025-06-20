@@ -54,11 +54,11 @@ export default function HomePage() {
         <div className="relative aspect-[16/9] w-full">
             <Image 
                 src="https://placehold.co/1200x675.png"
-                alt="Artisans working"
+                alt="Modern app interface"
                 layout="fill"
                 objectFit="cover"
-                className="rounded-2xl shadow-2xl border"
-                data-ai-hint="workspace tools"
+                className="rounded-2xl"
+                data-ai-hint="abstract graphic"
                 priority
             />
         </div>
