@@ -48,6 +48,7 @@ export default function NewAdPage() {
   const [providerName, setProviderName] = useState<string | null>(null); 
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
 
+  // fileInputRef is still used by handleImageChange if onChange is on the input
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -132,8 +133,6 @@ export default function NewAdPage() {
     let uploadedImageUrl: string | undefined | null = null;
     let adFirestoreId: string | undefined = undefined;
 
-
-    // Generate a Firestore ID first, regardless of image, to use it for the image path if an image exists.
     if (db) {
         adFirestoreId = doc(firestoreCollection(db, "serviceAds")).id;
     } else {
@@ -142,9 +141,8 @@ export default function NewAdPage() {
         return;
     }
 
-
     if (adImageFile) {
-      if (!adFirestoreId) { // Should not happen if db is checked above
+      if (!adFirestoreId) { 
         toast({ variant: "destructive", title: t.errorOccurred, description: "Failed to generate ad ID for image." });
         setIsLoading(false);
         return;
@@ -179,8 +177,6 @@ export default function NewAdPage() {
       });
       setErrors(fieldErrors);
       setIsLoading(false);
-      // If image was uploaded but form validation failed, consider deleting the uploaded image.
-      // For simplicity now, we are not deleting it if validation for other fields fails.
       return;
     }
     
@@ -193,14 +189,12 @@ export default function NewAdPage() {
         category: validationResult.data.category as ServiceCategory,
         address: validationResult.data.address,
         imageUrl: validationResult.data.imageUrl === null ? undefined : validationResult.data.imageUrl,
-      }, adFirestoreId); // Pass the generated adFirestoreId here
+      }, adFirestoreId); 
       toast({ title: t.adPostedSuccessfully, description: t.adLiveShortly });
       router.push('/dashboard/provider/ads'); 
     } catch (error) {
       console.error("Error posting ad:", error);
       toast({ variant: "destructive", title: t.errorOccurred, description: (error as Error).message || t.failedPostAd });
-      // If ad creation fails after image upload, the image might be orphaned.
-      // Consider adding logic to delete the image here if critical.
     } finally {
       setIsLoading(false);
     }
@@ -282,31 +276,40 @@ export default function NewAdPage() {
             <div className="space-y-2">
               <Label htmlFor="adImage">{t.adImage}</Label>
               <div 
-                className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-input border-dashed rounded-md cursor-pointer hover:border-primary transition-colors group"
-                onClick={() => fileInputRef.current?.click()}
+                className="mt-1 flex flex-col items-center justify-center px-6 pt-5 pb-6 border-2 border-input border-dashed rounded-md group"
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
                   if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                    handleImageChange({ target: { files: e.dataTransfer.files } } as any);
+                    // Set the file to the input if ref is available
+                    if (fileInputRef.current) {
+                        fileInputRef.current.files = e.dataTransfer.files;
+                        // Manually trigger handleImageChange
+                        handleImageChange({ target: fileInputRef.current } as any);
+                    } else {
+                         handleImageChange({ target: { files: e.dataTransfer.files } } as any);
+                    }
                   }
                 }}
               >
-                <div className="space-y-1 text-center">
-                  {adImagePreview ? (
-                    <NextImage src={adImagePreview} alt={t.imagePreview || "Image preview"} width={200} height={200} className="mx-auto h-24 w-auto object-contain rounded-md shadow-md" />
-                  ) : (
-                    <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground group-hover:text-primary transition-colors" />
-                  )}
-                  <div className="flex text-sm text-muted-foreground">
-                    <span className="relative rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-ring">
-                      <span>{adImagePreview ? t.changeImage : t.uploadAdImage}</span>
-                      <Input id="adImage" name="adImage" type="file" className="sr-only" ref={fileInputRef} onChange={handleImageChange} accept="image/*" disabled={!isFirebaseReady || isLoading} />
-                    </span>
-                    {!adImagePreview && <p className="pl-1 rtl:pr-1">{t.orDragAndDrop}</p>}
-                  </div>
-                  {!adImagePreview && <p className="text-xs text-muted-foreground">{t.imageUploadHint}</p>}
-                </div>
+                {adImagePreview ? (
+                    <div className="mb-2">
+                        <NextImage src={adImagePreview} alt={t.imagePreview || "Image preview"} width={200} height={200} className="mx-auto h-24 w-auto object-contain rounded-md shadow-md" />
+                    </div>
+                ) : (
+                    <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground group-hover:text-primary transition-colors mb-2" />
+                )}
+                <Input 
+                    id="adImage" 
+                    name="adImage" 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleImageChange} 
+                    accept="image/*" 
+                    disabled={!isFirebaseReady || isLoading}
+                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                />
+                <p className="text-xs text-muted-foreground mt-1">{t.orDragAndDrop} {t.imageUploadHint}</p>
               </div>
               {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl}</p>}
               {isUploadingImage && (
@@ -327,5 +330,4 @@ export default function NewAdPage() {
     </div>
   );
 }
-
     

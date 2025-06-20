@@ -80,13 +80,24 @@ export const uploadAdImage = async (file: File, providerId: string, adId: string
   if (!auth?.currentUser) throw new Error("User not authenticated for image upload.");
   if (!providerId || !adId) throw new Error("Provider ID and Ad ID are required for image path.");
   const storage = getStorage();
-  // Use the specific adId for the path
   const imagePath = `serviceAds/${providerId}/${adId}/${Date.now()}_${file.name}`;
   const storageRef = ref(storage, imagePath);
   
-  await uploadBytes(storageRef, file);
-  const downloadURL = await getDownloadURL(storageRef);
-  return downloadURL;
+  try {
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+  } catch (error) {
+    console.error("Firebase Storage uploadAdImage error:", error); // Log the raw error
+    let message = "Failed to upload image.";
+    if (error instanceof Error && 'code' in error) {
+      // Firebase errors often have a 'code' property
+      message = `Failed to upload image. Firebase Storage Error: ${(error as any).code} - ${(error as any).message}`;
+    } else if (error instanceof Error) {
+      message = `Failed to upload image: ${error.message}`;
+    }
+    throw new Error(message);
+  }
 };
 
 export const deleteAdImage = async (imageUrl: string): Promise<void> => {
@@ -112,14 +123,14 @@ export const deleteAdImage = async (imageUrl: string): Promise<void> => {
 export const addServiceAd = async (
   adData: {
     providerId: string;
-    providerName: string; // Made non-optional
+    providerName: string; 
     title: string;
     description: string;
     category: ServiceCategory;
     address: string;
     imageUrl?: string;
   },
-  forcedAdId?: string // Optional ID to force for the new document
+  forcedAdId?: string 
 ): Promise<string> => {
   if (!db) throw new Error("Firestore is not initialized.");
   if (!adData.providerName) throw new Error("Provider name is required to post an ad.");
@@ -133,12 +144,10 @@ export const addServiceAd = async (
 
   try {
     if (forcedAdId) {
-      // Use setDoc if a specific ID is provided
       const adDocRef = doc(db, "serviceAds", forcedAdId);
       await setDoc(adDocRef, dataToSave);
       return forcedAdId;
     } else {
-      // Use addDoc to auto-generate an ID
       const adDocRef = await addDoc(collection(db, "serviceAds"), dataToSave);
       return adDocRef.id;
     }
@@ -189,7 +198,7 @@ export const getAdsByProviderId = async (providerId: string): Promise<ServiceAd[
 export const deleteServiceAd = async (adId: string, imageUrl?: string): Promise<void> => {
   if (!db) throw new Error("Firestore is not initialized.");
   if (imageUrl) {
-    await deleteAdImage(imageUrl); // Attempt to delete image, but don't block ad deletion if this fails
+    await deleteAdImage(imageUrl); 
   }
   try {
     const adDocRef = doc(db, "serviceAds", adId);
@@ -241,15 +250,17 @@ export const getAllServiceAds = async (): Promise<ServiceAd[]> => {
     for (const docSnap of querySnapshot.docs) {
       const data = docSnap.data();
       
-      // Ensure providerName is fetched if not directly available
       let providerName = data.providerName;
       if (!providerName && data.providerId) { 
-        const providerProfile = await getUserProfileById(data.providerId);
-        providerName = providerProfile?.name || t.anonymousProvider || 'N/A'; // Use translation for anonymous
+        try {
+            const providerProfile = await getUserProfileById(data.providerId);
+            providerName = providerProfile?.name || 'Anonymous Provider'; 
+        } catch (profileError) {
+            console.warn(`Could not fetch profile for provider ${data.providerId}:`, profileError);
+            providerName = 'Anonymous Provider';
+        }
       } else if (!providerName) {
-        // Use a global t object or pass it if this function is client-side.
-        // For server-side or generic lib, a default string is safer.
-        providerName = 'Anonymous Provider'; // Fallback if t is not available
+        providerName = 'Anonymous Provider'; 
       }
 
       ads.push({

@@ -73,17 +73,14 @@ export default function EditAdPage() {
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           setCurrentUser(user);
-          // Fetch provider name here if not already fetched with ad
           const userDocRef = doc(db, "users", user.uid);
           const userDocSnap = await getDoc(userDocRef);
           if (userDocSnap.exists()) {
             const userData = userDocSnap.data() as UserProfile;
-            // Set providerName which will be used if ad.providerName is missing
             if (!providerName) setProviderName(userData.name || user.displayName || t.anonymousProvider);
           } else {
             if (!providerName) setProviderName(user.displayName || t.anonymousProvider);
           }
-
         } else {
           toast({ variant: "destructive", title: t.errorOccurred, description: t.userNotAuthenticated });
           router.push('/auth/login');
@@ -95,7 +92,7 @@ export default function EditAdPage() {
       console.warn("Firebase Auth or DB not initialized in EditAdPage.");
       toast({ variant: "destructive", title: t.serviceUnavailableTitle, description: t.coreServicesUnavailable });
     }
-  }, [router, toast, t, providerName]); // Added providerName to dependency array
+  }, [router, toast, t, providerName]);
 
   const fetchAdData = useCallback(async () => {
     if (!adId || !isFirebaseReady) return;
@@ -115,7 +112,7 @@ export default function EditAdPage() {
         setCategory(fetchedAd.category);
         setCurrentImageUrl(fetchedAd.imageUrl);
         setAdImagePreview(fetchedAd.imageUrl || null);
-        setProviderName(fetchedAd.providerName || providerName); // Use fetched ad's providerName or fallback
+        setProviderName(fetchedAd.providerName || providerName); 
       } else {
         toast({ variant: "destructive", title: t.errorOccurred, description: t.adNotFound });
         router.push('/dashboard/provider/ads');
@@ -144,17 +141,14 @@ export default function EditAdPage() {
         setAdImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-      setErrors(prev => ({ ...prev, imageUrl: '' })); // Clear image error if new one is selected
+      setErrors(prev => ({ ...prev, imageUrl: '' })); 
     }
   };
 
   const handleRemoveImage = async () => {
-     setAdImageFile(null); // Mark that no new file is selected
-     setAdImagePreview(null); // Clear preview
-     // currentImageUrl will be handled during submit to mark for deletion from storage
-     // and removal from Firestore
+     setAdImageFile(null); 
+     setAdImagePreview(null); 
   }
-
 
   const handleDetectCategory = async () => {
     if (!description) {
@@ -193,11 +187,11 @@ export default function EditAdPage() {
 
     let finalImageUrl: string | undefined | null = currentImageUrl; 
     
-    if (adImageFile) { // New image selected for upload
+    if (adImageFile) { 
       setIsUploadingImage(true);
       try {
         finalImageUrl = await uploadAdImage(adImageFile, currentUser.uid, ad.id);
-        if (currentImageUrl && currentImageUrl !== finalImageUrl) { // Delete old image if new one uploaded successfully
+        if (currentImageUrl && currentImageUrl !== finalImageUrl) { 
             await deleteAdImage(currentImageUrl);
         }
       } catch (error) {
@@ -208,17 +202,16 @@ export default function EditAdPage() {
         return;
       }
       setIsUploadingImage(false);
-    } else if (adImagePreview === null && currentImageUrl) { // Image was present and then removed (preview cleared)
-        finalImageUrl = undefined; // Mark for removal from Firestore
+    } else if (adImagePreview === null && currentImageUrl) { 
+        finalImageUrl = undefined; 
     }
-
 
     const validationResult = EditAdFormSchema.safeParse({ 
         title, 
         description, 
         address, 
         category, 
-        imageUrl: finalImageUrl // Use the potentially updated finalImageUrl
+        imageUrl: finalImageUrl 
     });
 
     if (!validationResult.success) {
@@ -252,11 +245,9 @@ export default function EditAdPage() {
       
       await updateServiceAd(ad.id, updateData);
 
-      // If image was marked for removal (finalImageUrl is undefined) and there was a currentImageUrl, delete from storage
       if (finalImageUrl === undefined && currentImageUrl) {
           await deleteAdImage(currentImageUrl);
       }
-
 
       toast({ title: t.adUpdatedTitle, description: t.adUpdatedSuccess });
       router.push('/dashboard/provider/ads'); 
@@ -356,17 +347,21 @@ export default function EditAdPage() {
             <div className="space-y-2">
               <Label htmlFor="adImageEdit">{t.adImage}</Label>
               <div 
-                className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-input border-dashed rounded-md cursor-pointer hover:border-primary transition-colors group"
-                onClick={() => fileInputRef.current?.click()}
+                className="mt-1 flex flex-col items-center justify-center px-6 pt-5 pb-6 border-2 border-input border-dashed rounded-md group"
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
                   if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                    handleImageChange({ target: { files: e.dataTransfer.files } } as any);
+                     if (fileInputRef.current) {
+                        fileInputRef.current.files = e.dataTransfer.files;
+                        handleImageChange({ target: fileInputRef.current } as any);
+                    } else {
+                         handleImageChange({ target: { files: e.dataTransfer.files } } as any);
+                    }
                   }
                 }}
               >
-                <div className="space-y-1 text-center">
+                <div className="space-y-1 text-center mb-2">
                   {adImagePreview ? (
                     <div className="relative group/img">
                         <NextImage src={adImagePreview} alt={t.imagePreview || "Image Preview"} width={200} height={200} className="mx-auto h-24 w-auto object-contain rounded-md shadow-md" />
@@ -398,15 +393,18 @@ export default function EditAdPage() {
                         <p className="text-sm text-muted-foreground">{t.noImageUploaded}</p>
                      </div>
                   )}
-                  <div className="flex text-sm text-muted-foreground">
-                    <span className="relative rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-ring">
-                      <span>{adImagePreview ? t.changeImage : t.uploadAdImage}</span>
-                      <Input id="adImageEdit" name="adImageEdit" type="file" className="sr-only" ref={fileInputRef} onChange={handleImageChange} accept="image/*" disabled={isLoading} />
-                    </span>
-                     {!adImagePreview && <p className="pl-1 rtl:pr-1">{t.orDragAndDrop}</p>}
-                  </div>
-                   {!adImagePreview && <p className="text-xs text-muted-foreground">{t.imageUploadHint}</p>}
                 </div>
+                <Input 
+                    id="adImageEdit" 
+                    name="adImageEdit" 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleImageChange} 
+                    accept="image/*" 
+                    disabled={isLoading}
+                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                />
+                <p className="text-xs text-muted-foreground mt-1">{t.orDragAndDrop} {t.imageUploadHint}</p>
               </div>
               {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl}</p>}
                {isUploadingImage && (
