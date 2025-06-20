@@ -107,14 +107,14 @@ export default function ContactPage() {
       <Card className="shadow-xl">
         <CardHeader className="text-center">
           <Mail className="mx-auto h-12 w-12 text-primary mb-4" />
-          <CardTitle className="text-3xl font-headline">{t.contactUs}</CardTitle>
+          <CardTitle className="text-2xl font-headline">{t.contactUs}</CardTitle>
           <CardDescription>{t.contactPageDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           {isSubmitted ? (
             <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 border border-green-500 rounded-lg shadow-md animate-fadeIn">
               <CheckCircle className="mx-auto h-16 w-16 text-green-600 dark:text-green-400 mb-4" />
-              <h3 className="text-2xl font-semibold text-green-700 dark:text-green-300 mb-2">{t.messageSentSuccessTitle}</h3>
+              <h3 className="text-xl font-semibold text-green-700 dark:text-green-300 mb-2">{t.messageSentSuccessTitle}</h3>
               <p className="text-muted-foreground">{t.messageSentSuccessDescription}</p>
               <Button onClick={() => setIsSubmitted(false)} className="mt-6">
                 {t.sendMessage} {t.other}

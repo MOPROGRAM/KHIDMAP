@@ -161,7 +161,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-lg shadow-xl">
         <CardHeader className="text-center">
           <UserPlus className="mx-auto h-12 w-12 text-primary mb-4" />
-          <CardTitle className="text-3xl font-headline">{t.register}</CardTitle>
+          <CardTitle className="text-2xl font-headline">{t.register}</CardTitle>
           <CardDescription>{t.createAccount} {t.appName}</CardDescription>
         </CardHeader>
         <CardContent>

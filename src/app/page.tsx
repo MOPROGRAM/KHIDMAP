@@ -30,7 +30,7 @@ export default function HomePage() {
       <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 mb-4">
         {React.cloneElement(service.icon, { className: `h-8 w-8 ${service.color}` })}
       </div>
-      <h3 className="text-lg font-bold text-foreground mb-1">{t[service.titleKey as keyof Translations]}</h3>
+      <h3 className="text-base font-bold text-foreground mb-1">{t[service.titleKey as keyof Translations]}</h3>
       <p className="text-sm text-muted-foreground">{t[service.descriptionKey as keyof Translations]}</p>
     </li>
   );
@@ -46,7 +46,7 @@ export default function HomePage() {
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
-            <h1 className="text-5xl md:text-6xl font-bold font-headline text-foreground tracking-tighter">
+            <h1 className="text-4xl md:text-5xl font-bold font-headline text-foreground tracking-tighter">
                 {t.appName}
             </h1>
         </div>
@@ -54,7 +54,7 @@ export default function HomePage() {
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}
         >
-            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base text-muted-foreground max-w-xl mx-auto">
                 {t.findSkilledArtisans} {t.orPostYourServices}
             </p>
         </div>
@@ -74,9 +74,9 @@ export default function HomePage() {
       </section>
 
       {/* Services Section */}
-      <section className="w-full py-12 md:py-16">
-        <div className="animate-fade-in-up text-center" style={{ animationFillMode: 'backwards' }}>
-            <h2 className="text-4xl md:text-5xl font-bold font-headline mb-8 text-foreground tracking-tighter">
+      <section className="w-full py-6 md:py-8">
+        <div className="animate-fade-in-up text-center mb-6" style={{ animationFillMode: 'backwards' }}>
+            <h2 className="text-3xl md:text-4xl font-bold font-headline text-foreground tracking-tighter">
                 {t.services}
             </h2>
         </div>
@@ -88,11 +88,11 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="w-full bg-muted/50 py-12">
+      <section className="w-full bg-muted/50 py-10">
           <div className="container max-w-4xl px-4 text-center">
-            <div className="animate-fade-in-up text-center" style={{ animationFillMode: 'backwards' }}>
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">{t.joinAsProvider}</h2>
-              <p className="text-base text-muted-foreground mb-6 max-w-2xl mx-auto">{t.orPostYourServices}</p>
+            <div className="animate-fade-in-up text-center space-y-3" style={{ animationFillMode: 'backwards' }}>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
+              <p className="text-base text-muted-foreground max-w-2xl mx-auto">{t.orPostYourServices}</p>
               <Button asChild size="lg" className="text-base px-8">
                 <Link href="/auth/register?role=provider">
                     {t.register}

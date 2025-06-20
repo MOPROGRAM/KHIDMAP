@@ -311,7 +311,7 @@ export default function ProviderDetailsPage() {
                 priority
             />
             <div className="flex-1">
-                <h1 className="text-3xl md:text-4xl font-bold font-headline text-foreground">{provider.name}</h1>
+                <h1 className="text-2xl md:text-3xl font-bold font-headline text-foreground">{provider.name}</h1>
                 <div className="flex items-center gap-2 mt-2">
                     <StarRating rating={averageRating} />
                     <span className="text-sm text-muted-foreground">
@@ -375,7 +375,7 @@ export default function ProviderDetailsPage() {
 
           {/* Reviews Section */}
           <div className="space-y-4 animate-fadeIn animation-delay-400">
-            <h2 className="text-2xl font-semibold text-primary font-headline">{t.reviews}</h2>
+            <h2 className="text-xl font-semibold text-primary font-headline">{t.reviews}</h2>
             {ratings.length > 0 ? (
                 <div className="space-y-4">
                     {ratings.map(rating => (
@@ -401,7 +401,7 @@ export default function ProviderDetailsPage() {
           {/* Rating Form */}
           {authUser && userRole === 'seeker' && authUser.uid !== providerId && (
             <div className="animate-fadeIn animation-delay-600">
-                <h2 className="text-2xl font-semibold text-primary font-headline mb-4">{t.rateThisProvider}</h2>
+                <h2 className="text-xl font-semibold text-primary font-headline mb-4">{t.rateThisProvider}</h2>
                 <form onSubmit={handleRatingSubmit} className="space-y-4">
                     <div>
                         <Label htmlFor="rating">{t.rating}</Label>

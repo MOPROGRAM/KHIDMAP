@@ -113,7 +113,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <LogInIcon className="mx-auto h-12 w-12 text-primary mb-4" />
-          <CardTitle className="text-3xl font-headline">{t.login}</CardTitle>
+          <CardTitle className="text-2xl font-headline">{t.login}</CardTitle>
           <CardDescription>{t.welcomeTo} {t.appName}! {t.tagline}</CardDescription>
         </CardHeader>
         <CardContent>

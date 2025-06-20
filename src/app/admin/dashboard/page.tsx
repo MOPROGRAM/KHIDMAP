@@ -73,7 +73,7 @@ export default function AdminDashboardPage() {
           <div className="flex items-center gap-3">
              <ShieldCheck className="h-10 w-10 text-primary" />
             <div>
-                <CardTitle className="text-3xl font-headline">{t.welcomeAdmin}</CardTitle>
+                <CardTitle className="text-2xl font-headline">{t.welcomeAdmin}</CardTitle>
                 <CardDescription>{t.adminDashboardDescription}</CardDescription>
             </div>
           </div>

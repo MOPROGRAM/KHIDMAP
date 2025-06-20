@@ -58,12 +58,12 @@ export default function DashboardPage() {
         <div className="grid md:grid-cols-2">
             <div className="p-8">
               <CardHeader className="p-0 mb-2">
-                <CardTitle className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
+                <CardTitle className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
                   {welcomeMessage}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                  <p className="text-lg text-muted-foreground">
+                  <p className="text-base text-muted-foreground">
                     {userRole === 'provider' ? t.dashboardTaglineProvider : t.dashboardTaglineSeeker}
                   </p>
               </CardContent>
@@ -94,7 +94,7 @@ export default function DashboardPage() {
                   {action.icon}
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-foreground">{t[action.titleKey as keyof Translations]}</h3>
+                  <h3 className="text-base font-bold text-foreground">{t[action.titleKey as keyof Translations]}</h3>
                   <p className="text-sm text-muted-foreground">{t[action.descriptionKey as keyof Translations]}</p>
                 </div>
               </div>

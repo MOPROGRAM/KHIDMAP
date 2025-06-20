@@ -186,7 +186,7 @@ export default function ProviderProfilePage() {
           <div className="flex items-center gap-3 mb-4">
             <UserCircle className="h-10 w-10 text-primary" />
             <div>
-              <CardTitle className="text-3xl font-headline">{t.profile}</CardTitle>
+              <CardTitle className="text-2xl font-headline">{t.profile}</CardTitle>
               <CardDescription>{t.profilePageDescription?.replace("{appName}", t.appName)}</CardDescription>
             </div>
           </div>

@@ -57,7 +57,7 @@ export default function SearchHistoryPage() {
         <div className="flex items-center gap-3">
           <History className="h-10 w-10 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold font-headline">{t.searchHistory}</h1>
+            <h1 className="text-2xl font-bold font-headline">{t.searchHistory}</h1>
             <p className="text-muted-foreground">{t.searchHistoryPageDescription}</p>
           </div>
         </div>
@@ -90,7 +90,7 @@ export default function SearchHistoryPage() {
         <Card className="text-center py-12 animate-fadeIn">
            <CardHeader>
             <History className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-            <CardTitle>{t.noHistoryYet}</CardTitle>
+            <CardTitle className="text-xl">{t.noHistoryYet}</CardTitle>
             <CardDescription>
               {t.noHistoryYetDescription}
             </CardDescription>

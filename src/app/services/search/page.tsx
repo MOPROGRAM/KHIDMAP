@@ -170,7 +170,7 @@ export default function ServiceSearchPage() {
     <div className="space-y-4 py-4 animate-fadeIn">
       <Card className="shadow-md sticky top-[calc(var(--header-height,4rem)+1rem)] z-40 backdrop-blur-md bg-background/90 border">
         <CardHeader>
-          <CardTitle className="text-3xl font-bold flex items-center gap-3 text-foreground">
+          <CardTitle className="text-2xl font-bold flex items-center gap-3 text-foreground">
             <SearchIcon className="h-8 w-8 text-primary" />
             {t.search} {t.serviceProviders}
           </CardTitle>
@@ -232,7 +232,7 @@ export default function ServiceSearchPage() {
          <Card className="text-center py-12 bg-destructive/10 border-destructive shadow-lg animate-fadeIn">
           <CardHeader>
             <AlertTriangle className="mx-auto h-16 w-16 text-destructive mb-4" />
-            <CardTitle className="text-destructive text-2xl">{t.errorOccurred}</CardTitle>
+            <CardTitle className="text-destructive text-xl">{t.errorOccurred}</CardTitle>
             <CardDescription className="text-destructive/80">
               {error}
             </CardDescription>
@@ -252,7 +252,7 @@ export default function ServiceSearchPage() {
         <Card className="text-center py-12 shadow-md animate-fadeIn border">
           <CardHeader>
              <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-            <CardTitle className="text-2xl text-foreground">{t.noResultsFound}</CardTitle>
+            <CardTitle className="text-xl text-foreground">{t.noResultsFound}</CardTitle>
             <CardDescription className="text-muted-foreground">
               {t.tryDifferentKeywords}
             </CardDescription>
@@ -264,7 +264,7 @@ export default function ServiceSearchPage() {
          <Card className="text-center py-12 shadow-md animate-fadeIn border">
           <CardHeader>
              <UserCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-            <CardTitle className="text-2xl text-foreground">{t.noServicesAvailableYet}</CardTitle>
+            <CardTitle className="text-xl text-foreground">{t.noServicesAvailableYet}</CardTitle>
             <CardDescription className="text-muted-foreground">
               {t.checkBackLater}
             </CardDescription>
@@ -302,7 +302,7 @@ export default function ServiceSearchPage() {
                         <Badge key={cat} variant="secondary">{t[cat.toLowerCase() as keyof Translations] || cat}</Badge>
                     ))}
                   </div>
-                  <CardTitle className="text-lg font-semibold truncate hover:text-primary transition-colors" title={provider.name}>
+                  <CardTitle className="text-base font-semibold truncate hover:text-primary transition-colors" title={provider.name}>
                      <Link href={`/services/ad/${provider.uid}`}>{provider.name}</Link>
                   </CardTitle>
                   <p className="text-sm text-muted-foreground line-clamp-2 h-10 mt-1">{provider.qualifications || t.provider + " " + (t[provider.serviceCategories?.[0]?.toLowerCase() as keyof Translations] || '')}</p>
