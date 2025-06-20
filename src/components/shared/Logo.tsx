@@ -7,10 +7,13 @@ const Logo = () => {
   const t = useTranslation();
 
   return (
-    <Link href="/" className="inline-block" aria-label="Homepage Logo">
-      <span className="font-headline font-extrabold text-2xl text-foreground transition-transform duration-200 ease-in-out hover:scale-105 block">
-        {t.appName}
-      </span>
+    <Link href="/" className="group inline-block" aria-label="Homepage Logo">
+      <div className="relative inline-block transition-transform duration-200 ease-in-out group-hover:scale-105">
+        <span className="font-headline font-extrabold text-2xl text-foreground block pb-1">
+          {t.appName}
+        </span>
+        <span className="absolute bottom-0 left-0 w-full h-[2px] bg-primary"></span>
+      </div>
     </Link>
   );
 };

@@ -47,9 +47,12 @@ export default function HomePage() {
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
-            <h1 className="text-5xl md:text-6xl font-extrabold font-headline tracking-tighter text-foreground">
+          <div className="relative inline-block">
+            <h1 className="text-5xl md:text-6xl font-extrabold font-headline tracking-tighter text-foreground pb-2">
                 {t.appName}
             </h1>
+            <span className="absolute bottom-0 left-0 w-full h-1 bg-primary"></span>
+          </div>
         </div>
         <div 
             className="animate-fade-in-up" 
@@ -75,7 +78,7 @@ export default function HomePage() {
       </section>
 
       {/* Services Section */}
-      <section className="w-full py-16 border-t bg-muted/30">
+      <section className="w-full py-16 border-y bg-muted/30">
         <div className="animate-fade-in-up text-center mb-8" style={{ animationFillMode: 'backwards' }}>
             <h2 className="text-3xl md:text-4xl font-bold font-headline text-foreground tracking-tighter">
                 {t.services}
@@ -89,7 +92,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="w-full bg-background py-16 border-t">
+      <section className="w-full bg-background py-16">
           <div className="container max-w-4xl px-4 text-center">
             <div className="animate-fade-in-up text-center space-y-3" style={{ animationFillMode: 'backwards' }}>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
