@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -10,7 +11,6 @@ import { useSettings } from '@/contexts/SettingsContext';
 export default function HomePage() {
   const t = useTranslation();
   const { language } = useSettings();
-  const animationClass = language === 'ar' ? 'animate-typingAr' : 'animate-typingEn';
 
   const serviceCards = [
     { icon: <Wrench />, titleKey: 'plumbing', descriptionKey: 'plumbingDescription', color: 'text-blue-500' },
@@ -47,19 +47,8 @@ export default function HomePage() {
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
-            <h1 className="text-5xl md:text-6xl font-bold font-headline tracking-tighter">
-                <div
-                  className="
-                    inline-block p-px rounded-lg
-                    bg-gradient-to-b from-green-500 to-orange-600
-                  "
-                >
-                  <div className="bg-background rounded-md px-4 py-2 flex items-center justify-center">
-                    <span className={`font-extrabold text-5xl md:text-6xl inline-block overflow-hidden whitespace-nowrap border-r-4 border-r-transparent pr-2 ${animationClass}`}>
-                        {t.appName}
-                    </span>
-                  </div>
-                </div>
+            <h1 className="text-5xl md:text-6xl font-extrabold font-headline tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-green-500 to-orange-600">
+                {t.appName}
             </h1>
         </div>
         <div 
