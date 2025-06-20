@@ -47,7 +47,7 @@ export default function HomePage() {
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
           <div className="relative inline-block">
-             <h1 className="text-5xl md:text-6xl font-extrabold font-headline tracking-tighter bg-gradient-to-t from-primary to-foreground/50 bg-clip-text text-transparent">
+             <h1 className="text-5xl md:text-6xl font-extrabold font-headline tracking-tighter bg-gradient-to-t from-primary to-primary/20 bg-clip-text text-transparent">
                 {t.appName}
             </h1>
           </div>
