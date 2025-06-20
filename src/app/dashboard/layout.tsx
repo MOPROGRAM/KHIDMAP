@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, User, Briefcase, Search, History, LogOut, Settings, PlusCircle, Loader2, ShieldCheck, AlertTriangle, ServerCrash } from 'lucide-react';
+import { Home, User, Search, History, LogOut, Settings, PlusCircle, Loader2, ShieldCheck, AlertTriangle, ServerCrash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -101,9 +101,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navItems: NavItem[] = [
     { href: '/dashboard', labelKey: 'dashboard', icon: <Home className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
     { href: '/dashboard/provider/profile', labelKey: 'profile', icon: <User className="h-5 w-5" />, roles: ['provider'] },
-    { href: '/dashboard/provider/ads', labelKey: 'myAds', icon: <Briefcase className="h-5 w-5" />, roles: ['provider'] },
-    { href: '/dashboard/provider/ads/new', labelKey: 'newAd', icon: <PlusCircle className="h-5 w-5" />, roles: ['provider'] },
-    { href: '/services/search', labelKey: 'search', icon: <Search className="h-5 w-5" />, roles: ['seeker'] },
+    { href: '/services/search', labelKey: 'search', icon: <Search className="h-5 w-5" />, roles: ['seeker', 'provider'] },
     { href: '/dashboard/seeker/history', labelKey: 'searchHistory', icon: <History className="h-5 w-5" />, roles: ['seeker'] },
     { href: '/admin/dashboard', labelKey: 'adminDashboard', icon: <ShieldCheck className="h-5 w-5" />, roles: ['admin'] },
   ];

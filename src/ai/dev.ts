@@ -1,4 +1,5 @@
+
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/categorize-ad.ts';
+// The categorize-ad flow has been removed as part of the pivot to a provider rating system.

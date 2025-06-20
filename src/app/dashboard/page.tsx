@@ -40,9 +40,8 @@ export default function DashboardPage() {
   }
 
   const providerActions = [
-    { titleKey: 'myAds', descriptionKey: 'myAdsDescriptionProvider', href: '/dashboard/provider/ads', icon: <Briefcase className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
-    { titleKey: 'newAd', descriptionKey: 'newAdDescriptionProvider', href: '/dashboard/provider/ads/new', icon: <PlusCircle className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
     { titleKey: 'profile', descriptionKey: 'profileDescriptionProvider', href: '/dashboard/provider/profile', icon: <UserCog className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
+    { titleKey: 'search', descriptionKey: 'searchDescriptionSeeker', href: '/services/search', icon: <Search className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
   ];
 
   const seekerActions = [

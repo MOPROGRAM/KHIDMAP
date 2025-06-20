@@ -1,18 +1,26 @@
 
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
-import { ServiceAd, UserProfile, getAdById, getUserProfileById, ServiceCategory } from '@/lib/data';
+import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, Rating } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import NextImage from 'next/image'; 
-import { ArrowLeft, MapPin, Wrench, Zap, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, ArrowRight, ImageOff, HardHat, Layers } from 'lucide-react';
+import NextImage from 'next/image';
+import {
+  ArrowLeft, MapPin, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, SprayCan,
+  GripVertical, HardHat, Layers, Star, Wrench, Zap
+} from 'lucide-react';
 import Link from 'next/link';
 import { Timestamp } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
-import { db } from '@/lib/firebase'; 
+import { db, auth } from '@/lib/firebase';
+import { useToast } from "@/hooks/use-toast";
+import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 
 const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Plumbing: Wrench,
@@ -25,74 +33,181 @@ const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Other: GripVertical,
 };
 
-export default function ServiceAdDetailsPage() {
+// Inline StarRating component
+const StarRating = ({
+  rating,
+  setRating,
+  size = 5,
+  interactive = false,
+  className
+}: {
+  rating: number;
+  setRating?: (rating: number) => void;
+  size?: number;
+  interactive?: boolean;
+  className?: string;
+}) => {
+  const [hoverRating, setHoverRating] = useState(0);
+
+  const handleMouseEnter = (index: number) => {
+    if (interactive) {
+      setHoverRating(index);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (interactive) {
+      setHoverRating(0);
+    }
+  };
+
+  const handleClick = (index: number) => {
+    if (interactive && setRating) {
+      setRating(index);
+    }
+  };
+
+  return (
+    <div className={cn("flex items-center gap-1", className)}>
+      {[...Array(5)].map((_, i) => {
+        const starValue = i + 1;
+        return (
+          <Star
+            key={i}
+            className={cn(
+              'transition-colors',
+              interactive ? 'cursor-pointer' : '',
+              starValue <= (hoverRating || rating)
+                ? 'text-yellow-400 fill-yellow-400'
+                : 'text-muted-foreground/50',
+              size === 5 ? 'h-5 w-5' : `h-${size} w-${size}`
+            )}
+            onMouseEnter={() => handleMouseEnter(starValue)}
+            onMouseLeave={handleMouseLeave}
+            onClick={() => handleClick(starValue)}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
+export default function ProviderDetailsPage() {
   const t = useTranslation();
   const router = useRouter();
   const params = useParams();
-  const adId = params.id as string;
+  const providerId = params.id as string;
+  const { toast } = useToast();
 
-  const [ad, setAd] = useState<ServiceAd | null>(null);
   const [provider, setProvider] = useState<UserProfile | null>(null);
+  const [ratings, setRatings] = useState<Rating[]>([]);
+  const [averageRating, setAverageRating] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDbAvailable, setIsDbAvailable] = useState(false);
+  
+  const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ratingInput, setRatingInput] = useState(0);
+  const [commentInput, setCommentInput] = useState('');
 
   useEffect(() => {
-      setIsDbAvailable(!!db);
+    setIsDbAvailable(!!db && !!auth);
+    if (auth) {
+        onAuthStateChanged(auth, (user) => {
+            setAuthUser(user);
+            if (user) {
+                setUserRole(localStorage.getItem('userRole'));
+            } else {
+                setUserRole(null);
+            }
+        });
+    }
   }, []);
 
-  const fetchAdDetails = useCallback(async () => {
+  const fetchProviderDetails = useCallback(async () => {
     if (!isDbAvailable) {
         setError(t.serviceUnavailableMessage);
         setIsLoading(false);
         return;
     }
-    if (!adId) {
-      setError(t.adIdMissing);
+    if (!providerId) {
+      setError(t.providerIdMissing);
       setIsLoading(false);
       return;
     }
     setIsLoading(true);
     setError(null);
     try {
-      const foundAd = await getAdById(adId);
-      if (foundAd) {
-        setAd(foundAd);
-        if (foundAd.providerId) {
-          const foundProvider = await getUserProfileById(foundAd.providerId);
-          setProvider(foundProvider);
+      const [foundProvider, foundRatings] = await Promise.all([
+          getUserProfileById(providerId),
+          getRatingsForUser(providerId),
+      ]);
+      
+      if (foundProvider) {
+        setProvider(foundProvider);
+        setRatings(foundRatings);
+
+        if (foundRatings.length > 0) {
+            const totalRating = foundRatings.reduce((acc, r) => acc + r.rating, 0);
+            setAverageRating(totalRating / foundRatings.length);
         } else {
-          console.warn("Ad has no providerId:", foundAd);
+            setAverageRating(0);
         }
       } else {
-        setError(t.adNotFound);
+        setError(t.providerNotFound);
       }
     } catch (err: any) {
-      console.error("Error fetching ad details:", err);
-      setError(err.message || t.failedLoadAdDetails);
+      console.error("Error fetching provider details:", err);
+      if (err.message.includes("requires an index")) {
+        setError(t.firestoreIndexError);
+      } else {
+        setError(err.message || t.failedLoadProviderDetails);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [adId, t, isDbAvailable]);
+  }, [providerId, t, isDbAvailable]);
 
   useEffect(() => {
-    fetchAdDetails();
-  }, [fetchAdDetails]);
-  
-  const formatDate = (dateValue: Timestamp | string | undefined): string => {
-    if (!dateValue) return 'N/A';
-    let date: Date;
-    if (typeof dateValue === 'string') {
-      date = new Date(dateValue);
-    } else if (dateValue instanceof Timestamp) {
-      date = dateValue.toDate();
-    } else {
-       return t.invalidDate;
-    }
-    if (isNaN(date.getTime())) return t.invalidDate;
-    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-  };
+    fetchProviderDetails();
+  }, [fetchProviderDetails]);
 
+  const handleRatingSubmit = async (e: FormEvent) => {
+      e.preventDefault();
+      if (!authUser || !provider) {
+          toast({ variant: "destructive", title: t.authError, description: t.loginToRate });
+          return;
+      }
+      if (ratingInput === 0) {
+          toast({ variant: "destructive", title: t.errorOccurred, description: t.selectRating });
+          return;
+      }
+      setIsSubmitting(true);
+      try {
+          await addRating({
+              ratedUserId: provider.uid,
+              raterUserId: authUser.uid,
+              raterName: authUser.displayName || "Anonymous",
+              rating: ratingInput,
+              comment: commentInput,
+          });
+          toast({ title: t.ratingSubmitted, description: t.thankYouForFeedback });
+          setRatingInput(0);
+          setCommentInput('');
+          fetchProviderDetails(); // Re-fetch to show new rating
+      } catch (error: any) {
+          toast({ variant: "destructive", title: t.errorOccurred, description: error.message || t.failedSubmitRating });
+      } finally {
+          setIsSubmitting(false);
+      }
+  }
+  
+  const formatDate = (dateValue: Timestamp | undefined): string => {
+    if (!dateValue) return 'N/A';
+    return dateValue.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  };
 
   if (isLoading) {
     return (
@@ -116,9 +231,7 @@ export default function ServiceAdDetailsPage() {
           <CardContent>
             <p className="text-muted-foreground mb-6">{error}</p>
             <Button asChild variant="outline" onClick={() => router.back()} className="hover:bg-destructive/10 hover:border-destructive transition-colors duration-200 group">
-              <Link href="#"> 
                 <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:translate-x-[-2px] transition-transform" /> {t.backButton}
-              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -126,32 +239,26 @@ export default function ServiceAdDetailsPage() {
     );
   }
   
-  if (!ad) { 
+  if (!provider) { 
      return (
       <div className="text-center py-10 max-w-md mx-auto animate-fadeIn">
         <Card className="shadow-xl border">
           <CardHeader>
             <CardTitle className="flex items-center justify-center gap-2 text-xl text-foreground">
               <Info className="h-8 w-8 text-primary" />
-               {t.adNotFound}
+               {t.providerNotFound}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-6">{t.adNotFoundDescription}</p>
+            <p className="text-muted-foreground mb-6">{t.providerDetailsNotAvailable}</p>
              <Button asChild variant="outline" onClick={() => router.back()} className="hover:bg-accent/10 hover:border-primary transition-colors duration-200 group">
-              <Link href="#">
                 <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:translate-x-[-2px] transition-transform" /> {t.backButton}
-              </Link>
             </Button>
           </CardContent>
         </Card>
       </div>
     );
   }
-
-  const Icon = categoryIcons[ad.category] || GripVertical;
-  const categoryKey = ad.category.toLowerCase() as keyof Translations;
-  const categoryName = t[categoryKey] || ad.category;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-8 animate-fadeIn">
@@ -160,136 +267,132 @@ export default function ServiceAdDetailsPage() {
       </Button>
 
       <Card className="overflow-hidden shadow-2xl border">
-        <div className="relative w-full h-72 md:h-96 group overflow-hidden bg-muted/30">
-          {ad.imageUrl ? (
-            <NextImage
-              src={ad.imageUrl}
-              alt={ad.title}
-              layout="fill"
-              objectFit="cover"
-              className="group-hover:scale-110 transition-transform duration-700 ease-in-out"
-              data-ai-hint={`${ad.category} service project`}
-              priority
+        <CardHeader className="p-6 flex flex-col md:flex-row items-start md:items-center gap-6">
+            <NextImage 
+                src={provider.profilePictureUrl || "https://placehold.co/128x128.png"} 
+                alt={provider.name} 
+                width={128} 
+                height={128} 
+                className="rounded-full border-4 border-primary shadow-lg object-cover"
+                data-ai-hint="person portrait"
+                priority
             />
-          ) : (
-             <div className="w-full h-full flex items-center justify-center">
-                <ImageOff className="h-24 w-24 text-muted-foreground/50" />
+            <div className="flex-1">
+                <h1 className="text-3xl md:text-4xl font-bold font-headline text-foreground">{provider.name}</h1>
+                <div className="flex items-center gap-2 mt-2">
+                    <StarRating rating={averageRating} />
+                    <span className="text-muted-foreground text-sm">
+                        {averageRating.toFixed(1)} {t.of} 5 ({ratings.length} {t.reviews})
+                    </span>
+                </div>
+                 <p className="text-sm text-muted-foreground mt-2">{t.postedOnFull} {formatDate(provider.createdAt)}</p>
             </div>
-          )}
-           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
-           <div className="absolute bottom-0 left-0 p-6 w-full">
-             <h1 className="text-3xl md:text-4xl font-bold font-headline text-white mb-2 drop-shadow-lg">{ad.title}</h1>
-             <div className="flex items-center gap-3 text-sm text-gray-200">
-                <span className="flex items-center gap-1.5 bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm shadow-md">
-                    <Icon className="h-4 w-4" />
-                    <span>{categoryName}</span>
-                </span>
-                <span className="flex items-center gap-1.5 bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm shadow-md">
-                    <MapPin className="h-4 w-4" />
-                    <span>{ad.address}</span>
-                </span>
-             </div>
-           </div>
-        </div>
+        </CardHeader>
         
         <CardContent className="p-6 space-y-6">
-          <div className="animate-fadeIn animation-delay-200">
-            <h2 className="text-2xl font-semibold flex items-center gap-2 mb-3 text-primary font-headline">
-                <Info className="h-6 w-6"/> {t.adDescription}
-            </h2>
-            <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap text-md">{ad.description}</p>
-            <p className="text-sm text-muted-foreground mt-4">
-                {t.postedOnFull}: {formatDate(ad.postedDate)}
-            </p>
-          </div>
-
-          <Separator className="my-6" />
-
-          {provider && (
-            <Card className="bg-card p-0 border-none shadow-none animate-fadeIn animation-delay-400">
-              <CardHeader className="px-0 pt-0 pb-4">
-                <CardTitle className="text-2xl font-semibold flex items-center gap-3 text-primary font-headline">
-                    <UserCircle className="h-7 w-7" /> {t.serviceProvider}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-0 pb-0 space-y-4">
-                <div className="flex items-center gap-4">
-                  <NextImage 
-                    src={provider.profilePictureUrl || "https://placehold.co/80x80.png"} 
-                    alt={provider.name} 
-                    width={80} 
-                    height={80} 
-                    className="rounded-full border-2 border-primary shadow-lg object-cover"
-                    data-ai-hint="person portrait"
-                  />
-                  <div>
-                    <h3 className="text-xl font-medium text-foreground">{provider.name}</h3>
-                    {provider.email && (
-                      <a href={`mailto:${provider.email}`} className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 mt-1 group">
-                        <Mail className="h-4 w-4 group-hover:animate-pulse-glow" /> {provider.email}
-                      </a>
-                    )}
-                    {provider.phoneNumber && (
-                        <a href={`tel:${provider.phoneNumber}`} className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 mt-1 group">
-                            <Phone className="h-4 w-4 group-hover:animate-pulse-glow" /> {provider.phoneNumber}
-                        </a>
-                    )}
-                  </div>
-                </div>
-                
-                {provider.qualifications && (
-                  <div>
-                    <h4 className="text-md font-semibold text-muted-foreground mb-1.5">{t.qualifications}:</h4>
-                    <p className="text-md bg-muted/50 p-4 rounded-lg border whitespace-pre-wrap text-foreground/90 shadow-inner">{provider.qualifications}</p>
-                  </div>
-                )}
-
-                {provider.serviceCategories && provider.serviceCategories.length > 0 && (
-                  <div>
-                    <h4 className="text-md font-semibold text-muted-foreground mb-1.5">{t.serviceCategoriesTitle}:</h4>
+          <div className="space-y-4 animate-fadeIn animation-delay-200">
+            {provider.qualifications && (
+              <div>
+                <h3 className="text-lg font-semibold text-muted-foreground mb-1.5">{t.qualifications}:</h3>
+                <p className="text-md bg-muted/50 p-4 rounded-lg border whitespace-pre-wrap text-foreground/90 shadow-inner">{provider.qualifications}</p>
+              </div>
+            )}
+            {provider.serviceCategories && provider.serviceCategories.length > 0 && (
+                <div>
+                    <h3 className="text-lg font-semibold text-muted-foreground mb-1.5">{t.serviceCategoriesTitle}:</h3>
                     <div className="flex flex-wrap gap-2">
-                      {provider.serviceCategories.map(cat => {
+                        {provider.serviceCategories.map(cat => {
                         const ProviderCatIcon = categoryIcons[cat] || GripVertical;
                         const providerCatKey = cat.toLowerCase() as keyof Translations;
-                        const providerCatName = t[providerCatKey] || cat;
                         return (
                         <span key={cat} className="px-3 py-1.5 bg-accent text-accent-foreground text-sm rounded-full shadow-md flex items-center gap-1.5">
-                          <ProviderCatIcon className="h-4 w-4" />
-                          {providerCatName}
+                            <ProviderCatIcon className="h-4 w-4" />
+                            {t[providerCatKey] || cat}
                         </span>
                         );
-                      })}
+                        })}
                     </div>
-                  </div>
-                 )}
-                 {provider.serviceAreas && provider.serviceAreas.length > 0 && (
-                   <div>
-                    <h4 className="text-md font-semibold text-muted-foreground mb-1.5">{t.servesAreasTitle}:</h4>
-                    <p className="text-md text-foreground/90">{provider.serviceAreas.join(', ')}</p>
-                  </div>
-                 )}
-              </CardContent>
-              <CardFooter className="px-0 pt-8">
-                 <Button size="lg" className="w-full sm:w-auto text-base py-3.5 group" asChild>
-                    <a href={`mailto:${provider.email}?subject=${t.inquiryAboutAd?.replace('{adTitle}', ad.title)}`}>
-                        {t.contactProvider?.replace('{providerName}', provider.name.split(' ')[0])}
-                        <ArrowRight className="ltr:ml-2 rtl:mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform"/>
-                    </a>
-                 </Button>
-              </CardFooter>
-            </Card>
+                </div>
+            )}
+            {provider.serviceAreas && provider.serviceAreas.length > 0 && (
+                <div>
+                <h3 className="text-lg font-semibold text-muted-foreground mb-1.5">{t.servesAreasTitle}:</h3>
+                <p className="text-md text-foreground/90">{provider.serviceAreas.join(', ')}</p>
+                </div>
+            )}
+          </div>
+          <CardFooter className="px-0 pt-4 flex flex-col sm:flex-row gap-2">
+             {provider.email && <Button size="lg" className="w-full sm:w-auto text-base py-3.5 group" asChild>
+                <a href={`mailto:${provider.email}`}>
+                    <Mail className="ltr:mr-2 rtl:ml-2 h-5 w-5" /> {t.email}
+                </a>
+             </Button>}
+             {provider.phoneNumber && <Button size="lg" variant="outline" className="w-full sm:w-auto text-base py-3.5 group" asChild>
+                <a href={`tel:${provider.phoneNumber}`}>
+                    <Phone className="ltr:mr-2 rtl:ml-2 h-5 w-5" /> {t.phoneNumber}
+                </a>
+             </Button>}
+          </CardFooter>
+          
+          <Separator className="my-6" />
+
+          {/* Reviews Section */}
+          <div className="space-y-6 animate-fadeIn animation-delay-400">
+            <h2 className="text-2xl font-semibold text-primary font-headline">{t.reviews}</h2>
+            {ratings.length > 0 ? (
+                <div className="space-y-4">
+                    {ratings.map(rating => (
+                        <Card key={rating.id} className="bg-muted/30 border p-4 shadow-sm">
+                           <div className="flex justify-between items-start">
+                             <div>
+                               <p className="font-semibold text-foreground">{rating.raterName}</p>
+                               <p className="text-xs text-muted-foreground">{formatDate(rating.createdAt)}</p>
+                             </div>
+                             <StarRating rating={rating.rating} />
+                           </div>
+                           {rating.comment && <p className="mt-2 text-foreground/80">{rating.comment}</p>}
+                        </Card>
+                    ))}
+                </div>
+            ) : (
+                <p className="text-muted-foreground">{t.noReviewsYet}</p>
+            )}
+          </div>
+          
+          <Separator className="my-6" />
+
+          {/* Rating Form */}
+          {authUser && userRole === 'seeker' && authUser.uid !== providerId && (
+            <div className="animate-fadeIn animation-delay-600">
+                <h2 className="text-2xl font-semibold text-primary font-headline mb-4">{t.rateThisProvider}</h2>
+                <form onSubmit={handleRatingSubmit} className="space-y-4">
+                    <div>
+                        <Label htmlFor="rating">{t.rating}</Label>
+                        <StarRating rating={ratingInput} setRating={setRatingInput} interactive={true} className="mt-2" />
+                    </div>
+                    <div>
+                        <Label htmlFor="comment">{t.comment}</Label>
+                        <Textarea 
+                            id="comment" 
+                            value={commentInput} 
+                            onChange={(e) => setCommentInput(e.target.value)}
+                            placeholder="..."
+                            disabled={isSubmitting}
+                        />
+                    </div>
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" />}
+                        {t.submitRating}
+                    </Button>
+                </form>
+            </div>
           )}
-           {!provider && !isLoading && ( 
-             <div className="text-center py-6 animate-fadeIn animation-delay-400">
-                <UserCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2"/>
-                <p className="text-muted-foreground">{t.providerDetailsNotAvailable}</p>
-             </div>
-           )}
         </CardContent>
       </Card>
        <style jsx global>{`
         .animation-delay-200 { animation-delay: 0.2s; }
         .animation-delay-400 { animation-delay: 0.4s; }
+        .animation-delay-600 { animation-delay: 0.6s; }
         [style*="animation-delay"] {
           animation-fill-mode: backwards; 
         }
@@ -297,4 +400,3 @@ export default function ServiceAdDetailsPage() {
     </div>
   );
 }
-

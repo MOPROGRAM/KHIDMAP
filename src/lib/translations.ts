@@ -28,9 +28,6 @@ export type Translations = {
   address: string;
   serviceAreas: string;
   serviceAreasPlaceholder: string;
-  postAd: string;
-  adTitle: string;
-  adDescription: string;
   category: string;
   plumbing: string;
   electrical: string;
@@ -40,9 +37,6 @@ export type Translations = {
   construction: string;
   plastering: string;
   other: string;
-  myAds: string;
-  editAd: string;
-  newAd: string;
   searchHistory: string;
   noResultsFound: string;
   loading: string;
@@ -63,27 +57,18 @@ export type Translations = {
   serviceDetails: string;
   contactInfo: string;
   saveChanges: string;
-  adPostedSuccessfully: string;
   profileUpdatedSuccessfully: string;
   selectCategory: string;
   serviceCategory: string;
-  detectedCategoryTitle: string;
-  confirmCategory: string;
   searchByAddressOrKeyword: string;
   recentSearches: string;
   clearHistory: string;
-  noAdsYet: string;
   noHistoryYet: string;
   requiredField: string;
   invalidEmail: string;
   passwordTooShort: string;
   passwordsDoNotMatch: string;
   confirmPassword: string;
-  uploadAdImage: string;
-  adImage: string;
-  imagePreview: string;
-  changeImage: string;
-  noImageUploaded: string;
   emailVerificationSent: string;
   checkYourEmailForVerification: string;
   contactUs: string;
@@ -96,6 +81,7 @@ export type Translations = {
   authServiceUnavailable?: string;
   serviceUnavailableTitle?: string;
   serviceUnavailableMessage?: string;
+  coreServicesUnavailableDashboard?: string;
   loginSuccessful?: string;
   welcomeBackUser?: string; // "Welcome back, {userName}!"
   loginFailedGeneric?: string;
@@ -107,79 +93,43 @@ export type Translations = {
   passwordTooWeak?: string;
   registrationFailedTitle?: string;
   userNotAuthenticated?: string;
-  notAuthorizedEditAd?: string;
-  adNotFound?: string;
-  failedLoadAdData?: string;
-  couldNotDetectCategory?: string;
-  cannotUpdateAdCoreServices?: string;
-  failedUploadImage?: string;
-  adUpdatedTitle?: string;
-  adUpdatedSuccess?: string;
-  failedUpdateAd?: string;
-  loadingAdDetails?: string;
-  errorOrAdNotFound?: string;
-  detectCategoryAI?: string;
-  orDragAndDrop?: string;
-  imageUploadHint?: string; // "PNG, JPG, GIF up to 10MB"
-  uploadingImage?: string;
-  anonymousProvider?: string;
   userNotIdentified?: string;
   coreServicesUnavailable?: string;
-  coreServicesUnavailableDashboard?: string; // Specific for dashboard layout
-  cannotPostAdCoreServices?: string;
   providerInfoMissing?: string;
-  adLiveShortly?: string;
-  failedPostAd?: string;
-  newAdDescriptionPage?: string; // "Fill out the form to post your service ad on {appName}."
-  postingAdsUnavailable?: string; // For new ad page
-  editingAdsUnavailable?: string; // For edit ad page
-  failedLoadAds?: string;
-  adDeletedTitle?: string;
-  adDeletedSuccess?: string;
-  failedDeleteAd?: string;
   invalidDate?: string;
-  myAdsPageDescription?: string; // "View, edit, or delete your service advertisements."
-  noAdsYetDescription?: string; // "Click the button above to create your first service advertisement."
-  postedOn?: string; // "Posted:"
   delete?: string;
-  confirmDeleteTitleAd?: string; // "Are you sure you want to delete the ad '{adTitle}'?"
-  confirmDeleteDescriptionAd?: string; // "This action cannot be undone. This will permanently delete this ad."
   cancel?: string;
   welcome?: string;
   completeYourProfile?: string;
   couldNotFetchProfile?: string;
   authError?: string;
-  profileServiceNotReady?: string;
   userNotAuthOrServiceUnavailable?: string;
   profileChangesSaved?: string;
   failedUpdateProfile?: string;
-  profilePageDescription?: string; // "Manage your provider profile details for {appName}."
+  profilePageDescription?: string;
   profilePictureAlt?: string;
-  profileEditingUnavailable?: string; // For profile page
-  profileHelpTextCategory?: string; // "Select your primary service category. For multiple, manage via separate ads."
+  profileEditingUnavailable?: string;
+  profileHelpTextCategory?: string;
   searchHistoryClearedTitle?: string;
   searchHistoryClearedSuccess?: string;
-  searchHistoryPageDescription?: string; // "Review your past service searches."
-  confirmClearHistoryTitle?: string; // "Are you sure you want to clear your search history?"
-  confirmClearHistoryDescription?: string; // "This action cannot be undone. This will permanently delete all your search history entries."
-  noHistoryYetDescription?: string; // "Your search history is empty. Start searching for services to see them here."
-  searchedOn?: string; // "Searched on:"
+  searchHistoryPageDescription?: string;
+  confirmClearHistoryTitle?: string;
+  confirmClearHistoryDescription?: string;
+  noHistoryYetDescription?: string;
+  searchedOn?: string;
   repeatSearch?: string;
-  adIdMissing?: string;
   failedLoadServices?: string;
   backButton?: string;
-  adNotFoundDescription?: string; // "The service ad you are looking for does not exist or may have been removed."
   backToSearch?: string;
-  postedOnFull?: string; // "Posted on:" for full date
-  serviceCategoriesTitle?: string; // "Service Categories:"
-  servesAreasTitle?: string; // "Serves Areas:"
-  inquiryAboutAd?: string; // "Inquiry about your ad: {adTitle}"
+  postedOnFull?: string;
+  serviceCategoriesTitle?: string;
+  servesAreasTitle?: string;
   contactProvider?: string; // "Contact {providerName}"
   providerDetailsNotAvailable?: string;
-  searchServicesPageDescription?: string; // "Find skilled artisans by searching by address, service type, or keywords."
-  tryDifferentKeywords?: string; // "Try searching with different keywords or check your spelling."
-  noServicesAvailableYet?: string; // "No Services Available Yet"
-  checkBackLater?: string; // "There are currently no service ads posted. Check back later!"
+  searchServicesPageDescription?: string;
+  tryDifferentKeywords?: string;
+  noServicesAvailableYet?: string;
+  checkBackLater?: string;
   switchToDarkMode?: string;
   switchToLightMode?: string;
   unauthorized?: string;
@@ -187,32 +137,26 @@ export type Translations = {
   accessDenied?: string;
   notAuthorizedViewPage?: string;
   adminDashboardDescription?: string;
-  adminDashboardUnavailable?: string; // For admin dashboard if services down
+  adminDashboardUnavailable?: string;
   logoutFailed?: string;
   goToHomepage?: string;
   redirectingToLogin?: string;
   verifyingUserRole?: string;
   verifyEmailPromptTitle?: string;
-  verifyEmailPromptMessage?: string; // "A verification link was sent to {email}. Check your inbox (and spam folder)."
+  verifyEmailPromptMessage?: string;
   resendVerificationEmail?: string;
   verificationEmailResent?: string;
   checkYourEmail?: string;
   errorResendingVerificationEmail?: string;
-  welcomeToDashboardUser?: string; // "Welcome to your Dashboard, {userName}!"
-  welcomeToDashboardProvider?: string; // "Welcome to your Provider Dashboard!"
-  welcomeToDashboardSeeker?: string; // "Welcome to your Seeker Dashboard!"
-  myAdsDescriptionProvider?: string; // "View and manage your service advertisements."
-  newAdDescriptionProvider?: string; // "Create a new advertisement to offer your services."
-  profileDescriptionProvider?: string; // "Update your personal and service information."
-  searchDescriptionSeeker?: string; // "Find skilled artisans for your needs."
-  searchHistoryDescriptionSeeker?: string; // "Review your past service searches."
-  dashboardTaglineProvider?: string; // "Manage your services and reach more customers."
-  dashboardTaglineSeeker?: string; // "Find the best services for your needs easily."
-  dashboardBannerAlt?: string; // "Dashboard banner with tools or workspace imagery"
-  descriptionTooShortAd?: string; // "Description must be at least 10 characters for an ad."
-  invalidImageUrl?: string; // "Invalid image URL."
-
-  // Contact Page Translations
+  welcomeToDashboardUser?: string;
+  welcomeToDashboardProvider?: string;
+  welcomeToDashboardSeeker?: string;
+  profileDescriptionProvider?: string;
+  searchDescriptionSeeker?: string;
+  searchHistoryDescriptionSeeker?: string;
+  dashboardTaglineProvider?: string;
+  dashboardTaglineSeeker?: string;
+  dashboardBannerAlt?: string;
   contactPageTitle?: string;
   contactPageDescription?: string;
   yourName?: string;
@@ -226,15 +170,8 @@ export type Translations = {
   messageSentErrorDescription?: string;
   contactFormIntro?: string;
   formSubmitActivationNote?: string;
-
-  // Image Deletion in Edit Ad
-  removeImageTitle?: string;
-  removeImageConfirm?: string;
-  removeImageButton?: string;
   tryAgain?: string;
   backToDashboard?: string;
-
-  // Homepage Service Card Descriptions
   plumbingDescription?: string;
   electricalDescription?: string;
   carpentryDescription?: string;
@@ -243,6 +180,26 @@ export type Translations = {
   constructionDescription?: string;
   plasteringDescription?: string;
   otherServicesDescription?: string;
+
+  // New Rating translations
+  reviews?: string;
+  averageRating?: string;
+  noReviewsYet?: string;
+  rateThisProvider?: string;
+  rating?: string;
+  comment?: string;
+  submitRating?: string;
+  loginToRate?: string;
+  selectRating?: string;
+  ratingSubmitted?: string;
+  thankYouForFeedback?: string;
+  failedSubmitRating?: string;
+  providerNotFound?: string;
+  providerIdMissing?: string;
+  failedLoadProviderDetails?: string;
+  firestoreIndexError?: string;
+  of?: string; // e.g. 4.5 of 5 stars
+  viewProfile?: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -260,7 +217,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     theme: "Theme",
     lightMode: "Light Mode",
     darkMode: "Dark Mode",
-    searchPlaceholder: "Search by address, service type...",
+    searchPlaceholder: "Search providers by name, category...",
     search: "Search",
     serviceProviders: "Service Providers",
     serviceSeekers: "Service Seekers",
@@ -275,9 +232,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     address: "Address / Service Location",
     serviceAreas: "Service Areas",
     serviceAreasPlaceholder: "e.g., Downtown, North Suburbs (comma-separated)",
-    postAd: "Post Ad",
-    adTitle: "Ad Title",
-    adDescription: "Ad Description",
     category: "Category",
     plumbing: "Plumbing",
     electrical: "Electrical",
@@ -287,9 +241,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     construction: "Construction",
     plastering: "Plastering",
     other: "Other Services",
-    myAds: "My Ads",
-    editAd: "Edit Ad",
-    newAd: "New Ad",
     searchHistory: "Search History",
     noResultsFound: "No results found.",
     loading: "Loading...",
@@ -310,27 +261,18 @@ export const translations: Record<'en' | 'ar', Translations> = {
     serviceDetails: "Service Details",
     contactInfo: "Contact Information",
     saveChanges: "Save Changes",
-    adPostedSuccessfully: "Ad posted successfully!",
     profileUpdatedSuccessfully: "Profile updated successfully!",
     selectCategory: "Select Category",
     serviceCategory: "Service Category",
-    detectedCategoryTitle: "Detected Category",
-    confirmCategory: "Confirm Category",
     searchByAddressOrKeyword: "Search by Address or Keyword",
     recentSearches: "Recent Searches",
     clearHistory: "Clear History",
-    noAdsYet: "You haven't posted any ads yet.",
     noHistoryYet: "You have no search history yet.",
     requiredField: "This field is required",
     invalidEmail: "Invalid email address",
     passwordTooShort: "Password must be at least 6 characters",
     passwordsDoNotMatch: "Passwords do not match",
     confirmPassword: "Confirm Password",
-    uploadAdImage: "Upload Ad Image",
-    adImage: "Ad Image",
-    imagePreview: "Image Preview",
-    changeImage: "Change Image",
-    noImageUploaded: "No image uploaded yet.",
     emailVerificationSent: "Email Verification Sent",
     checkYourEmailForVerification: "A verification link has been sent to your email. Please check your inbox (and spam folder) to activate your account.",
     contactUs: "Contact Us",
@@ -355,55 +297,23 @@ export const translations: Record<'en' | 'ar', Translations> = {
     passwordTooWeak: "Password is too weak. Please choose a stronger password.",
     registrationFailedTitle: "Registration Failed",
     userNotAuthenticated: "User not authenticated. Please log in again.",
-    notAuthorizedEditAd: "You are not authorized to edit this ad.",
-    adNotFound: "Ad not found.",
-    failedLoadAdData: "Failed to load ad data for editing.",
-    couldNotDetectCategory: "Could not detect category automatically.",
-    cannotUpdateAdCoreServices: "Cannot update ad. Core services are not ready or user not authenticated.",
-    failedUploadImage: "Failed to upload new image.",
-    adUpdatedTitle: "Ad Updated",
-    adUpdatedSuccess: "Your ad has been successfully updated.",
-    failedUpdateAd: "Failed to update ad.",
-    loadingAdDetails: "Loading ad details...",
-    errorOrAdNotFound: "Error occurred or ad not found.",
-    detectCategoryAI: "Detect Category with AI",
-    orDragAndDrop: "or drag and drop",
-    imageUploadHint: "PNG, JPG, GIF up to 10MB",
-    uploadingImage: "Uploading image",
-    anonymousProvider: "Anonymous Provider",
     userNotIdentified: "User not identified. Please log in again.",
     coreServicesUnavailable: "Core services are not ready or unavailable.",
-    cannotPostAdCoreServices: "Cannot post ad. Core services are not ready.",
     providerInfoMissing: "Provider information is missing. Please try again.",
-    adLiveShortly: "Your ad will be live shortly.",
-    failedPostAd: "Failed to post ad.",
-    newAdDescriptionPage: "Fill out the form to post your service ad on {appName}.",
-    postingAdsUnavailable: "Posting ads is currently unavailable because core services are not configured.",
-    editingAdsUnavailable: "Editing ads is currently unavailable because core services are not configured.",
-    failedLoadAds: "Failed to load your ads.",
-    adDeletedTitle: "Ad Deleted",
-    adDeletedSuccess: "The advertisement has been successfully deleted.",
-    failedDeleteAd: "Failed to delete ad.",
     invalidDate: "Invalid Date",
-    myAdsPageDescription: "View, edit, or delete your service advertisements.",
-    noAdsYetDescription: "Click the button above to create your first service advertisement.",
-    postedOn: "Posted:",
     delete: "Delete",
-    confirmDeleteTitleAd: "Are you sure you want to delete the ad '{adTitle}'?",
-    confirmDeleteDescriptionAd: "This action cannot be undone. This will permanently delete this ad.",
     cancel: "Cancel",
     welcome: "Welcome!",
     completeYourProfile: "Please complete your provider profile.",
     couldNotFetchProfile: "Could not fetch profile data.",
     authError: "Authentication Error",
-    profileServiceNotReady: "Profile service is not ready.",
     userNotAuthOrServiceUnavailable: "User not authenticated or service unavailable.",
     profileChangesSaved: "Your profile changes have been saved.",
     failedUpdateProfile: "Failed to update profile.",
     profilePageDescription: "Manage your provider profile details for {appName}.",
     profilePictureAlt: "Profile Picture",
     profileEditingUnavailable: "Profile editing is currently unavailable because core services are not configured.",
-    profileHelpTextCategory: "Select your primary service category. For multiple, manage via separate ads.",
+    profileHelpTextCategory: "Select your primary service category.",
     searchHistoryClearedTitle: "Search History Cleared",
     searchHistoryClearedSuccess: "Your search history has been successfully cleared.",
     searchHistoryPageDescription: "Review your past service searches.",
@@ -412,21 +322,18 @@ export const translations: Record<'en' | 'ar', Translations> = {
     noHistoryYetDescription: "Your search history is empty. Start searching for services to see them here.",
     searchedOn: "Searched on:",
     repeatSearch: "Repeat Search",
-    adIdMissing: "Ad ID is missing.",
     failedLoadServices: "Failed to load services.",
     backButton: "Back",
-    adNotFoundDescription: "The service ad you are looking for does not exist or may have been removed.",
     backToSearch: "Back to Search",
-    postedOnFull: "Posted on:",
+    postedOnFull: "Joined on:",
     serviceCategoriesTitle: "Service Categories:",
     servesAreasTitle: "Serves Areas:",
-    inquiryAboutAd: "Inquiry about your ad: {adTitle}",
     contactProvider: "Contact {providerName}",
     providerDetailsNotAvailable: "Provider details are not available.",
-    searchServicesPageDescription: "Find skilled artisans by searching by address, service type, or keywords.",
+    searchServicesPageDescription: "Find skilled artisans by searching by name, service type, or keywords.",
     tryDifferentKeywords: "Try searching with different keywords or check your spelling.",
-    noServicesAvailableYet: "No Services Available Yet",
-    checkBackLater: "There are currently no service ads posted. Check back later!",
+    noServicesAvailableYet: "No Service Providers Available Yet",
+    checkBackLater: "There are currently no service providers registered. Check back later!",
     switchToDarkMode: "Switch to Dark Mode",
     switchToLightMode: "Switch to Light Mode",
     unauthorized: "Unauthorized",
@@ -448,16 +355,12 @@ export const translations: Record<'en' | 'ar', Translations> = {
     welcomeToDashboardUser: "Welcome to your Dashboard, {userName}!",
     welcomeToDashboardProvider: "Welcome to your Provider Dashboard!",
     welcomeToDashboardSeeker: "Welcome to your Seeker Dashboard!",
-    myAdsDescriptionProvider: "View and manage your service advertisements.",
-    newAdDescriptionProvider: "Create a new advertisement to offer your services.",
     profileDescriptionProvider: "Update your personal and service information.",
     searchDescriptionSeeker: "Find skilled artisans for your needs.",
     searchHistoryDescriptionSeeker: "Review your past service searches.",
-    dashboardTaglineProvider: "Manage your services and reach more customers.",
-    dashboardTaglineSeeker: "Find the best services for your needs easily.",
+    dashboardTaglineProvider: "Manage your profile and connect with customers.",
+    dashboardTaglineSeeker: "Find and rate the best services for your needs.",
     dashboardBannerAlt: "Dashboard banner with tools or workspace imagery",
-    descriptionTooShortAd: "Description must be at least 10 characters for an ad.",
-    invalidImageUrl: "Invalid image URL.",
     contactPageTitle: "Contact Us",
     contactPageDescription: "Have questions or feedback? Reach out to us!",
     yourName: "Your Name",
@@ -471,9 +374,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     messageSentErrorDescription: "Sorry, there was an issue sending your message. Please try again later.",
     contactFormIntro: "We'd love to hear from you! Please fill out the form below and we'll get in touch as soon as possible.",
     formSubmitActivationNote: "Note: For this form to work, the owner of mobusinessarena@gmail.com needs to activate it once via an email from FormSubmit.co after the first submission attempt.",
-    removeImageTitle: "Remove Image?",
-    removeImageConfirm: "Are you sure you want to remove the current ad image? This action will permanently delete the image if you save the changes.",
-    removeImageButton: "Remove Image",
     tryAgain: "Try Again",
     backToDashboard: "Back to Dashboard",
     plumbingDescription: "Expert plumbing services for repairs, installations, and maintenance.",
@@ -484,6 +384,24 @@ export const translations: Record<'en' | 'ar', Translations> = {
     constructionDescription: "Comprehensive construction services from foundation to finish.",
     plasteringDescription: "Quality plastering for smooth and durable walls and ceilings.",
     otherServicesDescription: "Various other services to meet your unique needs.",
+    reviews: "Reviews",
+    averageRating: "Average Rating",
+    noReviewsYet: "No reviews yet. Be the first to rate this provider!",
+    rateThisProvider: "Rate this Provider",
+    rating: "Your Rating",
+    comment: "Your Comment (optional)",
+    submitRating: "Submit Rating",
+    loginToRate: "You must be logged in to submit a rating.",
+    selectRating: "Please select a star rating before submitting.",
+    ratingSubmitted: "Rating Submitted",
+    thankYouForFeedback: "Thank you for your feedback!",
+    failedSubmitRating: "Failed to submit rating.",
+    providerNotFound: "Provider not found.",
+    providerIdMissing: "Provider ID is missing from the request.",
+    failedLoadProviderDetails: "Failed to load provider details.",
+    firestoreIndexError: "The database is being updated to support this query. Please try again in a few minutes.",
+    of: "of",
+    viewProfile: "View Profile",
   },
   ar: {
     appName: "خدماب",
@@ -499,7 +417,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     theme: "المظهر",
     lightMode: "الوضع النهاري",
     darkMode: "الوضع الليلي",
-    searchPlaceholder: "ابحث بالعنوان، نوع الخدمة...",
+    searchPlaceholder: "ابحث عن مقدمي خدمة بالاسم، الفئة...",
     search: "بحث",
     serviceProviders: "مقدمو الخدمات",
     serviceSeekers: "الباحثون عن الخدمات",
@@ -514,9 +432,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     address: "العنوان / موقع الخدمة",
     serviceAreas: "مناطق الخدمة",
     serviceAreasPlaceholder: "مثال: وسط المدينة، الحي الشمالي (مفصولة بفاصلة)",
-    postAd: "نشر إعلان",
-    adTitle: "عنوان الإعلان",
-    adDescription: "وصف الإعلان",
     category: "الفئة",
     plumbing: "سباكة",
     electrical: "كهرباء",
@@ -526,9 +441,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     construction: "بناء",
     plastering: "محارة",
     other: "خدمات أخرى",
-    myAds: "إعلاناتي",
-    editAd: "تعديل الإعلان",
-    newAd: "إعلان جديد",
     searchHistory: "سجل البحث",
     noResultsFound: "لم يتم العثور على نتائج.",
     loading: "جاري التحميل...",
@@ -549,27 +461,18 @@ export const translations: Record<'en' | 'ar', Translations> = {
     serviceDetails: "تفاصيل الخدمة",
     contactInfo: "معلومات الاتصال",
     saveChanges: "حفظ التغييرات",
-    adPostedSuccessfully: "تم نشر الإعلان بنجاح!",
     profileUpdatedSuccessfully: "تم تحديث الملف الشخصي بنجاح!",
     selectCategory: "اختر الفئة",
     serviceCategory: "فئة الخدمة",
-    detectedCategoryTitle: "الفئة المكتشفة",
-    confirmCategory: "تأكيد الفئة",
     searchByAddressOrKeyword: "ابحث بالعنوان أو كلمة مفتاحية",
     recentSearches: "عمليات البحث الأخيرة",
     clearHistory: "مسح السجل",
-    noAdsYet: "لم تقم بنشر أي إعلانات بعد.",
     noHistoryYet: "ليس لديك سجل بحث حتى الآن.",
     requiredField: "هذا الحقل مطلوب",
     invalidEmail: "عنوان بريد إلكتروني غير صالح",
     passwordTooShort: "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل",
     passwordsDoNotMatch: "كلمتا المرور غير متطابقتين",
     confirmPassword: "تأكيد كلمة المرور",
-    uploadAdImage: "رفع صورة الإعلان",
-    adImage: "صورة الإعلان",
-    imagePreview: "معاينة الصورة",
-    changeImage: "تغيير الصورة",
-    noImageUploaded: "لم يتم رفع صورة بعد.",
     emailVerificationSent: "تم إرسال رسالة التحقق",
     checkYourEmailForVerification: "تم إرسال رابط التحقق إلى بريدك الإلكتروني. يرجى التحقق من صندوق الوارد (ومجلد الرسائل غير المرغوب فيها) لتفعيل حسابك.",
     contactUs: "اتصل بنا",
@@ -594,55 +497,23 @@ export const translations: Record<'en' | 'ar', Translations> = {
     passwordTooWeak: "كلمة المرور ضعيفة جدًا. يرجى اختيار كلمة مرور أقوى.",
     registrationFailedTitle: "فشل التسجيل",
     userNotAuthenticated: "المستخدم غير مصادق عليه. يرجى تسجيل الدخول مرة أخرى.",
-    notAuthorizedEditAd: "أنت غير مصرح لك بتعديل هذا الإعلان.",
-    adNotFound: "الإعلان غير موجود.",
-    failedLoadAdData: "فشل تحميل بيانات الإعلان للتعديل.",
-    couldNotDetectCategory: "تعذر اكتشاف الفئة تلقائيًا.",
-    cannotUpdateAdCoreServices: "لا يمكن تحديث الإعلان. الخدمات الأساسية غير جاهزة أو المستخدم غير مصادق عليه.",
-    failedUploadImage: "فشل تحميل الصورة الجديدة.",
-    adUpdatedTitle: "تم تحديث الإعلان",
-    adUpdatedSuccess: "تم تحديث إعلانك بنجاح.",
-    failedUpdateAd: "فشل تحديث الإعلان.",
-    loadingAdDetails: "جاري تحميل تفاصيل الإعلان...",
-    errorOrAdNotFound: "حدث خطأ أو الإعلان غير موجود.",
-    detectCategoryAI: "اكتشف الفئة بالذكاء الاصطناعي",
-    orDragAndDrop: "أو اسحب وأفلت",
-    imageUploadHint: "PNG, JPG, GIF حتى 10 ميجابايت",
-    uploadingImage: "جاري تحميل الصورة",
-    anonymousProvider: "مقدم خدمة مجهول",
     userNotIdentified: "لم يتم التعرف على المستخدم. يرجى تسجيل الدخول مرة أخرى.",
     coreServicesUnavailable: "الخدمات الأساسية غير جاهزة أو غير متاحة.",
-    cannotPostAdCoreServices: "لا يمكن نشر الإعلان. الخدمات الأساسية غير جاهزة.",
     providerInfoMissing: "معلومات مقدم الخدمة مفقودة. يرجى المحاولة مرة أخرى.",
-    adLiveShortly: "سيكون إعلانك متاحًا قريبًا.",
-    failedPostAd: "فشل نشر الإعلان.",
-    newAdDescriptionPage: "املأ النموذج لنشر إعلان خدمتك على {appName}.",
-    postingAdsUnavailable: "نشر الإعلانات غير متاح حاليًا لأن الخدمات الأساسية غير مهيأة.",
-    editingAdsUnavailable: "تعديل الإعلانات غير متاح حاليًا لأن الخدمات الأساسية غير مهيأة.",
-    failedLoadAds: "فشل تحميل إعلاناتك.",
-    adDeletedTitle: "تم حذف الإعلان",
-    adDeletedSuccess: "تم حذف الإعلان بنجاح.",
-    failedDeleteAd: "فشل حذف الإعلان.",
     invalidDate: "تاريخ غير صالح",
-    myAdsPageDescription: "عرض وتعديل وحذف إعلانات خدماتك.",
-    noAdsYetDescription: "انقر على الزر أعلاه لإنشاء أول إعلان خدمة لك.",
-    postedOn: "نشر في:",
     delete: "حذف",
-    confirmDeleteTitleAd: "هل أنت متأكد أنك تريد حذف الإعلان '{adTitle}'؟",
-    confirmDeleteDescriptionAd: "لا يمكن التراجع عن هذا الإجراء. سيؤدي هذا إلى حذف هذا الإعلان نهائيًا.",
     cancel: "إلغاء",
     welcome: "مرحباً!",
     completeYourProfile: "يرجى إكمال ملف تعريف المزود الخاص بك.",
     couldNotFetchProfile: "تعذر جلب بيانات الملف الشخصي.",
     authError: "خطأ في المصادقة",
-    profileServiceNotReady: "خدمة الملف الشخصي غير جاهزة.",
     userNotAuthOrServiceUnavailable: "المستخدم غير مصادق عليه أو الخدمة غير متوفرة.",
     profileChangesSaved: "تم حفظ تغييرات ملفك الشخصي.",
     failedUpdateProfile: "فشل تحديث الملف الشخصي.",
     profilePageDescription: "إدارة تفاصيل ملف تعريف المزود الخاص بك لـ {appName}.",
     profilePictureAlt: "الصورة الشخصية",
     profileEditingUnavailable: "تعديل الملف الشخصي غير متاح حاليًا لأن الخدمات الأساسية غير مهيأة.",
-    profileHelpTextCategory: "اختر فئة خدمتك الأساسية. لعدة فئات، قم بإدارتها عبر إعلانات منفصلة.",
+    profileHelpTextCategory: "اختر فئة خدمتك الأساسية.",
     searchHistoryClearedTitle: "تم مسح سجل البحث",
     searchHistoryClearedSuccess: "تم مسح سجل البحث الخاص بك بنجاح.",
     searchHistoryPageDescription: "مراجعة عمليات بحثك السابقة عن الخدمات.",
@@ -651,21 +522,18 @@ export const translations: Record<'en' | 'ar', Translations> = {
     noHistoryYetDescription: "سجل البحث الخاص بك فارغ. ابدأ البحث عن الخدمات لرؤيتها هنا.",
     searchedOn: "بحث في:",
     repeatSearch: "إعادة البحث",
-    adIdMissing: "معرف الإعلان مفقود.",
     failedLoadServices: "فشل تحميل الخدمات.",
     backButton: "رجوع",
-    adNotFoundDescription: "إعلان الخدمة الذي تبحث عنه غير موجود أو ربما تم حذفه.",
     backToSearch: "العودة إلى البحث",
-    postedOnFull: "نشر في:",
+    postedOnFull: "انضم في:",
     serviceCategoriesTitle: "فئات الخدمة:",
     servesAreasTitle: "يخدم المناطق:",
-    inquiryAboutAd: "استفسار بخصوص إعلانك: {adTitle}",
     contactProvider: "اتصل بـ {providerName}",
     providerDetailsNotAvailable: "تفاصيل المزود غير متوفرة.",
-    searchServicesPageDescription: "ابحث عن حرفيين ماهرين من خلال البحث بالعنوان أو نوع الخدمة أو الكلمات المفتاحية.",
+    searchServicesPageDescription: "ابحث عن حرفيين ماهرين من خلال البحث بالاسم أو نوع الخدمة أو الكلمات المفتاحية.",
     tryDifferentKeywords: "حاول البحث بكلمات مفتاحية مختلفة أو تحقق من التهجئة.",
-    noServicesAvailableYet: "لا توجد خدمات متاحة بعد",
-    checkBackLater: "لا توجد حاليًا إعلانات خدمات منشورة. تحقق مرة أخرى لاحقًا!",
+    noServicesAvailableYet: "لا يوجد مقدمو خدمات متاحون بعد",
+    checkBackLater: "لا يوجد حاليًا مقدمو خدمات مسجلون. تحقق مرة أخرى لاحقًا!",
     switchToDarkMode: "التحول إلى الوضع الداكن",
     switchToLightMode: "التحول إلى الوضع الفاتح",
     unauthorized: "غير مصرح به",
@@ -687,16 +555,12 @@ export const translations: Record<'en' | 'ar', Translations> = {
     welcomeToDashboardUser: "مرحباً بك في لوحة التحكم الخاصة بك، {userName}!",
     welcomeToDashboardProvider: "مرحباً بك في لوحة تحكم مقدم الخدمة!",
     welcomeToDashboardSeeker: "مرحباً بك في لوحة تحكم الباحث عن خدمة!",
-    myAdsDescriptionProvider: "عرض وإدارة إعلانات خدماتك.",
-    newAdDescriptionProvider: "إنشاء إعلان جديد لتقديم خدماتك.",
     profileDescriptionProvider: "تحديث معلوماتك الشخصية ومعلومات الخدمة.",
     searchDescriptionSeeker: "العثور على حرفيين ماهرين لاحتياجاتك.",
     searchHistoryDescriptionSeeker: "مراجعة عمليات بحثك السابقة عن الخدمات.",
-    dashboardTaglineProvider: "إدارة خدماتك والوصول إلى المزيد من العملاء.",
-    dashboardTaglineSeeker: "ابحث عن أفضل الخدمات لاحتياجاتك بسهولة.",
+    dashboardTaglineProvider: "إدارة ملفك الشخصي والتواصل مع العملاء.",
+    dashboardTaglineSeeker: "ابحث عن أفضل الخدمات وقيمها لاحتياجاتك.",
     dashboardBannerAlt: "بانر لوحة التحكم مع أدوات أو صور لمساحة عمل",
-    descriptionTooShortAd: "يجب أن يتكون الوصف من 10 أحرف على الأقل للإعلان.",
-    invalidImageUrl: "رابط صورة غير صالح.",
     contactPageTitle: "اتصل بنا",
     contactPageDescription: "هل لديك أسئلة أو ملاحظات؟ تواصل معنا!",
     yourName: "اسمك",
@@ -710,9 +574,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     messageSentErrorDescription: "عذراً، حدث خطأ أثناء إرسال رسالتك. يرجى المحاولة مرة أخرى لاحقاً.",
     contactFormIntro: "يسعدنا أن نسمع منك! يرجى ملء النموذج أدناه وسنتواصل معك في أقرب وقت ممكن.",
     formSubmitActivationNote: "ملاحظة: لكي يعمل هذا النموذج، يحتاج مالك mobusinessarena@gmail.com إلى تفعيله مرة واحدة عبر بريد إلكتروني من FormSubmit.co بعد أول محاولة إرسال.",
-    removeImageTitle: "إزالة الصورة؟",
-    removeImageConfirm: "هل أنت متأكد أنك تريد إزالة صورة الإعلان الحالية؟ سيؤدي هذا الإجراء إلى حذف الصورة نهائيًا إذا قمت بحفظ التغييرات.",
-    removeImageButton: "إزالة الصورة",
     tryAgain: "حاول مرة أخرى",
     backToDashboard: "العودة إلى لوحة التحكم",
     plumbingDescription: "خدمات سباكة متخصصة للإصلاحات والتركيبات والصيانة.",
@@ -723,5 +584,23 @@ export const translations: Record<'en' | 'ar', Translations> = {
     constructionDescription: "خدمات بناء شاملة من الأساس وحتى التشطيب.",
     plasteringDescription: "أعمال محارة عالية الجودة لجدران وأسقف ناعمة ومتينة.",
     otherServicesDescription: "خدمات أخرى متنوعة لتلبية احتياجاتك الفريدة.",
+    reviews: "التقييمات",
+    averageRating: "متوسط التقييم",
+    noReviewsYet: "لا توجد تقييمات بعد. كن أول من يقيم هذا المزود!",
+    rateThisProvider: "قيم هذا المزود",
+    rating: "تقييمك",
+    comment: "تعليقك (اختياري)",
+    submitRating: "إرسال التقييم",
+    loginToRate: "يجب عليك تسجيل الدخول لتقديم تقييم.",
+    selectRating: "يرجى تحديد تقييم بالنجوم قبل الإرسال.",
+    ratingSubmitted: "تم إرسال التقييم",
+    thankYouForFeedback: "شكرا لك على ملاحظاتك!",
+    failedSubmitRating: "فشل إرسال التقييم.",
+    providerNotFound: "لم يتم العثور على مقدم الخدمة.",
+    providerIdMissing: "معرف مقدم الخدمة مفقود من الطلب.",
+    failedLoadProviderDetails: "فشل تحميل تفاصيل مقدم الخدمة.",
+    firestoreIndexError: "قاعدة البيانات قيد التحديث لدعم هذا الاستعلام. يرجى المحاولة مرة أخرى في غضون دقائق قليلة.",
+    of: "من",
+    viewProfile: "عرض الملف الشخصي",
   },
 };

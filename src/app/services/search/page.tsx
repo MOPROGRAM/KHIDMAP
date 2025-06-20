@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
-import { ServiceAd, getAllServiceAds, UserProfile, getUserProfileById, ServiceCategory } from '@/lib/data';
+import { UserProfile, getAllProviders, ServiceCategory } from '@/lib/data';
 import Link from 'next/link';
 import NextImage from 'next/image'; 
-import { Search as SearchIcon, MapPin, Briefcase, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, HardHat, Layers, ImageOff } from 'lucide-react';
+import { Search as SearchIcon, MapPin, User, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, HardHat, Layers, UserCircle, Star } from 'lucide-react';
 import { db } from '@/lib/firebase'; 
-import { useToast } from '@/hooks/use-toast'; // Added for FormSubmit notifications
+import { useToast } from '@/hooks/use-toast';
 
 interface SearchHistoryItem {
   query: string;
@@ -34,12 +34,11 @@ export default function ServiceSearchPage() {
   const t = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { toast } = useToast(); // For FormSubmit notifications
+  const { toast } = useToast();
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
-  const [allAds, setAllAds] = useState<ServiceAd[]>([]);
-  const [filteredAds, setFilteredAds] = useState<ServiceAd[]>([]);
-  const [providerDetails, setProviderDetails] = useState<Record<string, UserProfile>>({});
+  const [allProviders, setAllProviders] = useState<UserProfile[]>([]);
+  const [filteredProviders, setFilteredProviders] = useState<UserProfile[]>([]);
   
   const [isLoading, setIsLoading] = useState(false); 
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
@@ -67,7 +66,7 @@ export default function ServiceSearchPage() {
     localStorage.setItem('fullSearchHistory', JSON.stringify(newHistory));
   };
 
-  const fetchInitialAdsAndProviders = useCallback(async () => {
+  const fetchInitialProviders = useCallback(async () => {
     if (!isDbAvailable) {
         setError(t.serviceUnavailableMessage);
         setInitialLoadComplete(true);
@@ -77,40 +76,23 @@ export default function ServiceSearchPage() {
     setIsLoading(true); 
     setError(null);
     try {
-      const ads = await getAllServiceAds();
-      setAllAds(ads);
+      const providers = await getAllProviders();
+      setAllProviders(providers);
       
-      const providerIds = [...new Set(ads.map(ad => ad.providerId).filter(id => !!id))] as string[];
-      
-      const providerMap: Record<string, UserProfile> = {};
-      if (providerIds.length > 0) {
-        const providerPromises = providerIds.map(id => getUserProfileById(id).catch(err => {
-            console.warn(`Failed to fetch profile for provider ${id}:`, err);
-            return null; 
-        }));
-        const providersArray = await Promise.all(providerPromises);
-        providersArray.forEach(provider => {
-          if (provider) {
-            providerMap[provider.uid] = provider;
-          }
-        });
-      }
-      setProviderDetails(providerMap);
-
       const initialQuery = searchParams.get('q');
       if (initialQuery) {
         setSearchTerm(initialQuery);
-        filterAds(initialQuery, ads, providerMap); 
+        filterProviders(initialQuery, providers); 
         setCurrentSearchQuery(initialQuery);
       } else {
-        setFilteredAds(ads);
+        setFilteredProviders(providers);
       }
 
     } catch (err: any) {
-      console.error("Error fetching ads or providers:", err);
+      console.error("Error fetching providers:", err);
       setError(err.message || t.failedLoadServices);
-      setAllAds([]);
-      setFilteredAds([]);
+      setAllProviders([]);
+      setFilteredProviders([]);
     } finally {
       setIsLoading(false);
       setInitialLoadComplete(true);
@@ -118,37 +100,34 @@ export default function ServiceSearchPage() {
   }, [searchParams, t, isDbAvailable]); 
 
   
-  const filterAds = (query: string, adsToFilter: ServiceAd[], currentProviderDetails: Record<string, UserProfile>) => {
+  const filterProviders = (query: string, providersToFilter: UserProfile[]) => {
     if (!query.trim()) {
-      setFilteredAds(adsToFilter);
+      setFilteredProviders(providersToFilter);
       return;
     }
     const lowerCaseQuery = query.toLowerCase();
-    const results = adsToFilter.filter(ad => {
-      const provider = ad.providerId ? currentProviderDetails[ad.providerId] : null;
-      const providerName = ad.providerName?.toLowerCase() || provider?.name.toLowerCase() || '';
-      const categoryKey = ad.category.toLowerCase() as keyof Translations;
-      const translatedCategory = t[categoryKey]?.toLowerCase() || ad.category.toLowerCase();
-
-      return (
-        ad.title.toLowerCase().includes(lowerCaseQuery) ||
-        ad.description.toLowerCase().includes(lowerCaseQuery) ||
-        ad.address.toLowerCase().includes(lowerCaseQuery) || 
-        translatedCategory.includes(lowerCaseQuery) ||
-        providerName.includes(lowerCaseQuery)
-      );
+    const results = providersToFilter.filter(provider => {
+        const categories = (provider.serviceCategories || []).map(cat => (t[cat.toLowerCase() as keyof Translations] || cat).toLowerCase());
+        const areas = (provider.serviceAreas || []).map(area => area.toLowerCase());
+        
+        return (
+            provider.name.toLowerCase().includes(lowerCaseQuery) ||
+            (provider.qualifications || '').toLowerCase().includes(lowerCaseQuery) ||
+            categories.some(cat => cat.includes(lowerCaseQuery)) ||
+            areas.some(area => area.includes(lowerCaseQuery))
+        );
     });
-    setFilteredAds(results);
+    setFilteredProviders(results);
   };
   
   useEffect(() => {
     if (isDbAvailable) {
-        fetchInitialAdsAndProviders();
+        fetchInitialProviders();
     } else if (!isDbAvailable && !initialLoadComplete) { 
         setError(t.serviceUnavailableMessage);
         setInitialLoadComplete(true);
     }
-  }, [isDbAvailable, fetchInitialAdsAndProviders, initialLoadComplete, t.serviceUnavailableMessage]);
+  }, [isDbAvailable, fetchInitialProviders, initialLoadComplete, t.serviceUnavailableMessage]);
 
 
   const handleSearch = (query: string) => {
@@ -157,7 +136,7 @@ export default function ServiceSearchPage() {
     if (initialLoadComplete) setIsLoading(true); 
 
     setTimeout(() => {
-      filterAds(query, allAds, providerDetails);
+      filterProviders(query, allProviders);
       if (query.trim()) {
         updateSearchHistory(query);
         router.push(`/services/search?q=${encodeURIComponent(query)}`, { scroll: false });
@@ -192,7 +171,7 @@ export default function ServiceSearchPage() {
         <CardHeader>
           <CardTitle className="text-3xl font-headline flex items-center gap-3 text-foreground">
             <SearchIcon className="h-8 w-8 text-primary" />
-            {t.search} {t.services}
+            {t.search} {t.serviceProviders}
           </CardTitle>
           <CardDescription>{t.searchServicesPageDescription}</CardDescription>
         </CardHeader>
@@ -244,7 +223,7 @@ export default function ServiceSearchPage() {
       {!initialLoadComplete && isLoading && ( 
         <div className="flex flex-col justify-center items-center py-10 min-h-[300px]">
           <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <p className="text-lg text-muted-foreground">{t.loading} {t.services}...</p>
+          <p className="text-lg text-muted-foreground">{t.loading} {t.serviceProviders}...</p>
         </div>
       )}
       
@@ -259,7 +238,7 @@ export default function ServiceSearchPage() {
           </CardHeader>
           <CardContent>
             <Button onClick={() => {
-                if(isDbAvailable) fetchInitialAdsAndProviders();
+                if(isDbAvailable) fetchInitialProviders();
                 else toast({variant: "destructive", title: t.serviceUnavailableTitle, description: t.serviceUnavailableMessage});
             }} variant="outline" className="group">
                 {t.tryAgain}
@@ -268,7 +247,7 @@ export default function ServiceSearchPage() {
         </Card>
       )}
 
-      {initialLoadComplete && !error && currentSearchQuery && filteredAds.length === 0 && (
+      {initialLoadComplete && !error && currentSearchQuery && filteredProviders.length === 0 && (
         <Card className="text-center py-12 shadow-xl animate-fadeIn border">
           <CardHeader>
              <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
@@ -280,10 +259,10 @@ export default function ServiceSearchPage() {
         </Card>
       )}
       
-      {initialLoadComplete && !error && filteredAds.length === 0 && !currentSearchQuery && allAds.length === 0 && (
+      {initialLoadComplete && !error && filteredProviders.length === 0 && !currentSearchQuery && allProviders.length === 0 && (
          <Card className="text-center py-12 shadow-xl animate-fadeIn border">
           <CardHeader>
-             <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+             <UserCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <CardTitle className="text-2xl text-foreground">{t.noServicesAvailableYet}</CardTitle>
             <CardDescription className="text-muted-foreground">
               {t.checkBackLater}
@@ -292,58 +271,44 @@ export default function ServiceSearchPage() {
         </Card>
       )}
 
-      {initialLoadComplete && !isLoading && !error && filteredAds.length > 0 && (
+      {initialLoadComplete && !isLoading && !error && filteredProviders.length > 0 && (
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 animate-fadeIn animation-delay-400">
-          {filteredAds.map((ad, index) => {
-            const provider = ad.providerId ? providerDetails[ad.providerId] : null;
-            const providerName = ad.providerName || provider?.name || t.provider;
-            const Icon = categoryIcons[ad.category] || GripVertical;
-            const categoryKey = ad.category.toLowerCase() as keyof Translations;
-            const categoryName = t[categoryKey] || ad.category;
+          {filteredProviders.map((provider, index) => {
+            const mainCategory = provider.serviceCategories?.[0];
+            const Icon = mainCategory ? (categoryIcons[mainCategory] || GripVertical) : User;
             return (
               <Card 
-                key={ad.id} 
+                key={provider.uid} 
                 className="overflow-hidden shadow-xl hover:shadow-2xl border transition-all duration-300 ease-in-out flex flex-col group transform hover:-translate-y-1.5"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="relative w-full h-60 overflow-hidden bg-muted/30">
-                  {ad.imageUrl ? (
-                    <NextImage
-                      src={ad.imageUrl}
-                      alt={ad.title}
-                      layout="fill"
-                      objectFit="cover"
-                      className="group-hover:scale-110 transition-transform duration-500 ease-in-out"
-                      data-ai-hint={`${ad.category} items tools`}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ImageOff className="h-16 w-16 text-muted-foreground/50" />
-                    </div>
-                  )}
-                  <div className="absolute top-3 right-3 rtl:left-3 rtl:right-auto bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold rounded-full shadow-md flex items-center gap-1.5">
-                    <Icon className="h-3.5 w-3.5" />
-                    {categoryName}
+                <CardHeader className="pb-3 flex-row items-center gap-4">
+                  <NextImage 
+                    src={provider.profilePictureUrl || "https://placehold.co/80x80.png"} 
+                    alt={provider.name} 
+                    width={80} 
+                    height={80} 
+                    className="rounded-full border-2 border-primary shadow-lg object-cover"
+                    data-ai-hint="person portrait"
+                  />
+                  <div>
+                    <CardTitle className="text-xl font-semibold font-headline truncate hover:text-primary transition-colors" title={provider.name}>
+                       <Link href={`/services/ad/${provider.uid}`}>{provider.name}</Link>
+                    </CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground pt-1 flex flex-wrap gap-x-2">
+                        {(provider.serviceCategories || []).slice(0, 2).map(cat => (
+                            <span key={cat}>{t[cat.toLowerCase() as keyof Translations] || cat}</span>
+                        ))}
+                    </CardDescription>
                   </div>
-                </div>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-xl font-semibold font-headline truncate hover:text-primary transition-colors" title={ad.title}>
-                     <Link href={`/services/ad/${ad.id}`}>{ad.title}</Link>
-                  </CardTitle>
-                  <CardDescription className="text-sm text-muted-foreground pt-1">
-                    <div className="flex items-center gap-1.5"> <Briefcase className="h-4 w-4" /> {providerName} </div>
-                  </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow pt-1">
-                  <p className="text-sm text-foreground/90 line-clamp-3 mb-3 whitespace-pre-wrap">{ad.description}</p>
-                  <div className="flex items-center text-sm text-muted-foreground gap-1.5">
-                    <MapPin className="h-4 w-4" /> {ad.address}
-                  </div>
+                  <p className="text-sm text-foreground/90 line-clamp-3 mb-3 whitespace-pre-wrap">{provider.qualifications || t.provider + " " + (t[provider.serviceCategories?.[0]?.toLowerCase() as keyof Translations] || '')}</p>
                 </CardContent>
                 <CardFooter className="bg-muted/30 p-4 mt-auto">
                   <Button asChild className="w-full group/button">
-                    <Link href={`/services/ad/${ad.id}`}> 
-                      {t.viewDetails} <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4 group-hover/button:translate-x-0.5 transition-transform" />
+                    <Link href={`/services/ad/${provider.uid}`}>
+                      {t.viewProfile} <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4 group-hover/button:translate-x-0.5 transition-transform" />
                     </Link>
                   </Button>
                 </CardFooter>
@@ -362,4 +327,3 @@ export default function ServiceSearchPage() {
     </div>
   );
 }
-
