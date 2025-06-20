@@ -52,7 +52,7 @@ export default function HomePage() {
                     bg-gradient-to-b from-green-500 to-orange-600
                   "
                 >
-                  <div className="bg-background rounded-md px-1 py-0.5 text-foreground">
+                  <div className="bg-background rounded-md text-foreground">
                     {t.appName}
                   </div>
                 </div>
