@@ -140,7 +140,7 @@ export default function ProviderProfilePage() {
       qualifications: data.qualifications,
       serviceAreas: data.serviceAreasString ? data.serviceAreasString.split(',').map(area => area.trim()).filter(Boolean) : [],
       serviceCategories: data.serviceCategories || [], 
-      profilePictureUrl: profilePictureUrl, 
+      profilePictureUrl: profilePictureUrl || null, 
       role: 'provider',
       updatedAt: serverTimestamp(),
     };
@@ -180,14 +180,14 @@ export default function ProviderProfilePage() {
   ];
 
   return (
-    <div className="max-w-3xl mx-auto py-4">
+    <div className="max-w-3xl mx-auto py-2">
       <Card className="shadow-xl">
         <CardHeader>
-          <div className="flex items-center gap-3 mb-4">
-            <UserCircle className="h-10 w-10 text-primary" />
+          <div className="flex items-center gap-3 mb-2">
+            <UserCircle className="h-8 w-8 text-primary" />
             <div>
-              <CardTitle className="text-2xl font-headline">{t.profile}</CardTitle>
-              <CardDescription>{t.profilePageDescription?.replace("{appName}", t.appName)}</CardDescription>
+              <CardTitle className="text-xl font-headline">{t.profile}</CardTitle>
+              <CardDescription className="text-xs">{t.profilePageDescription?.replace("{appName}", t.appName)}</CardDescription>
             </div>
           </div>
           <div className="flex justify-center">
@@ -214,33 +214,33 @@ export default function ProviderProfilePage() {
                 <span>{t.profileEditingUnavailable}</span>
             </div>
           )}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
                 <Label htmlFor="name">{t.name}</Label>
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} disabled={!isCoreServicesAvailable || isLoading} />
                 {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="email">{t.email}</Label>
                 <Input id="email" type="email" value={email} readOnly disabled className="bg-muted/50 cursor-not-allowed"/>
                 {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="phoneNumber">{t.phoneNumber}</Label>
               <Input id="phoneNumber" type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} disabled={!isCoreServicesAvailable || isLoading}/>
               {errors.phoneNumber && <p className="text-sm text-destructive">{errors.phoneNumber}</p>}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="qualifications">{t.qualifications}</Label>
-              <Textarea id="qualifications" value={qualifications} onChange={(e) => setQualifications(e.target.value)} rows={4} disabled={!isCoreServicesAvailable || isLoading}/>
+              <Textarea id="qualifications" value={qualifications} onChange={(e) => setQualifications(e.target.value)} rows={3} disabled={!isCoreServicesAvailable || isLoading}/>
               {errors.qualifications && <p className="text-sm text-destructive">{errors.qualifications}</p>}
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="serviceCategories">{t.serviceCategory}</Label>
               <Select
                 value={serviceCategories.length > 0 ? serviceCategories[0] : ""} 
@@ -260,13 +260,13 @@ export default function ProviderProfilePage() {
               {errors.serviceCategories && <p className="text-sm text-destructive">{errors.serviceCategories}</p>}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="serviceAreas">{t.serviceAreas}</Label>
               <Input id="serviceAreas" value={serviceAreasString} onChange={(e) => setServiceAreasString(e.target.value)} placeholder={t.serviceAreasPlaceholder} disabled={!isCoreServicesAvailable || isLoading}/>
               {errors.serviceAreasString && <p className="text-sm text-destructive">{errors.serviceAreasString}</p>}
             </div>
 
-            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !isCoreServicesAvailable}>
+            <Button type="submit" className="w-full text-base py-2.5" disabled={isLoading || !isCoreServicesAvailable}>
               {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Save className="ltr:mr-2 rtl:ml-2 h-4 w-4"/>}
               {t.saveChanges}
             </Button>
