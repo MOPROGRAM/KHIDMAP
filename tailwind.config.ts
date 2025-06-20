@@ -120,8 +120,8 @@ export default {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'fade-in-up': 'fade-in-up 0.6s ease-out forwards',
         'scroll': 'scroll 60s linear infinite',
-        'typingEn': 'typing 7s steps(7, end) infinite, blink .75s step-end infinite',
-        'typingAr': 'typing 5s steps(5, end) infinite, blink .75s step-end infinite',
+        'typingEn': 'typing 12s steps(7, end) infinite, blink .75s step-end infinite',
+        'typingAr': 'typing 9s steps(5, end) infinite, blink .75s step-end infinite',
       },
       transitionProperty: {
         'height': 'height',
