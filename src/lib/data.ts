@@ -63,11 +63,11 @@ export const getUserProfileById = async (uid: string): Promise<UserProfile | nul
         serviceCategories: data.serviceCategories,
         serviceAreas: data.serviceAreas,
         profilePictureUrl: data.profilePictureUrl,
-        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
-        updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate().toISOString() : data.updatedAt,
+        createdAt: data.createdAt, // Reverted
+        updatedAt: data.updatedAt, // Reverted
         searchHistory: (data.searchHistory || []).map((item: any) => ({
           ...item,
-          date: item.date instanceof Timestamp ? item.date.toDate().toISOString() : item.date,
+          date: item.date instanceof Timestamp ? item.date.toISOString() : item.date, // This was likely ok
         })),
         emailVerified: data.emailVerified || false,
       } as UserProfile;
@@ -234,9 +234,9 @@ export const getAdsByProviderId = async (providerId: string): Promise<ServiceAd[
       return {
         id: docSnap.id,
         ...data,
-        postedDate: (data.postedDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-        createdAt: (data.createdAt as Timestamp)?.toDate().toISOString() || undefined,
-        updatedAt: (data.updatedAt as Timestamp)?.toDate().toISOString() || undefined,
+        postedDate: (data.postedDate as Timestamp)?.toISOString() || new Date().toISOString(), // Reverted
+        createdAt: (data.createdAt as Timestamp)?.toISOString() || undefined, // Reverted
+        updatedAt: (data.updatedAt as Timestamp)?.toISOString() || undefined, // Reverted
       } as ServiceAd;
     });
   } catch (error) {
@@ -286,9 +286,9 @@ export const getAdById = async (adId: string): Promise<ServiceAd | null> => {
       return {
         id: docSnap.id,
         ...adData,
-        postedDate: (adData.postedDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-        createdAt: (adData.createdAt as Timestamp)?.toDate().toISOString() || undefined,
-        updatedAt: (adData.updatedAt as Timestamp)?.toDate().toISOString() || undefined,
+        postedDate: (adData.postedDate as Timestamp)?.toISOString() || new Date().toISOString(), // Reverted
+        createdAt: (adData.createdAt as Timestamp)?.toISOString() || undefined, // Reverted
+        updatedAt: (adData.updatedAt as Timestamp)?.toISOString() || undefined, // Reverted
       } as ServiceAd;
     } else {
       console.log("No such ad document!");
@@ -328,9 +328,9 @@ export const getAllServiceAds = async (): Promise<ServiceAd[]> => {
       ads.push({
         id: docSnap.id,
         ...data,
-        postedDate: (data.postedDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-        createdAt: (data.createdAt as Timestamp)?.toDate().toISOString() || undefined,
-        updatedAt: (data.updatedAt as Timestamp)?.toDate().toISOString() || undefined,
+        postedDate: (data.postedDate as Timestamp)?.toISOString() || new Date().toISOString(), // Reverted
+        createdAt: (data.createdAt as Timestamp)?.toISOString() || undefined, // Reverted
+        updatedAt: (data.updatedAt as Timestamp)?.toISOString() || undefined, // Reverted
         providerName: providerName,
       } as ServiceAd);
     }
