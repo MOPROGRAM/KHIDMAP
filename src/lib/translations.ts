@@ -233,6 +233,16 @@ export type Translations = {
   removeImageButton?: string;
   tryAgain?: string;
   backToDashboard?: string;
+
+  // Homepage Service Card Descriptions
+  plumbingDescription?: string;
+  electricalDescription?: string;
+  carpentryDescription?: string;
+  paintingDescription?: string;
+  homeCleaningDescription?: string;
+  constructionDescription?: string;
+  plasteringDescription?: string;
+  otherServicesDescription?: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -466,6 +476,14 @@ export const translations: Record<'en' | 'ar', Translations> = {
     removeImageButton: "Remove Image",
     tryAgain: "Try Again",
     backToDashboard: "Back to Dashboard",
+    plumbingDescription: "Expert plumbing services for repairs, installations, and maintenance.",
+    electricalDescription: "Safe and reliable electrical solutions for your home and business.",
+    carpentryDescription: "Skilled carpentry for furniture, repairs, and custom projects.",
+    paintingDescription: "Professional painting services for a fresh new look.",
+    homeCleaningDescription: "Reliable home cleaning services for a spotless living space.",
+    constructionDescription: "Comprehensive construction services from foundation to finish.",
+    plasteringDescription: "Quality plastering for smooth and durable walls and ceilings.",
+    otherServicesDescription: "Various other services to meet your unique needs.",
   },
   ar: {
     appName: "خدماب",
@@ -697,5 +715,13 @@ export const translations: Record<'en' | 'ar', Translations> = {
     removeImageButton: "إزالة الصورة",
     tryAgain: "حاول مرة أخرى",
     backToDashboard: "العودة إلى لوحة التحكم",
+    plumbingDescription: "خدمات سباكة متخصصة للإصلاحات والتركيبات والصيانة.",
+    electricalDescription: "حلول كهربائية آمنة وموثوقة لمنزلك وعملك.",
+    carpentryDescription: "أعمال نجارة ماهرة للأثاث والإصلاحات والمشاريع المخصصة.",
+    paintingDescription: "خدمات دهان احترافية لمظهر جديد منعش.",
+    homeCleaningDescription: "خدمات تنظيف منازل موثوقة لمساحة معيشة نظيفة.",
+    constructionDescription: "خدمات بناء شاملة من الأساس وحتى التشطيب.",
+    plasteringDescription: "أعمال محارة عالية الجودة لجدران وأسقف ناعمة ومتينة.",
+    otherServicesDescription: "خدمات أخرى متنوعة لتلبية احتياجاتك الفريدة.",
   },
 };

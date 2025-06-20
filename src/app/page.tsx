@@ -11,14 +11,14 @@ export default function HomePage() {
   const t = useTranslation();
 
   const serviceCards = [
-    { icon: <Wrench className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'plumbing', description: "Expert plumbing services for repairs, installations, and maintenance." },
-    { icon: <Zap className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'electrical', description: "Safe and reliable electrical solutions for your home and business." },
-    { icon: <Hammer className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'carpentry', description: "Skilled carpentry for furniture, repairs, and custom projects." },
-    { icon: <Brush className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'painting', description: "Professional painting services for a fresh new look." },
-    { icon: <SprayCan className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'homeCleaning', description: "Reliable home cleaning services for a spotless living space." },
-    { icon: <HardHat className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'construction', description: "Comprehensive construction services from foundation to finish." },
-    { icon: <Layers className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'plastering', description: "Quality plastering for smooth and durable walls and ceilings." },
-    { icon: <GripVertical className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'other', description: "Various other services to meet your unique needs." },
+    { icon: <Wrench className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'plumbing', descriptionKey: 'plumbingDescription' },
+    { icon: <Zap className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'electrical', descriptionKey: 'electricalDescription' },
+    { icon: <Hammer className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'carpentry', descriptionKey: 'carpentryDescription' },
+    { icon: <Brush className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'painting', descriptionKey: 'paintingDescription' },
+    { icon: <SprayCan className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'homeCleaning', descriptionKey: 'homeCleaningDescription' },
+    { icon: <HardHat className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'construction', descriptionKey: 'constructionDescription' },
+    { icon: <Layers className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'plastering', descriptionKey: 'plasteringDescription' },
+    { icon: <GripVertical className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'other', descriptionKey: 'otherServicesDescription' },
   ];
 
 
@@ -57,7 +57,7 @@ export default function HomePage() {
       </section>
 
       <section className="w-full max-w-5xl px-4 animate-fadeIn animation-delay-600">
-         <div className="grid md:grid-cols-1 gap-8 items-center text-center md:text-center"> {/* Centered text */}
+         <div className="grid md:grid-cols-1 gap-8 items-center text-center md:text-center">
             <div className="space-y-4">
               <h2 className="text-3xl font-headline font-semibold text-foreground">{t.joinAsProvider}</h2>
               <p className="text-muted-foreground text-lg max-w-xl mx-auto">
@@ -71,7 +71,7 @@ export default function HomePage() {
       </section>
 
       <section className="w-full max-w-5xl px-4 animate-fadeIn animation-delay-800">
-         <div className="grid md:grid-cols-1 gap-8 items-center text-center md:text-center"> {/* Centered text */}
+         <div className="grid md:grid-cols-1 gap-8 items-center text-center md:text-center">
            <div className="space-y-4">
               <h2 className="text-3xl font-headline font-semibold text-foreground">{t.joinAsSeeker}</h2>
               <p className="text-muted-foreground text-lg max-w-xl mx-auto">
@@ -95,7 +95,7 @@ export default function HomePage() {
               {service.icon}
               <h3 className="text-2xl font-semibold mb-3 font-headline text-foreground">{t[service.titleKey as keyof Translations]}</h3>
               <p className="text-muted-foreground text-sm">
-                {service.description}
+                {t[service.descriptionKey as keyof Translations]}
               </p>
             </div>
           ))}
