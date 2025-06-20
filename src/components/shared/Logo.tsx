@@ -7,11 +7,10 @@ const Logo = () => {
 
   return (
     <Link href="/" className="group inline-block" aria-label="Homepage Logo">
-      <div className="inline-flex flex-col items-start transition-transform duration-200 ease-in-out group-hover:scale-105">
-        <h1 className="text-lg font-extrabold font-headline tracking-tighter text-foreground leading-none">
-            {t.appName}
+      <div className="relative inline-block transition-transform duration-200 ease-in-out group-hover:scale-105">
+        <h1 className="text-xl font-extrabold font-headline tracking-tighter bg-gradient-to-t from-primary to-foreground/50 bg-clip-text text-transparent">
+          {t.appName}
         </h1>
-        <span className="w-full h-[1px] bg-primary"></span>
       </div>
     </Link>
   );

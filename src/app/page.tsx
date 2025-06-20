@@ -46,11 +46,10 @@ export default function HomePage() {
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
-          <div className="inline-flex flex-col items-start">
-            <h1 className="text-5xl md:text-6xl font-extrabold font-headline tracking-tighter text-foreground leading-none">
+          <div className="relative inline-block">
+             <h1 className="text-5xl md:text-6xl font-extrabold font-headline tracking-tighter bg-gradient-to-t from-primary to-foreground/50 bg-clip-text text-transparent">
                 {t.appName}
             </h1>
-            <span className="w-full h-[3px] bg-primary"></span>
           </div>
         </div>
         <div 
