@@ -112,7 +112,6 @@ export default function ProviderDetailsPage() {
   const [averageRating, setAverageRating] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isDbAvailable, setIsDbAvailable] = useState(false);
   
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -122,68 +121,62 @@ export default function ProviderDetailsPage() {
   const [commentInput, setCommentInput] = useState('');
 
   useEffect(() => {
-    setIsDbAvailable(!!db && !!auth);
-    if (!auth) return;
-
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-        setAuthUser(user);
-        if (user) {
-            setUserRole(localStorage.getItem('userRole'));
-        } else {
-            setUserRole(null);
-        }
+    // Set up auth listener
+    if (!auth) {
+      return;
+    }
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setAuthUser(user);
+      setUserRole(user ? localStorage.getItem('userRole') : null);
     });
 
-    return () => unsubscribe(); // Cleanup the subscription
-  }, []);
-
-  const fetchProviderDetails = useCallback(async () => {
-    if (!isDbAvailable) {
+    // Fetch provider data
+    if (!db) {
         setError(t.serviceUnavailableMessage);
         setIsLoading(false);
-        return;
+        return () => unsubscribeAuth();
     }
     if (!providerId) {
       setError(t.providerIdMissing);
       setIsLoading(false);
-      return;
+      return () => unsubscribeAuth();
     }
+
     setIsLoading(true);
     setError(null);
-    try {
-      const [foundProvider, foundRatings] = await Promise.all([
-          getUserProfileById(providerId),
-          getRatingsForUser(providerId),
-      ]);
-      
+    
+    Promise.all([
+        getUserProfileById(providerId),
+        getRatingsForUser(providerId),
+    ]).then(([foundProvider, foundRatings]) => {
       if (foundProvider) {
         setProvider(foundProvider);
         setRatings(foundRatings);
 
         if (foundRatings.length > 0) {
-            const totalRating = foundRatings.reduce((acc, r) => acc + r.rating, 0);
-            setAverageRating(totalRating / foundRatings.length);
+          const totalRating = foundRatings.reduce((acc, r) => acc + r.rating, 0);
+          setAverageRating(totalRating / foundRatings.length);
         } else {
-            setAverageRating(0);
+          setAverageRating(0);
         }
       } else {
         setError(t.providerNotFound);
       }
-    } catch (err: any) {
+    }).catch((err: any) => {
       console.error("Error fetching provider details:", err);
       if (String(err.message).includes("requires an index")) {
         setError(t.firestoreIndexError);
       } else {
         setError(String(err.message) || t.failedLoadProviderDetails);
       }
-    } finally {
+    }).finally(() => {
       setIsLoading(false);
-    }
-  }, [providerId, t, isDbAvailable]);
+    });
 
-  useEffect(() => {
-    fetchProviderDetails();
-  }, [fetchProviderDetails]);
+    return () => {
+      unsubscribeAuth();
+    };
+  }, [providerId, t]);
 
   const handleRatingSubmit = async (e: FormEvent) => {
       e.preventDefault();
@@ -207,7 +200,16 @@ export default function ProviderDetailsPage() {
           toast({ title: t.ratingSubmitted, description: t.thankYouForFeedback });
           setRatingInput(0);
           setCommentInput('');
-          fetchProviderDetails(); // Re-fetch to show new rating
+          // Re-fetch ratings after submission
+          getRatingsForUser(provider.uid).then(foundRatings => {
+            setRatings(foundRatings);
+            if (foundRatings.length > 0) {
+                const totalRating = foundRatings.reduce((acc, r) => acc + r.rating, 0);
+                setAverageRating(totalRating / foundRatings.length);
+            } else {
+                setAverageRating(0);
+            }
+          });
       } catch (error: any) {
           toast({ variant: "destructive", title: t.errorOccurred, description: String(error.message || t.failedSubmitRating) });
       } finally {
@@ -297,7 +299,7 @@ export default function ProviderDetailsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-4 py-4 animate-fadeIn">
-      <Button variant="outline" onClick={() => router.back()} className="mb-4 group">
+      <Button variant="outline" onClick={() => router.back()} className="mb-2 group">
         <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:text-primary transition-colors group-hover:translate-x-[-2px]" /> {t.backToSearch}
       </Button>
 
@@ -329,7 +331,7 @@ export default function ProviderDetailsPage() {
             {provider.qualifications && (
               <div>
                 <h3 className="text-base font-semibold text-muted-foreground mb-1.5">{t.qualifications}:</h3>
-                <p className="text-base bg-muted/50 p-4 rounded-lg border whitespace-pre-wrap text-foreground/90 shadow-inner">{provider.qualifications}</p>
+                <p className="text-sm bg-muted/50 p-3 rounded-lg border whitespace-pre-wrap text-foreground/90 shadow-inner">{provider.qualifications}</p>
               </div>
             )}
             {provider.serviceCategories && provider.serviceCategories.length > 0 && (
@@ -352,7 +354,7 @@ export default function ProviderDetailsPage() {
             {provider.serviceAreas && provider.serviceAreas.length > 0 && (
                 <div>
                 <h3 className="text-base font-semibold text-muted-foreground mb-1.5">{t.servesAreasTitle}:</h3>
-                <p className="text-base text-foreground/90">{provider.serviceAreas.join(', ')}</p>
+                <p className="text-sm text-foreground/90">{provider.serviceAreas.join(', ')}</p>
                 </div>
             )}
           </div>
@@ -402,7 +404,7 @@ export default function ProviderDetailsPage() {
 
           {/* Rating Form */}
           {authUser && userRole === 'seeker' && authUser.uid !== providerId && (
-            <div className="animate-fadeIn animation-delay-600">
+            <div className="pt-2 animate-fadeIn animation-delay-600">
                 <h2 className="text-xl font-semibold text-primary font-headline mb-4">{t.rateThisProvider}</h2>
                 <form onSubmit={handleRatingSubmit} className="space-y-4">
                     <div>
@@ -419,7 +421,7 @@ export default function ProviderDetailsPage() {
                             disabled={isSubmitting}
                         />
                     </div>
-                    <Button type="submit" disabled={isSubmitting}>
+                    <Button type="submit" disabled={isSubmitting || ratingInput === 0}>
                         {isSubmitting && <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" />}
                         {t.submitRating}
                     </Button>
