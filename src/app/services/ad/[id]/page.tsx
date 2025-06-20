@@ -123,16 +123,18 @@ export default function ProviderDetailsPage() {
 
   useEffect(() => {
     setIsDbAvailable(!!db && !!auth);
-    if (auth) {
-        onAuthStateChanged(auth, (user) => {
-            setAuthUser(user);
-            if (user) {
-                setUserRole(localStorage.getItem('userRole'));
-            } else {
-                setUserRole(null);
-            }
-        });
-    }
+    if (!auth) return;
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setAuthUser(user);
+        if (user) {
+            setUserRole(localStorage.getItem('userRole'));
+        } else {
+            setUserRole(null);
+        }
+    });
+
+    return () => unsubscribe(); // Cleanup the subscription
   }, []);
 
   const fetchProviderDetails = useCallback(async () => {
@@ -209,7 +211,7 @@ export default function ProviderDetailsPage() {
       } catch (error: any) {
           toast({ variant: "destructive", title: t.errorOccurred, description: String(error.message || t.failedSubmitRating) });
       } finally {
-          setIsSubmitting(true);
+          setIsSubmitting(false);
       }
   }
 
