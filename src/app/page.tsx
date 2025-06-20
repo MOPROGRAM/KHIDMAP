@@ -32,9 +32,9 @@ export default function HomePage() {
           {t.findSkilledArtisans} {t.orPostYourServices}
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <Button 
-            size="lg" 
-            asChild 
+          <Button
+            size="lg"
+            asChild
             className="animate-slideUp animation-delay-200 shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-300 group"
           >
             <Link href="/services/search">
@@ -42,10 +42,10 @@ export default function HomePage() {
               <Search className="ltr:ml-2 rtl:mr-2 h-5 w-5 group-hover:animate-pulse-glow" />
             </Link>
           </Button>
-          <Button 
-            size="lg" 
-            variant="outline" 
-            asChild 
+          <Button
+            size="lg"
+            variant="outline"
+            asChild
             className="animate-slideUp animation-delay-400 shadow-md hover:shadow-lg hover:scale-105 transform transition-all duration-300 group"
           >
             <Link href="/auth/register">
@@ -60,7 +60,7 @@ export default function HomePage() {
          <div className="grid md:grid-cols-2 gap-8 items-center">
             <div className="relative aspect-video rounded-xl overflow-hidden shadow-2xl group transform transition-all duration-500 hover:scale-105">
               <Image
-                src="https://placehold.co/600x400.png"
+                src="https://images.unsplash.com/photo-1672512263515-d1fefa4a1db6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx0ZWNobmljaWFuJTIwd29ya3xlbnwwfHx8fDE3NTA0MDcyMjN8MA&ixlib=rb-4.1.0&q=80&w=1080"
                 alt="Technician working"
                 layout="fill"
                 objectFit="cover"
@@ -81,7 +81,7 @@ export default function HomePage() {
             </div>
           </div>
       </section>
-      
+
       <section className="w-full max-w-5xl px-4 animate-fadeIn animation-delay-800">
          <div className="grid md:grid-cols-2 gap-8 items-center">
            <div className="space-y-4 text-left rtl:text-right md:order-last">
@@ -95,7 +95,7 @@ export default function HomePage() {
             </div>
             <div className="relative aspect-video rounded-xl overflow-hidden shadow-2xl group transform transition-all duration-500 hover:scale-105 md:order-first">
               <Image
-                src="https://placehold.co/600x400.png"
+                src="https://images.unsplash.com/photo-1608752503578-52f35965e3d9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxob21lJTIwaW1wcm92ZW1lbnR8ZW58MHx8fHwxNzUwNDA3MjIyfDA&ixlib=rb-4.1.0&q=80&w=1080"
                 alt="Home improvement"
                 layout="fill"
                 objectFit="cover"
@@ -112,8 +112,8 @@ export default function HomePage() {
         <h2 className="text-3xl md:text-4xl font-headline font-semibold mb-12 text-foreground">{t.services}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {serviceCards.map((service, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className="p-6 bg-card rounded-xl shadow-lg border border-border transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 group"
             >
               {service.icon}
@@ -132,10 +132,9 @@ export default function HomePage() {
         .animation-delay-800 { animation-delay: 0.8s; }
         .animation-delay-1000 { animation-delay: 1.0s; }
         [class*="animation-delay"] {
-          animation-fill-mode: backwards; 
+          animation-fill-mode: backwards;
         }
       `}</style>
     </div>
   );
 }
-
