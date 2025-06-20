@@ -39,22 +39,23 @@ export default function HomePage() {
       
       {/* Hero Section */}
       <section 
-        className="w-full flex flex-col items-center text-center pt-6 pb-5 md:pt-10 md:pb-8 space-y-2"
+        className="w-full flex flex-col items-center text-center pt-3 pb-2 md:pt-5 md:pb-4 space-y-3"
       >
         <div 
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
             <h1 className="text-3xl md:text-4xl font-bold font-headline tracking-tighter">
-                <span
+                <div
                   className="
-                    inline-block px-6 py-3 rounded-md text-white 
-                    bg-[linear-gradient(to_bottom,hsl(var(--accent))_50%,hsl(25_95%_45%)_50%)] 
-                    dark:bg-[linear-gradient(to_bottom,hsl(var(--accent))_50%,hsl(25_95%_50%)_50%)]
+                    inline-block p-0.5 rounded-lg
+                    bg-[linear-gradient(to_bottom,hsl(var(--accent)),hsl(var(--primary)))]
                   "
                 >
-                  {t.appName}
-                </span>
+                  <div className="bg-background rounded-md px-4 py-2 text-foreground">
+                    {t.appName}
+                  </div>
+                </div>
             </h1>
         </div>
         <div 
@@ -81,9 +82,9 @@ export default function HomePage() {
       </section>
 
       {/* Services Section */}
-      <section className="w-full py-3 md:py-4">
+      <section className="w-full py-1 md:py-2">
         <div className="animate-fade-in-up text-center mb-3" style={{ animationFillMode: 'backwards' }}>
-            <h2 className="text-2xl md:text-3xl font-bold font-headline text-foreground tracking-tighter">
+            <h2 className="text-xl md:text-2xl font-bold font-headline text-foreground tracking-tighter">
                 {t.services}
             </h2>
         </div>
@@ -95,10 +96,10 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="w-full bg-muted/50 py-5">
+      <section className="w-full bg-muted/50 py-2.5">
           <div className="container max-w-4xl px-4 text-center">
             <div className="animate-fade-in-up text-center space-y-1.5" style={{ animationFillMode: 'backwards' }}>
-              <h2 className="text-2xl md:text-3xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
+              <h2 className="text-xl md:text-2xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
               <p className="text-sm text-muted-foreground max-w-2xl mx-auto">{t.orPostYourServices}</p>
               <Button asChild size="lg" className="text-sm px-6">
                 <Link href="/auth/register?role=provider">

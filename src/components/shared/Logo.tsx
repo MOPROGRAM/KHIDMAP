@@ -8,16 +8,16 @@ const Logo = () => {
     <Link href="/" className="inline-block" aria-label="Homepage Logo">
       <div 
         className="
-          flex items-center justify-center 
-          px-4 py-2 rounded-md
-          bg-[linear-gradient(to_bottom,hsl(var(--accent))_50%,hsl(25_95%_45%)_50%)]
-          dark:bg-[linear-gradient(to_bottom,hsl(var(--accent))_50%,hsl(25_95%_50%)_50%)]
-          text-white 
-          font-headline font-bold text-2xl
-          transition-transform duration-200 ease-in-out hover:scale-105 shadow-sm
+          inline-block p-0.5 rounded-lg
+          bg-[linear-gradient(to_bottom,hsl(var(--accent)),hsl(var(--primary)))]
+          transition-transform duration-200 ease-in-out hover:scale-105
         "
       >
-        <span>{t.appName}</span>
+        <div className="bg-background rounded-md px-3 py-1.5">
+          <span className="font-headline font-bold text-2xl text-foreground">
+            {t.appName}
+          </span>
+        </div>
       </div>
     </Link>
   );
