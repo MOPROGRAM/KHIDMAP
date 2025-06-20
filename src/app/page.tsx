@@ -47,7 +47,7 @@ export default function HomePage() {
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
-            <h1 className="text-5xl md:text-6xl font-extrabold font-headline tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-green-500 to-orange-600">
+            <h1 className="text-5xl md:text-6xl font-extrabold font-headline tracking-tighter text-foreground">
                 {t.appName}
             </h1>
         </div>
