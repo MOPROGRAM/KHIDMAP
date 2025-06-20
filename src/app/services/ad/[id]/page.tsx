@@ -8,7 +8,7 @@ import { ServiceAd, UserProfile, getAdById, getUserProfileById, ServiceCategory 
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import NextImage from 'next/image'; 
-import { ArrowLeft, MapPin, Wrench, Zap, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, Sparkles, GripVertical, ArrowRight } from 'lucide-react';
+import { ArrowLeft, MapPin, Wrench, Zap, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, Sparkles, GripVertical, ArrowRight, ImageOff } from 'lucide-react';
 import Link from 'next/link';
 import { Timestamp } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
@@ -92,8 +92,8 @@ export default function ServiceAdDetailsPage() {
 
   if (error) {
     return (
-      <div className="text-center py-10 max-w-md mx-auto">
-        <Card className="shadow-lg border-destructive/50">
+      <div className="text-center py-10 max-w-md mx-auto animate-fadeIn">
+        <Card className="shadow-xl border-destructive/50">
           <CardHeader>
             <CardTitle className="flex items-center justify-center gap-2 text-xl text-destructive">
               <AlertTriangle className="h-8 w-8" />
@@ -102,7 +102,7 @@ export default function ServiceAdDetailsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-6">{error}</p>
-            <Button asChild variant="outline" onClick={() => router.back()}>
+            <Button asChild variant="outline" onClick={() => router.back()} className="hover:bg-destructive/10 hover:border-destructive transition-colors duration-200">
               <Link href="#"> 
                 <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4" /> Back
               </Link>
@@ -115,17 +115,17 @@ export default function ServiceAdDetailsPage() {
   
   if (!ad) {
      return (
-      <div className="text-center py-10 max-w-md mx-auto">
-        <Card className="shadow-lg">
+      <div className="text-center py-10 max-w-md mx-auto animate-fadeIn">
+        <Card className="shadow-xl border">
           <CardHeader>
-            <CardTitle className="flex items-center justify-center gap-2 text-xl">
+            <CardTitle className="flex items-center justify-center gap-2 text-xl text-foreground">
               <Info className="h-8 w-8 text-primary" />
                {t.noResultsFound}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-6">The service ad you are looking for does not exist or may have been removed.</p>
-             <Button asChild variant="outline" onClick={() => router.back()}>
+             <Button asChild variant="outline" onClick={() => router.back()} className="hover:bg-accent/10 hover:border-primary transition-colors duration-200">
               <Link href="#">
                 <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4" /> Back
               </Link>
@@ -141,31 +141,37 @@ export default function ServiceAdDetailsPage() {
   const categoryName = t[categoryKey] || ad.category;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 py-8">
-      <Button variant="outline" onClick={() => router.back()} className="mb-6 group transition-all hover:shadow-md">
+    <div className="max-w-4xl mx-auto space-y-8 py-8 animate-fadeIn">
+      <Button variant="outline" onClick={() => router.back()} className="mb-6 group transition-all hover:shadow-md hover:scale-105 transform duration-300">
         <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:text-primary transition-colors" /> Back to Search
       </Button>
 
-      <Card className="overflow-hidden shadow-xl transform hover:scale-[1.01] transition-transform duration-300">
-        <div className="relative w-full h-72 md:h-96 group overflow-hidden">
-          <NextImage
-            src={ad.imageUrl || "https://placehold.co/800x600.png"}
-            alt={ad.title}
-            layout="fill"
-            objectFit="cover"
-            className="group-hover:scale-110 transition-transform duration-700 ease-in-out"
-            data-ai-hint={`${ad.category} service project`}
-            priority
-          />
+      <Card className="overflow-hidden shadow-2xl border">
+        <div className="relative w-full h-72 md:h-96 group overflow-hidden bg-muted/30">
+          {ad.imageUrl ? (
+            <NextImage
+              src={ad.imageUrl}
+              alt={ad.title}
+              layout="fill"
+              objectFit="cover"
+              className="group-hover:scale-110 transition-transform duration-700 ease-in-out"
+              data-ai-hint={`${ad.category} service project`}
+              priority
+            />
+          ) : (
+             <div className="w-full h-full flex items-center justify-center">
+                <ImageOff className="h-24 w-24 text-muted-foreground/50" />
+            </div>
+          )}
            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
            <div className="absolute bottom-0 left-0 p-6 w-full">
              <h1 className="text-3xl md:text-4xl font-bold font-headline text-white mb-2 drop-shadow-lg">{ad.title}</h1>
              <div className="flex items-center gap-3 text-sm text-gray-200">
-                <span className="flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm shadow">
+                <span className="flex items-center gap-1.5 bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm shadow-md">
                     <Icon className="h-4 w-4" />
                     <span>{categoryName}</span>
                 </span>
-                <span className="flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm shadow">
+                <span className="flex items-center gap-1.5 bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm shadow-md">
                     <MapPin className="h-4 w-4" />
                     <span>{ad.address}</span>
                 </span>
@@ -175,7 +181,7 @@ export default function ServiceAdDetailsPage() {
         
         <CardContent className="p-6 space-y-6">
           <div>
-            <h2 className="text-xl font-semibold flex items-center gap-2 mb-3 text-primary">
+            <h2 className="text-2xl font-semibold flex items-center gap-2 mb-3 text-primary font-headline">
                 <Info className="h-6 w-6"/> {t.adDescription}
             </h2>
             <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap text-md">{ad.description}</p>
@@ -184,12 +190,12 @@ export default function ServiceAdDetailsPage() {
             </p>
           </div>
 
-          <Separator />
+          <Separator className="my-6" />
 
           {provider && (
             <Card className="bg-card p-0 border-none shadow-none">
               <CardHeader className="px-0 pt-0 pb-4">
-                <CardTitle className="text-2xl font-semibold flex items-center gap-3 text-primary">
+                <CardTitle className="text-2xl font-semibold flex items-center gap-3 text-primary font-headline">
                     <UserCircle className="h-7 w-7" /> {t.serviceProvider}
                 </CardTitle>
               </CardHeader>
@@ -200,19 +206,19 @@ export default function ServiceAdDetailsPage() {
                     alt={provider.name} 
                     width={80} 
                     height={80} 
-                    className="rounded-full border-2 border-primary shadow-md object-cover"
+                    className="rounded-full border-2 border-primary shadow-lg object-cover"
                     data-ai-hint="person portrait"
                   />
                   <div>
                     <h3 className="text-xl font-medium text-foreground">{provider.name}</h3>
                     {provider.email && (
-                      <a href={`mailto:${provider.email}`} className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 mt-1">
-                        <Mail className="h-4 w-4" /> {provider.email}
+                      <a href={`mailto:${provider.email}`} className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 mt-1 group">
+                        <Mail className="h-4 w-4 group-hover:animate-pulse-glow" /> {provider.email}
                       </a>
                     )}
                     {provider.phoneNumber && (
-                        <a href={`tel:${provider.phoneNumber}`} className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 mt-1">
-                            <Phone className="h-4 w-4" /> {provider.phoneNumber}
+                        <a href={`tel:${provider.phoneNumber}`} className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 mt-1 group">
+                            <Phone className="h-4 w-4 group-hover:animate-pulse-glow" /> {provider.phoneNumber}
                         </a>
                     )}
                   </div>
@@ -220,8 +226,8 @@ export default function ServiceAdDetailsPage() {
                 
                 {provider.qualifications && (
                   <div>
-                    <h4 className="text-md font-semibold text-muted-foreground mb-1">{t.qualifications}:</h4>
-                    <p className="text-md bg-muted/50 p-4 rounded-md border whitespace-pre-wrap text-foreground/90">{provider.qualifications}</p>
+                    <h4 className="text-md font-semibold text-muted-foreground mb-1.5">{t.qualifications}:</h4>
+                    <p className="text-md bg-muted/50 p-4 rounded-lg border whitespace-pre-wrap text-foreground/90 shadow-inner">{provider.qualifications}</p>
                   </div>
                 )}
 
@@ -234,15 +240,15 @@ export default function ServiceAdDetailsPage() {
                         const providerCatKey = cat.toLowerCase() as keyof Translations;
                         const providerCatName = t[providerCatKey] || cat;
                         return (
-                        <span key={cat} className="px-3 py-1 bg-accent text-accent-foreground text-sm rounded-full shadow-sm flex items-center gap-1">
-                          <ProviderCatIcon className="h-3 w-3" />
+                        <span key={cat} className="px-3 py-1.5 bg-accent text-accent-foreground text-sm rounded-full shadow-md flex items-center gap-1.5">
+                          <ProviderCatIcon className="h-4 w-4" />
                           {providerCatName}
                         </span>
                         );
                       })}
                     </div>
                   </div>
-                )}
+                 )}
                  {provider.serviceAreas && provider.serviceAreas.length > 0 && (
                    <div>
                     <h4 className="text-md font-semibold text-muted-foreground mb-1.5">Serves Areas:</h4>
@@ -250,8 +256,8 @@ export default function ServiceAdDetailsPage() {
                   </div>
                  )}
               </CardContent>
-              <CardFooter className="px-0 pt-6">
-                 <Button size="lg" className="w-full sm:w-auto text-base py-3 group hover:shadow-lg transition-all transform hover:scale-105" asChild>
+              <CardFooter className="px-0 pt-8">
+                 <Button size="lg" className="w-full sm:w-auto text-base py-3.5 group shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-300" asChild>
                     <a href={`mailto:${provider.email}?subject=Inquiry about your ad: ${ad.title}`}>
                         Contact {provider.name.split(' ')[0]}
                         <ArrowRight className="ltr:ml-2 rtl:mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform"/>

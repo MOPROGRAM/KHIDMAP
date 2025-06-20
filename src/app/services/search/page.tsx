@@ -53,7 +53,7 @@ export default function ServiceSearchPage() {
   const updateSearchHistory = (query: string) => {
     if (!query.trim()) return;
     const newItem: SearchHistoryItem = { query, date: new Date().toISOString() };
-    const newHistory = [newItem, ...searchHistory.filter(item => item.query.toLowerCase() !== query.toLowerCase())].slice(0, 5);
+    const newHistory = [newItem, ...searchHistory.filter(item => item.query.toLowerCase() !== query.toLowerCase())].slice(0, 5); // Limit to 5 recent searches
     setSearchHistory(newHistory);
     localStorage.setItem('fullSearchHistory', JSON.stringify(newHistory));
   };
@@ -65,7 +65,7 @@ export default function ServiceSearchPage() {
       const ads = await getAllServiceAds();
       setAllAds(ads);
       
-      const providerIds = [...new Set(ads.map(ad => ad.providerId).filter(id => !!id))] as string[]; // Filter out undefined/null providerIds
+      const providerIds = [...new Set(ads.map(ad => ad.providerId).filter(id => !!id))] as string[];
       
       const providerMap: Record<string, UserProfile> = {};
       if (providerIds.length > 0) {
@@ -82,7 +82,7 @@ export default function ServiceSearchPage() {
       const initialQuery = searchParams.get('q');
       if (initialQuery) {
         setSearchTerm(initialQuery);
-        filterAds(initialQuery, ads, providerMap);
+        filterAds(initialQuery, ads, providerMap); // Pass t here
         setCurrentSearchQuery(initialQuery);
       } else {
         setFilteredAds(ads);
@@ -97,11 +97,7 @@ export default function ServiceSearchPage() {
       setIsLoading(false);
       setInitialLoad(false);
     }
-  }, [searchParams]); // Removed t from dependencies as it's stable
-
-  useEffect(() => {
-    fetchInitialAdsAndProviders();
-  }, [fetchInitialAdsAndProviders]);
+  }, [searchParams]); 
 
   const filterAds = (query: string, adsToFilter: ServiceAd[], currentProviderDetails: Record<string, UserProfile>) => {
     if (!query.trim()) {
@@ -125,15 +121,19 @@ export default function ServiceSearchPage() {
     });
     setFilteredAds(results);
   };
+  
+  useEffect(() => {
+    fetchInitialAdsAndProviders();
+  }, [fetchInitialAdsAndProviders]);
+
 
   const handleSearch = (query: string) => {
     setSearchTerm(query);
     setCurrentSearchQuery(query);
     if (!initialLoad) setIsLoading(true);
 
-    // Debounce or delay filtering slightly for better UX
     setTimeout(() => {
-      filterAds(query, allAds, providerDetails);
+      filterAds(query, allAds, providerDetails); // Pass t here
       if (query.trim()) {
         updateSearchHistory(query);
         router.push(`/services/search?q=${encodeURIComponent(query)}`, { scroll: false });
@@ -155,10 +155,10 @@ export default function ServiceSearchPage() {
   }
 
   return (
-    <div className="space-y-8 py-8">
-      <Card className="shadow-lg sticky top-20 z-40 backdrop-blur-md bg-background/90">
+    <div className="space-y-8 py-8 animate-fadeIn">
+      <Card className="shadow-xl sticky top-[calc(var(--header-height,4rem)+1rem)] z-40 backdrop-blur-md bg-background/90 border">
         <CardHeader>
-          <CardTitle className="text-3xl font-headline flex items-center gap-2">
+          <CardTitle className="text-3xl font-headline flex items-center gap-3 text-foreground">
             <SearchIcon className="h-8 w-8 text-primary" />
             {t.search} {t.services}
           </CardTitle>
@@ -171,10 +171,15 @@ export default function ServiceSearchPage() {
               placeholder={t.searchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-grow text-lg p-3 rounded-md shadow-sm focus:ring-2 focus:ring-primary"
+              className="flex-grow text-lg p-3 rounded-lg shadow-inner focus:ring-2 focus:ring-primary border-input"
               aria-label={t.searchPlaceholder}
             />
-            <Button type="submit" size="lg" className="text-lg py-3 rounded-md shadow-md hover:bg-primary/90 transition-all duration-300 transform hover:scale-105" disabled={isLoading && !initialLoad}>
+            <Button 
+              type="submit" 
+              size="lg" 
+              className="text-lg py-3 rounded-lg shadow-lg hover:scale-105 transform transition-all duration-300" 
+              disabled={isLoading && !initialLoad}
+            >
               {(isLoading && !initialLoad) ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <SearchIcon className="ltr:mr-2 rtl:ml-2 h-5 w-5" />}
               {t.search}
             </Button>
@@ -183,13 +188,19 @@ export default function ServiceSearchPage() {
       </Card>
 
       {searchHistory.length > 0 && !initialLoad && (
-        <Card className="shadow-md">
+        <Card className="shadow-lg animate-fadeIn animation-delay-200 border">
           <CardHeader>
-            <CardTitle className="text-xl font-headline">{t.recentSearches}</CardTitle>
+            <CardTitle className="text-xl font-headline text-foreground">{t.recentSearches}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             {searchHistory.map((item, index) => (
-              <Button key={index} variant="outline" size="sm" onClick={() => handleHistorySearch(item.query)} className="rounded-full hover:bg-accent/10 transition-colors">
+              <Button 
+                key={index} 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleHistorySearch(item.query)} 
+                className="rounded-full hover:bg-accent/20 hover:border-primary transition-colors duration-200"
+              >
                 {item.query}
               </Button>
             ))}
@@ -205,10 +216,10 @@ export default function ServiceSearchPage() {
       )}
       
       {error && !initialLoad && (
-         <Card className="text-center py-12 bg-destructive/10 border-destructive shadow-lg">
+         <Card className="text-center py-12 bg-destructive/10 border-destructive shadow-xl animate-fadeIn">
           <CardHeader>
             <AlertTriangle className="mx-auto h-16 w-16 text-destructive mb-4" />
-            <CardTitle className="text-destructive">{t.errorOccurred}</CardTitle>
+            <CardTitle className="text-destructive text-2xl">{t.errorOccurred}</CardTitle>
             <CardDescription className="text-destructive/80">
               {error}
             </CardDescription>
@@ -217,11 +228,11 @@ export default function ServiceSearchPage() {
       )}
 
       {!initialLoad && !isLoading && !error && currentSearchQuery && filteredAds.length === 0 && (
-        <Card className="text-center py-12 shadow-lg">
+        <Card className="text-center py-12 shadow-xl animate-fadeIn border">
           <CardHeader>
              <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-            <CardTitle>{t.noResultsFound}</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-2xl text-foreground">{t.noResultsFound}</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Try searching with different keywords or check your spelling.
             </CardDescription>
           </CardHeader>
@@ -229,11 +240,11 @@ export default function ServiceSearchPage() {
       )}
       
       {!initialLoad && !isLoading && !error && filteredAds.length === 0 && !currentSearchQuery && allAds.length === 0 && (
-         <Card className="text-center py-12 shadow-lg">
+         <Card className="text-center py-12 shadow-xl animate-fadeIn border">
           <CardHeader>
              <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-            <CardTitle>No Services Available Yet</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-2xl text-foreground">No Services Available Yet</CardTitle>
+            <CardDescription className="text-muted-foreground">
               There are currently no service ads posted. Check back later!
             </CardDescription>
           </CardHeader>
@@ -242,30 +253,34 @@ export default function ServiceSearchPage() {
 
 
       {!isLoading && !error && filteredAds.length > 0 && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredAds.map((ad) => {
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 animate-fadeIn animation-delay-400">
+          {filteredAds.map((ad, index) => {
             const provider = ad.providerId ? providerDetails[ad.providerId] : null;
             const providerName = ad.providerName || provider?.name || t.provider;
             const Icon = categoryIcons[ad.category] || GripVertical;
             const categoryKey = ad.category.toLowerCase() as keyof Translations;
             const categoryName = t[categoryKey] || ad.category;
             return (
-              <Card key={ad.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out flex flex-col group transform hover:-translate-y-1">
-                <div className="relative w-full h-56 overflow-hidden">
+              <Card 
+                key={ad.id} 
+                className="overflow-hidden shadow-xl hover:shadow-2xl border transition-all duration-300 ease-in-out flex flex-col group transform hover:-translate-y-1.5"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="relative w-full h-60 overflow-hidden">
                    <NextImage
                     src={ad.imageUrl || "https://placehold.co/600x400.png"}
                     alt={ad.title}
                     layout="fill"
                     objectFit="cover"
-                    className="group-hover:scale-105 transition-transform duration-500 ease-in-out"
+                    className="group-hover:scale-110 transition-transform duration-500 ease-in-out"
                     data-ai-hint={`${ad.category} items tools`}
                   />
-                  <div className="absolute top-3 right-3 rtl:left-3 rtl:right-auto bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold rounded-full shadow-md flex items-center gap-1">
-                    <Icon className="h-3 w-3" />
+                  <div className="absolute top-3 right-3 rtl:left-3 rtl:right-auto bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold rounded-full shadow-md flex items-center gap-1.5">
+                    <Icon className="h-3.5 w-3.5" />
                     {categoryName}
                   </div>
                 </div>
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-3">
                   <CardTitle className="text-xl font-semibold font-headline truncate hover:text-primary transition-colors" title={ad.title}>
                      <Link href={`/services/ad/${ad.id}`}>{ad.title}</Link>
                   </CardTitle>
@@ -274,15 +289,15 @@ export default function ServiceSearchPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow pt-1">
-                  <p className="text-sm text-foreground/90 line-clamp-3 mb-2 whitespace-pre-wrap">{ad.description}</p>
+                  <p className="text-sm text-foreground/90 line-clamp-3 mb-3 whitespace-pre-wrap">{ad.description}</p>
                   <div className="flex items-center text-sm text-muted-foreground gap-1.5">
                     <MapPin className="h-4 w-4" /> {ad.address}
                   </div>
                 </CardContent>
-                <CardFooter className="bg-muted/20 p-4">
-                  <Button asChild className="w-full group/button hover:bg-primary/90 transition-all duration-300 transform hover:scale-105">
+                <CardFooter className="bg-muted/30 p-4 mt-auto">
+                  <Button asChild className="w-full group/button hover:bg-primary/90 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg">
                     <Link href={`/services/ad/${ad.id}`}> 
-                      {t.viewDetails} <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4 group-hover/button:translate-x-1 transition-transform" />
+                      {t.viewDetails} <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4 group-hover/button:translate-x-0.5 transition-transform" />
                     </Link>
                   </Button>
                 </CardFooter>
@@ -291,6 +306,13 @@ export default function ServiceSearchPage() {
           })}
         </div>
       )}
+      <style jsx global>{`
+        .animation-delay-200 { animation-delay: 0.2s; }
+        .animation-delay-400 { animation-delay: 0.4s; }
+        [class*="animation-delay"] {
+          animation-fill-mode: backwards; 
+        }
+      `}</style>
     </div>
   );
 }
