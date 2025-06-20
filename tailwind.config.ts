@@ -68,12 +68,12 @@ export default {
         },
       },
       borderRadius: {
-        lg: 'var(--radius)', // 1rem
-        md: 'calc(var(--radius) - 6px)', // 0.625rem
-        sm: 'calc(var(--radius) - 8px)', // 0.5rem
-        xl: 'calc(var(--radius) + 4px)', // 1.25rem
-        '2xl': 'calc(var(--radius) + 8px)', // 1.5rem
-        '3xl': 'calc(var(--radius) + 16px)', // 2rem
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 0.25rem)',
+        sm: 'calc(var(--radius) - 0.5rem)',
+        xl: 'calc(var(--radius) + 0.25rem)',
+        '2xl': 'calc(var(--radius) + 0.5rem)',
+        '3xl': 'calc(var(--radius) + 1rem)',
       },
       boxShadow: {
         'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',

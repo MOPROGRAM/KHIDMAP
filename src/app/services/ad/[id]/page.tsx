@@ -314,7 +314,7 @@ export default function ProviderDetailsPage() {
                 <h1 className="text-3xl md:text-4xl font-bold font-headline text-foreground">{provider.name}</h1>
                 <div className="flex items-center gap-2 mt-2">
                     <StarRating rating={averageRating} />
-                    <span className="text-muted-foreground text-sm">
+                    <span className="text-sm text-muted-foreground">
                         {averageRating.toFixed(1)} {t.of} 5 ({ratings.length} {t.reviews})
                     </span>
                 </div>
@@ -326,19 +326,19 @@ export default function ProviderDetailsPage() {
           <div className="space-y-4 animate-fadeIn animation-delay-200">
             {provider.qualifications && (
               <div>
-                <h3 className="text-lg font-semibold text-muted-foreground mb-1.5">{t.qualifications}:</h3>
-                <p className="text-md bg-muted/50 p-4 rounded-lg border whitespace-pre-wrap text-foreground/90 shadow-inner">{provider.qualifications}</p>
+                <h3 className="text-base font-semibold text-muted-foreground mb-1.5">{t.qualifications}:</h3>
+                <p className="text-base bg-muted/50 p-4 rounded-lg border whitespace-pre-wrap text-foreground/90 shadow-inner">{provider.qualifications}</p>
               </div>
             )}
             {provider.serviceCategories && provider.serviceCategories.length > 0 && (
                 <div>
-                    <h3 className="text-lg font-semibold text-muted-foreground mb-1.5">{t.serviceCategoriesTitle}:</h3>
+                    <h3 className="text-base font-semibold text-muted-foreground mb-1.5">{t.serviceCategoriesTitle}:</h3>
                     <div className="flex flex-wrap gap-2">
                         {provider.serviceCategories.map(cat => {
                         const ProviderCatIcon = categoryIcons[cat] || GripVertical;
                         const providerCatKey = cat.toLowerCase() as keyof Translations;
                         return (
-                        <span key={cat} className="px-3 py-1.5 bg-accent text-accent-foreground text-sm rounded-full shadow-md flex items-center gap-1.5">
+                        <span key={cat} className="px-3 py-1.5 bg-accent text-accent-foreground text-sm rounded-full shadow-sm flex items-center gap-1.5">
                             <ProviderCatIcon className="h-4 w-4" />
                             {t[providerCatKey] || cat}
                         </span>
@@ -349,8 +349,8 @@ export default function ProviderDetailsPage() {
             )}
             {provider.serviceAreas && provider.serviceAreas.length > 0 && (
                 <div>
-                <h3 className="text-lg font-semibold text-muted-foreground mb-1.5">{t.servesAreasTitle}:</h3>
-                <p className="text-md text-foreground/90">{provider.serviceAreas.join(', ')}</p>
+                <h3 className="text-base font-semibold text-muted-foreground mb-1.5">{t.servesAreasTitle}:</h3>
+                <p className="text-base text-foreground/90">{provider.serviceAreas.join(', ')}</p>
                 </div>
             )}
           </div>
@@ -358,10 +358,10 @@ export default function ProviderDetailsPage() {
           <Separator className="my-6" />
 
           {authUser && authUser.uid !== provider.uid && (
-            <CardFooter className="px-0 pt-0 flex flex-col sm:flex-row gap-2">
+            <CardFooter className="p-0 pt-0 flex flex-col sm:flex-row gap-2">
               <Button
                 size="lg"
-                className="w-full text-base py-3.5 group"
+                className="w-full text-base py-3 group"
                 onClick={handleStartConversation}
                 disabled={isCreatingConversation}
               >
@@ -387,7 +387,7 @@ export default function ProviderDetailsPage() {
                              </div>
                              <StarRating rating={rating.rating} />
                            </div>
-                           {rating.comment && <p className="mt-2 text-foreground/80">{rating.comment}</p>}
+                           {rating.comment && <p className="mt-2 text-sm text-foreground/80">{rating.comment}</p>}
                         </Card>
                     ))}
                 </div>

@@ -183,14 +183,14 @@ export default function ServiceSearchPage() {
               placeholder={t.searchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-grow text-lg p-3 rounded-lg shadow-inner focus:ring-2 focus:ring-primary border-input"
+              className="flex-grow text-base p-3 rounded-lg shadow-inner focus:ring-2 focus:ring-primary border-input"
               aria-label={t.searchPlaceholder}
               disabled={!isDbAvailable || (isLoading && initialLoadComplete)}
             />
             <Button 
               type="submit" 
               size="lg" 
-              className="text-lg py-3 rounded-lg group" 
+              className="text-base py-3 rounded-lg group" 
               disabled={!isDbAvailable || (isLoading && initialLoadComplete)}
             >
               {(isLoading && initialLoadComplete) ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <SearchIcon className="ltr:mr-2 rtl:ml-2 h-5 w-5 group-hover:animate-pulse-glow" />}
@@ -296,13 +296,13 @@ export default function ServiceSearchPage() {
                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                   </div>
                 </CardHeader>
-                <CardContent className="flex-grow p-4">
+                <CardContent className="flex-grow p-5">
                   <div className="flex items-center gap-2 mb-2">
                     {(provider.serviceCategories || []).slice(0, 2).map(cat => (
                         <Badge key={cat} variant="secondary">{t[cat.toLowerCase() as keyof Translations] || cat}</Badge>
                     ))}
                   </div>
-                  <CardTitle className="text-lg font-bold truncate hover:text-primary transition-colors" title={provider.name}>
+                  <CardTitle className="text-lg font-semibold truncate hover:text-primary transition-colors" title={provider.name}>
                      <Link href={`/services/ad/${provider.uid}`}>{provider.name}</Link>
                   </CardTitle>
                   <p className="text-sm text-muted-foreground line-clamp-2 h-10 mt-1">{provider.qualifications || t.provider + " " + (t[provider.serviceCategories?.[0]?.toLowerCase() as keyof Translations] || '')}</p>
