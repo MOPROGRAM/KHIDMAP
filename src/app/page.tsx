@@ -48,10 +48,10 @@ export default function HomePage() {
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
           <div className="relative inline-block">
-            <h1 className="text-5xl md:text-6xl font-extrabold font-headline tracking-tighter text-foreground relative z-10 bg-background leading-[0.8] pb-0 pr-2">
+            <h1 className="text-5xl md:text-6xl font-extrabold font-headline tracking-tighter text-foreground relative z-10 leading-[0.8] pb-0 pr-2">
                 {t.appName}
             </h1>
-            <span className="absolute bottom-[8px] left-0 w-full h-[3px] bg-primary"></span>
+            <span className="absolute bottom-[8px] left-0 w-full h-[3px] bg-primary z-0"></span>
           </div>
         </div>
         <div 
