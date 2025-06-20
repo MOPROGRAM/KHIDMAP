@@ -48,11 +48,11 @@ export default function HomePage() {
             <h1 className="text-3xl md:text-4xl font-bold font-headline tracking-tighter">
                 <div
                   className="
-                    inline-block p-0.5 rounded-lg
-                    bg-[linear-gradient(to_bottom,hsl(var(--accent)),hsl(var(--primary)))]
+                    inline-block p-[2px] rounded-lg
+                    bg-gradient-to-b from-green-500 to-orange-600
                   "
                 >
-                  <div className="bg-background rounded-md px-4 py-2 text-foreground">
+                  <div className="bg-background rounded-md px-3 py-1.5 text-foreground">
                     {t.appName}
                   </div>
                 </div>
@@ -89,9 +89,9 @@ export default function HomePage() {
             </h2>
         </div>
         <div className="w-full overflow-x-auto pb-4 group" >
-            <ul className="flex flex-nowrap items-stretch justify-start gap-4 px-8 md:px-16">
-                {serviceCards.map((service, index) => renderServiceCard(service, index))}
-            </ul>
+          <ul className="flex flex-nowrap items-stretch justify-start gap-4 px-8 md:px-16">
+              {[...serviceCards].map((service, index) => renderServiceCard(service, index))}
+          </ul>
         </div>
       </section>
 
