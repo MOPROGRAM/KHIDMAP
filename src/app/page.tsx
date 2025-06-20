@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -47,10 +48,10 @@ export default function HomePage() {
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
           <div className="relative inline-block">
-            <h1 className="text-5xl md:text-6xl font-extrabold font-headline tracking-tighter text-foreground leading-none">
+            <h1 className="text-5xl md:text-6xl font-extrabold font-headline tracking-tighter text-foreground relative z-10 bg-background leading-[0.8] pb-0 pr-2">
                 {t.appName}
             </h1>
-            <span className="absolute bottom-0 left-0 w-full h-1.5 bg-primary"></span>
+            <span className="absolute bottom-[8px] left-0 w-full h-[3px] bg-primary"></span>
           </div>
         </div>
         <div 
@@ -77,34 +78,39 @@ export default function HomePage() {
       </section>
 
       {/* Services Section */}
-      <section className="w-full py-16 border-y bg-muted/30">
-        <div className="animate-fade-in-up text-center mb-8" style={{ animationFillMode: 'backwards' }}>
-            <h2 className="text-3xl md:text-4xl font-bold font-headline text-foreground tracking-tighter">
-                {t.services}
-            </h2>
-        </div>
-        <div className="w-full overflow-x-auto pb-4 group" >
-          <ul className="flex flex-nowrap items-stretch justify-start gap-4 px-4 md:px-8">
-              {[...serviceCards, ...serviceCards].map((service, index) => renderServiceCard(service, index))}
-          </ul>
-        </div>
-      </section>
+       <div className="w-full border-t bg-muted/30">
+        <section className="w-full container mx-auto py-16 border-x bg-background">
+          <div className="animate-fade-in-up text-center mb-8" style={{ animationFillMode: 'backwards' }}>
+              <h2 className="text-3xl md:text-4xl font-bold font-headline text-foreground tracking-tighter">
+                  {t.services}
+              </h2>
+          </div>
+          <div className="w-full overflow-x-auto pb-4 group" >
+            <ul className="flex flex-nowrap items-stretch justify-start gap-4 px-4 md:px-8">
+                {[...serviceCards, ...serviceCards].map((service, index) => renderServiceCard(service, index))}
+            </ul>
+          </div>
+        </section>
+      </div>
+
 
       {/* CTA Section */}
-      <section className="w-full bg-background py-16">
-          <div className="container max-w-4xl px-4 text-center">
-            <div className="animate-fade-in-up text-center space-y-3" style={{ animationFillMode: 'backwards' }}>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
-              <p className="text-base text-muted-foreground max-w-2xl mx-auto">{t.orPostYourServices}</p>
-              <Button asChild size="lg">
-                <Link href="/auth/register?role=provider">
-                    {t.register}
-                    <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4" />
-                </Link>
-              </Button>
+       <div className="w-full border-t">
+        <section className="w-full container mx-auto bg-background py-16 border-x">
+            <div className="max-w-4xl px-4 text-center">
+              <div className="animate-fade-in-up text-center space-y-3" style={{ animationFillMode: 'backwards' }}>
+                <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
+                <p className="text-base text-muted-foreground max-w-2xl mx-auto">{t.orPostYourServices}</p>
+                <Button asChild size="lg">
+                  <Link href="/auth/register?role=provider">
+                      {t.register}
+                      <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
             </div>
-          </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
