@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { ArrowRight, Wrench, Zap, Hammer, Brush, SprayCan, HardHat, Layers, GripVertical } from 'lucide-react';
-import NextImage from 'next/image';
 import React from 'react';
 
 export default function HomePage() {
@@ -39,21 +38,23 @@ export default function HomePage() {
       
       {/* Hero Section */}
       <section 
-        className="w-full flex flex-col items-center text-center pt-2 pb-1 md:pt-3 md:pb-2 space-y-2"
+        className="w-full flex flex-col items-center text-center pt-2 pb-1 md:pt-3 md:pb-2 space-y-1"
       >
         <div 
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
-            <h1 className="text-2xl md:text-3xl font-bold font-headline tracking-tighter">
+            <h1 className="text-2xl md:text-3xl font-bold font-headline tracking-tighter leading-none">
                 <div
                   className="
                     inline-block p-[2px] rounded-lg
                     bg-gradient-to-b from-green-500 to-orange-600
                   "
                 >
-                  <div className="bg-background rounded-md text-foreground">
-                    {t.appName}
+                  <div className="bg-background rounded-md px-1 py-0">
+                    <span className="font-extrabold">
+                      {t.appName}
+                    </span>
                   </div>
                 </div>
             </h1>
