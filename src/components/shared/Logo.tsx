@@ -13,8 +13,8 @@ const Logo = () => {
           transition-transform duration-200 ease-in-out hover:scale-105
         "
       >
-        <div className="bg-background rounded-md px-1 flex items-center justify-center">
-          <span className="font-headline font-extrabold text-xl text-foreground leading-[0.9]">
+        <div className="bg-background rounded-md px-3 py-1 flex items-center justify-center">
+          <span className="font-headline font-extrabold text-xl text-foreground">
             {t.appName}
           </span>
         </div>

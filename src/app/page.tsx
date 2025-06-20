@@ -51,8 +51,8 @@ export default function HomePage() {
                     bg-gradient-to-b from-green-500 to-orange-600
                   "
                 >
-                  <div className="bg-background rounded-md px-1 flex items-center justify-center">
-                    <span className="font-extrabold text-5xl md:text-6xl leading-[0.9]">
+                  <div className="bg-background rounded-md px-4 py-2 flex items-center justify-center">
+                    <span className="font-extrabold text-5xl md:text-6xl">
                       {t.appName}
                     </span>
                   </div>
@@ -83,7 +83,7 @@ export default function HomePage() {
       </section>
 
       {/* Services Section */}
-      <section className="w-full py-16 border-t">
+      <section className="w-full py-16 border-t bg-muted/30">
         <div className="animate-fade-in-up text-center mb-8" style={{ animationFillMode: 'backwards' }}>
             <h2 className="text-3xl md:text-4xl font-bold font-headline text-foreground tracking-tighter">
                 {t.services}
@@ -97,7 +97,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="w-full bg-muted/50 py-16 border-t">
+      <section className="w-full bg-background py-16 border-t">
           <div className="container max-w-4xl px-4 text-center">
             <div className="animate-fade-in-up text-center space-y-3" style={{ animationFillMode: 'backwards' }}>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
