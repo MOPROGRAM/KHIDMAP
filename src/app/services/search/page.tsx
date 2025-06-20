@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useTranslation } from '@/hooks/useTranslation';
 import { ServiceAd, getAllServiceAds, UserProfile, getUserProfileById } from '@/lib/data';
 import Link from 'next/link';
-import Image from 'next/image';
+import NextImage from 'next/image'; // Renamed
 import { Search as SearchIcon, MapPin, Briefcase, Wrench, Zap, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
 
 interface SearchHistoryItem {
@@ -35,7 +35,7 @@ export default function ServiceSearchPage() {
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
 
   useEffect(() => {
-    const storedHistory = localStorage.getItem('fullSearchHistory'); // Changed from 'searchHistory'
+    const storedHistory = localStorage.getItem('fullSearchHistory');
     if (storedHistory) {
       setSearchHistory(JSON.parse(storedHistory));
     }
@@ -46,7 +46,7 @@ export default function ServiceSearchPage() {
     const newItem: SearchHistoryItem = { query, date: new Date().toISOString() };
     const newHistory = [newItem, ...searchHistory.filter(item => item.query.toLowerCase() !== query.toLowerCase())].slice(0, 5);
     setSearchHistory(newHistory);
-    localStorage.setItem('fullSearchHistory', JSON.stringify(newHistory)); // Changed key
+    localStorage.setItem('fullSearchHistory', JSON.stringify(newHistory));
   };
 
   const fetchInitialAdsAndProviders = useCallback(async () => {
@@ -56,7 +56,6 @@ export default function ServiceSearchPage() {
       const ads = await getAllServiceAds();
       setAllAds(ads);
       
-      // Fetch provider details for all unique provider IDs
       const providerIds = [...new Set(ads.map(ad => ad.providerId))];
       const providerPromises = providerIds.map(id => getUserProfileById(id));
       const providersArray = await Promise.all(providerPromises);
@@ -69,14 +68,13 @@ export default function ServiceSearchPage() {
       });
       setProviderDetails(providerMap);
 
-      // Apply initial search term if present in URL
       const initialQuery = searchParams.get('q');
       if (initialQuery) {
         setSearchTerm(initialQuery);
         filterAds(initialQuery, ads, providerMap);
         setCurrentSearchQuery(initialQuery);
       } else {
-        setFilteredAds(ads); // Show all ads initially if no query
+        setFilteredAds(ads);
       }
 
     } catch (err) {
@@ -88,7 +86,7 @@ export default function ServiceSearchPage() {
       setIsLoading(false);
       setInitialLoad(false);
     }
-  }, [searchParams]); // Include searchParams in dependencies
+  }, [searchParams]);
 
   useEffect(() => {
     fetchInitialAdsAndProviders();
@@ -101,12 +99,12 @@ export default function ServiceSearchPage() {
     }
     const lowerCaseQuery = query.toLowerCase();
     const results = adsToFilter.filter(ad => {
-      const providerName = currentProviderDetails[ad.providerId]?.name.toLowerCase() || '';
+      const providerName = ad.providerName?.toLowerCase() || currentProviderDetails[ad.providerId]?.name.toLowerCase() || '';
       return (
         ad.title.toLowerCase().includes(lowerCaseQuery) ||
         ad.description.toLowerCase().includes(lowerCaseQuery) ||
-        ad.zipCode.includes(lowerCaseQuery) || // Zip code is usually exact match
-        t[ad.category.toLowerCase() as keyof typeof t].toLowerCase().includes(lowerCaseQuery) || // Search localized category
+        ad.address.toLowerCase().includes(lowerCaseQuery) || 
+        t[ad.category.toLowerCase() as keyof typeof t].toLowerCase().includes(lowerCaseQuery) ||
         providerName.includes(lowerCaseQuery)
       );
     });
@@ -115,21 +113,19 @@ export default function ServiceSearchPage() {
 
   const handleSearch = (query: string) => {
     setSearchTerm(query);
-    setCurrentSearchQuery(query); // Keep track of what was actually searched
-    if (!initialLoad) setIsLoading(true); // Show loader for subsequent searches
+    setCurrentSearchQuery(query);
+    if (!initialLoad) setIsLoading(true);
 
-    // Simulate search delay for better UX, filtering is client-side
     setTimeout(() => {
       filterAds(query, allAds, providerDetails);
       if (query.trim()) {
         updateSearchHistory(query);
-        // Update URL query parameter
         router.push(`/services/search?q=${encodeURIComponent(query)}`, { scroll: false });
       } else {
-         router.push(`/services/search`, { scroll: false }); // Clear query from URL
+         router.push(`/services/search`, { scroll: false });
       }
       if (!initialLoad) setIsLoading(false);
-    }, 500); 
+    }, 300); 
   };
   
   const onSearchSubmit = (e: React.FormEvent) => {
@@ -138,19 +134,19 @@ export default function ServiceSearchPage() {
   };
 
   const handleHistorySearch = (term: string) => {
-    setSearchTerm(term); // Set input field
-    handleSearch(term); // Perform search
+    setSearchTerm(term);
+    handleSearch(term);
   }
 
   return (
-    <div className="space-y-8">
-      <Card className="shadow-lg">
+    <div className="space-y-8 py-8">
+      <Card className="shadow-lg sticky top-20 z-40 backdrop-blur-md bg-background/90">
         <CardHeader>
           <CardTitle className="text-3xl font-headline flex items-center gap-2">
             <SearchIcon className="h-8 w-8 text-primary" />
             {t.search} {t.services}
           </CardTitle>
-          <CardDescription>{t.searchByZipOrKeyword}</CardDescription>
+          <CardDescription>{t.searchByAddressOrKeyword}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSearchSubmit} className="flex flex-col sm:flex-row gap-4">
@@ -159,10 +155,10 @@ export default function ServiceSearchPage() {
               placeholder={t.searchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-grow text-lg p-3"
+              className="flex-grow text-lg p-3 rounded-md shadow-sm focus:ring-2 focus:ring-primary"
               aria-label={t.searchPlaceholder}
             />
-            <Button type="submit" size="lg" className="text-lg py-3" disabled={isLoading && !initialLoad}>
+            <Button type="submit" size="lg" className="text-lg py-3 rounded-md shadow-md hover:bg-primary/90 transition-all duration-300 transform hover:scale-105" disabled={isLoading && !initialLoad}>
               {(isLoading && !initialLoad) ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <SearchIcon className="ltr:mr-2 rtl:ml-2 h-5 w-5" />}
               {t.search}
             </Button>
@@ -171,13 +167,13 @@ export default function ServiceSearchPage() {
       </Card>
 
       {searchHistory.length > 0 && !initialLoad && (
-        <Card>
+        <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="text-xl font-headline">{t.recentSearches}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             {searchHistory.map((item, index) => (
-              <Button key={index} variant="outline" size="sm" onClick={() => handleHistorySearch(item.query)}>
+              <Button key={index} variant="outline" size="sm" onClick={() => handleHistorySearch(item.query)} className="rounded-full hover:bg-accent/10 transition-colors">
                 {item.query}
               </Button>
             ))}
@@ -193,7 +189,7 @@ export default function ServiceSearchPage() {
       )}
       
       {error && !initialLoad && (
-         <Card className="text-center py-12 bg-destructive/10 border-destructive">
+         <Card className="text-center py-12 bg-destructive/10 border-destructive shadow-lg">
           <CardHeader>
             <AlertTriangle className="mx-auto h-16 w-16 text-destructive mb-4" />
             <CardTitle className="text-destructive">{t.errorOccurred}</CardTitle>
@@ -205,7 +201,7 @@ export default function ServiceSearchPage() {
       )}
 
       {!initialLoad && !isLoading && !error && currentSearchQuery && filteredAds.length === 0 && (
-        <Card className="text-center py-12">
+        <Card className="text-center py-12 shadow-lg">
           <CardHeader>
              <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <CardTitle>{t.noResultsFound}</CardTitle>
@@ -217,7 +213,7 @@ export default function ServiceSearchPage() {
       )}
       
       {!initialLoad && !isLoading && !error && filteredAds.length === 0 && !currentSearchQuery && allAds.length === 0 && (
-         <Card className="text-center py-12">
+         <Card className="text-center py-12 shadow-lg">
           <CardHeader>
              <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <CardTitle>No Services Available Yet</CardTitle>
@@ -235,38 +231,39 @@ export default function ServiceSearchPage() {
             const provider = providerDetails[ad.providerId];
             const providerName = ad.providerName || provider?.name || t.provider;
             return (
-              <Card key={ad.id} className="overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col">
-                <div className="relative w-full h-48">
-                   <Image
+              <Card key={ad.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out flex flex-col group transform hover:-translate-y-1">
+                <div className="relative w-full h-56 overflow-hidden">
+                   <NextImage
                     src={ad.imageUrl || "https://placehold.co/600x400.png"}
                     alt={ad.title}
                     layout="fill"
                     objectFit="cover"
+                    className="group-hover:scale-105 transition-transform duration-500 ease-in-out"
                     data-ai-hint={ad.category === 'Plumbing' ? "plumbing work" : "electrical work"}
                   />
-                  <div className="absolute top-2 right-2 rtl:left-2 rtl:right-auto bg-primary text-primary-foreground px-2 py-1 text-xs font-semibold rounded">
+                  <div className="absolute top-3 right-3 rtl:left-3 rtl:right-auto bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold rounded-full shadow-md">
                     {ad.category === 'Plumbing' ? <Wrench className="inline h-3 w-3 ltr:mr-1 rtl:ml-1" /> : <Zap className="inline h-3 w-3 ltr:mr-1 rtl:ml-1" />}
                     {t[ad.category.toLowerCase() as keyof typeof t]}
                   </div>
                 </div>
-                <CardHeader>
-                  <CardTitle className="text-xl font-semibold font-headline truncate" title={ad.title}>{ad.title}</CardTitle>
-                  
-                    <CardDescription className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Briefcase className="h-4 w-4" /> {providerName}
-                    </CardDescription>
-                  
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl font-semibold font-headline truncate hover:text-primary transition-colors" title={ad.title}>
+                     <Link href={`/services/ad/${ad.id}`}>{ad.title}</Link>
+                  </CardTitle>
+                  <CardDescription className="text-sm text-muted-foreground pt-1">
+                    <div className="flex items-center gap-1.5"> <Briefcase className="h-4 w-4" /> {providerName} </div>
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="flex-grow">
-                  <p className="text-sm text-foreground line-clamp-3 mb-2 whitespace-pre-wrap">{ad.description}</p>
-                  <div className="flex items-center text-sm text-muted-foreground gap-1">
-                    <MapPin className="h-4 w-4" /> {ad.zipCode}
+                <CardContent className="flex-grow pt-1">
+                  <p className="text-sm text-foreground/90 line-clamp-3 mb-2 whitespace-pre-wrap">{ad.description}</p>
+                  <div className="flex items-center text-sm text-muted-foreground gap-1.5">
+                    <MapPin className="h-4 w-4" /> {ad.address}
                   </div>
                 </CardContent>
-                <CardFooter>
-                  <Button asChild className="w-full">
+                <CardFooter className="bg-muted/20 p-4">
+                  <Button asChild className="w-full group/button hover:bg-primary/90 transition-all duration-300 transform hover:scale-105">
                     <Link href={`/services/ad/${ad.id}`}> 
-                      {t.viewDetails} <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4" />
+                      {t.viewDetails} <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4 group-hover/button:translate-x-1 transition-transform" />
                     </Link>
                   </Button>
                 </CardFooter>
@@ -278,3 +275,5 @@ export default function ServiceSearchPage() {
     </div>
   );
 }
+
+    

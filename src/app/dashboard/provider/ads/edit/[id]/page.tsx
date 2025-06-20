@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,17 +12,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { categorizeAd, CategorizeAdOutput } from '@/ai/flows/categorize-ad';
-import { ServiceAd, ServiceCategory, getAdById, updateServiceAd } from '@/lib/data';
-import { Loader2, Wand2, Edit3, Save } from 'lucide-react';
+import { ServiceAd, ServiceCategory, getAdById, updateServiceAd, uploadAdImage, deleteAdImage } from '@/lib/data';
+import { Loader2, Wand2, Edit3, Save, UploadCloud, Image as ImageIcon } from 'lucide-react';
 import { z } from 'zod';
 import { auth, db } from '@/lib/firebase';
 import { User } from 'firebase/auth';
+import NextImage from 'next/image'; // Renamed to avoid conflict
 
 const EditAdFormSchema = z.object({
   title: z.string().min(1, { message: "requiredField" }),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
-  zipCode: z.string().min(1, { message: "requiredField" }),
+  address: z.string().min(1, { message: "requiredField" }), // Changed
   category: z.enum(['Plumbing', 'Electrical'], { errorMap: (issue, ctx) => ({ message: issue.code === 'invalid_enum_value' ? ctx.data || "requiredField" : "requiredField" }) }),
+  imageUrl: z.string().url({ message: "Invalid image URL" }).optional(),
 });
 
 export default function EditAdPage() {
@@ -35,16 +37,22 @@ export default function EditAdPage() {
   const [ad, setAd] = useState<ServiceAd | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [zipCode, setZipCode] = useState('');
+  const [address, setAddress] = useState(''); // Changed
   const [category, setCategory] = useState<ServiceCategory | ''>('');
   const [detectedCategory, setDetectedCategory] = useState<ServiceCategory | null>(null);
+  const [adImageFile, setAdImageFile] = useState<File | null>(null);
+  const [adImagePreview, setAdImagePreview] = useState<string | null>(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>(undefined);
   
   const [isCategorizing, setIsCategorizing] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingAd, setIsFetchingAd] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (auth && db) {
@@ -79,8 +87,10 @@ export default function EditAdPage() {
         setAd(fetchedAd);
         setTitle(fetchedAd.title);
         setDescription(fetchedAd.description);
-        setZipCode(fetchedAd.zipCode);
+        setAddress(fetchedAd.address); // Changed
         setCategory(fetchedAd.category);
+        setCurrentImageUrl(fetchedAd.imageUrl);
+        setAdImagePreview(fetchedAd.imageUrl || null);
       } else {
         toast({ variant: "destructive", title: "Error", description: "Ad not found." });
         router.push('/dashboard/provider/ads');
@@ -100,6 +110,20 @@ export default function EditAdPage() {
     }
   }, [adId, fetchAdData, currentUser, isFirebaseReady]);
 
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setAdImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAdImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // If no new file is selected, keep the existing preview if available
+      // setAdImagePreview(currentImageUrl || null); // this might revert immediately
+    }
+  };
 
   const handleDetectCategory = async () => {
     if (!description) {
@@ -132,9 +156,31 @@ export default function EditAdPage() {
         return;
     }
     setIsLoading(true);
+    setIsUploadingImage(false);
     setErrors({});
 
-    const validationResult = EditAdFormSchema.safeParse({ title, description, zipCode, category });
+    let newImageUrl = currentImageUrl;
+    if (adImageFile) {
+      setIsUploadingImage(true);
+      try {
+        // If there was an old image, and a new one is uploaded, delete the old one
+        if (currentImageUrl && currentImageUrl !== adImagePreview) { // Check if preview changed due to new file
+             // No need to await this, can happen in background
+             // await deleteAdImage(currentImageUrl); 
+        }
+        newImageUrl = await uploadAdImage(adImageFile, currentUser.uid, ad.id);
+      } catch (error) {
+        console.error("Error uploading new image:", error);
+        toast({ variant: "destructive", title: t.errorOccurred, description: "Failed to upload new image." });
+        setIsLoading(false);
+        setIsUploadingImage(false);
+        return;
+      }
+      setIsUploadingImage(false);
+    }
+
+
+    const validationResult = EditAdFormSchema.safeParse({ title, description, address, category, imageUrl: newImageUrl });
 
     if (!validationResult.success) {
       const fieldErrors: Record<string, string> = {};
@@ -153,11 +199,21 @@ export default function EditAdPage() {
         title: validationResult.data.title,
         description: validationResult.data.description,
         category: validationResult.data.category,
-        zipCode: validationResult.data.zipCode,
-        // imageUrl will be handled separately if/when image uploads are implemented
+        address: validationResult.data.address, // Changed
+        imageUrl: validationResult.data.imageUrl,
       };
+      
+      // If a new image was uploaded AND the old image existed, try to delete old one AFTER successful update
+      // This is safer: only delete old image if update definitely succeeds with new image URL.
+      const oldImageUrlToDelete = (adImageFile && currentImageUrl && currentImageUrl !== newImageUrl) ? currentImageUrl : undefined;
+
 
       await updateServiceAd(ad.id, updateData);
+
+      if (oldImageUrlToDelete) {
+        await deleteAdImage(oldImageUrlToDelete); // Delete old image after successful update
+      }
+
       toast({ title: "Ad Updated", description: "Your ad has been successfully updated." });
       router.push('/dashboard/provider/ads'); 
     } catch (error) {
@@ -187,7 +243,7 @@ export default function EditAdPage() {
 
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto py-8">
       <Card className="shadow-xl">
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -200,17 +256,17 @@ export default function EditAdPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="title">{t.adTitle}</Label>
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={isLoading} />
               {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="description">{t.adDescription}</Label>
-              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={5}/>
+              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={5} disabled={isLoading}/>
               {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
             </div>
             
-            <Button type="button" variant="outline" onClick={handleDetectCategory} disabled={isCategorizing || !description} className="w-full sm:w-auto">
+            <Button type="button" variant="outline" onClick={handleDetectCategory} disabled={isCategorizing || !description || isLoading} className="w-full sm:w-auto">
               {isCategorizing ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Wand2 className="ltr:mr-2 rtl:ml-2 h-4 w-4" />}
               {t.detectedCategory} AI
             </Button>
@@ -224,7 +280,7 @@ export default function EditAdPage() {
 
             <div className="space-y-2">
               <Label htmlFor="category">{t.category}</Label>
-              <Select value={category} onValueChange={(value) => setCategory(value as ServiceCategory)}>
+              <Select value={category} onValueChange={(value) => setCategory(value as ServiceCategory)} disabled={isLoading}>
                 <SelectTrigger id="category">
                   <SelectValue placeholder={t.selectCategory} />
                 </SelectTrigger>
@@ -237,12 +293,47 @@ export default function EditAdPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="zipCode">{t.zipCode}</Label>
-              <Input id="zipCode" value={zipCode} onChange={(e) => setZipCode(e.target.value)} />
-              {errors.zipCode && <p className="text-sm text-destructive">{errors.zipCode}</p>}
+              <Label htmlFor="address">{t.address}</Label>
+              <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} disabled={isLoading} placeholder="e.g., 123 Main St, City" />
+              {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
             </div>
 
-            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || isFetchingAd}>
+            <div className="space-y-2">
+              <Label htmlFor="adImageEdit">{t.adImage}</Label>
+              <div 
+                className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md cursor-pointer hover:border-primary transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <div className="space-y-1 text-center">
+                  {adImagePreview ? (
+                    <NextImage src={adImagePreview} alt={t.imagePreview} width={200} height={200} className="mx-auto h-24 w-auto object-contain rounded-md" />
+                  ) : (
+                     <div className="flex flex-col items-center">
+                        <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">{t.noImageUploaded}</p>
+                     </div>
+                  )}
+                  <div className="flex text-sm text-muted-foreground">
+                    <span className="relative rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-ring">
+                      <span>{currentImageUrl ? t.changeImage : t.uploadAdImage}</span>
+                      <Input id="adImageEdit" name="adImageEdit" type="file" className="sr-only" ref={fileInputRef} onChange={handleImageChange} accept="image/*" disabled={isLoading} />
+                    </span>
+                    {!currentImageUrl && <p className="pl-1 rtl:pr-1">or drag and drop</p>}
+                  </div>
+                  {!currentImageUrl && <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</p>}
+                </div>
+              </div>
+              {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl}</p>}
+               {isUploadingImage && (
+                <div className="flex items-center text-sm text-muted-foreground mt-2">
+                  <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />
+                  Uploading image...
+                </div>
+              )}
+            </div>
+
+
+            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || isFetchingAd || isUploadingImage}>
               {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Save className="ltr:mr-2 rtl:ml-2 h-4 w-4"/> }
               {t.saveChanges}
             </Button>
@@ -252,3 +343,5 @@ export default function EditAdPage() {
     </div>
   );
 }
+
+    

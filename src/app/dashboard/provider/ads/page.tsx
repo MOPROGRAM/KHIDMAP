@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ServiceAd, getAdsByProviderId, deleteServiceAd } from '@/lib/data';
-import { Briefcase, PlusCircle, Edit3, Trash2, Wrench, Zap, Loader2 } from 'lucide-react';
-import Image from 'next/image';
+import { Briefcase, PlusCircle, Edit3, Trash2, Wrench, Zap, Loader2, MapPin } from 'lucide-react';
+import NextImage from 'next/image'; // Renamed to avoid conflict
 import {
   AlertDialog,
   AlertDialogAction,
@@ -87,7 +87,7 @@ export default function MyAdsPage() {
 
   if (isLoading && !ads.length) { 
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full min-h-[calc(100vh-10rem)]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="ml-2">{t.loading}</p>
       </div>
@@ -95,7 +95,7 @@ export default function MyAdsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
           <Briefcase className="h-10 w-10 text-primary" />
@@ -113,7 +113,7 @@ export default function MyAdsPage() {
       </div>
 
       {ads.length === 0 && !isLoading ? ( 
-        <Card className="text-center py-12">
+        <Card className="text-center py-12 shadow-lg hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
             <Briefcase className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <CardTitle>{t.noAdsYet}</CardTitle>
@@ -130,38 +130,40 @@ export default function MyAdsPage() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
           {ads.map((ad) => (
-            <Card key={ad.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col">
-              <div className="relative w-full h-48">
-                <Image
+            <Card key={ad.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col group">
+              <div className="relative w-full h-56 overflow-hidden">
+                <NextImage
                   src={ad.imageUrl || "https://placehold.co/600x400.png"}
                   alt={ad.title}
                   layout="fill"
                   objectFit="cover"
+                  className="group-hover:scale-105 transition-transform duration-500 ease-in-out"
                   data-ai-hint={ad.category === 'Plumbing' ? "plumbing tools" : "electrical equipment"}
                 />
-                <div className="absolute top-2 right-2 rtl:left-2 rtl:right-auto bg-primary text-primary-foreground px-2 py-1 text-xs font-semibold rounded">
+                <div className="absolute top-2 right-2 rtl:left-2 rtl:right-auto bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold rounded-full shadow-md">
                   {ad.category === 'Plumbing' ? <Wrench className="inline h-3 w-3 ltr:mr-1 rtl:ml-1" /> : <Zap className="inline h-3 w-3 ltr:mr-1 rtl:ml-1" />}
                   {t[ad.category.toLowerCase() as keyof typeof t]}
                 </div>
               </div>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle className="text-xl font-semibold font-headline">{ad.title}</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">
-                  {t.zipCode}: {ad.zipCode} &bull; Posted: {formatDate(ad.postedDate)}
+                <CardDescription className="text-sm text-muted-foreground pt-1">
+                  <div className="flex items-center gap-1.5"> <MapPin className="h-4 w-4"/> {ad.address} </div>
+                  <div className="mt-1">Posted: {formatDate(ad.postedDate)}</div>
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex-grow">
+              <CardContent className="flex-grow pt-0">
                 <p className="text-sm text-foreground line-clamp-3">{ad.description}</p>
               </CardContent>
-              <div className="p-4 border-t flex gap-2 justify-end">
-                <Button variant="outline" size="sm" asChild>
+              <div className="p-4 border-t flex gap-2 justify-end bg-muted/30">
+                <Button variant="outline" size="sm" asChild className="hover:bg-accent/20 transition-colors">
                   <Link href={`/dashboard/provider/ads/edit/${ad.id}`}>
                     <Edit3 className="ltr:mr-1 rtl:ml-1 h-4 w-4" /> {t.editAd}
                   </Link>
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
+                    <Button variant="destructive" size="sm" className="transition-colors">
                       <Trash2 className="ltr:mr-1 rtl:ml-1 h-4 w-4" /> Delete
                     </Button>
                   </AlertDialogTrigger>
@@ -188,3 +190,5 @@ export default function MyAdsPage() {
     </div>
   );
 }
+
+    

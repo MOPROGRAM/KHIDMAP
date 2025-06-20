@@ -25,7 +25,8 @@ export type Translations = {
   name: string;
   qualifications: string;
   phoneNumber: string;
-  zipCode: string;
+  address: string;
+  serviceAreas: string;
   postAd: string;
   adTitle: string;
   adDescription: string;
@@ -61,7 +62,7 @@ export type Translations = {
   serviceCategory: string;
   detectedCategory: string;
   confirmCategory: string;
-  searchByZipOrKeyword: string;
+  searchByAddressOrKeyword: string;
   recentSearches: string;
   clearHistory: string;
   noAdsYet: string;
@@ -71,6 +72,11 @@ export type Translations = {
   passwordTooShort: string;
   passwordsDoNotMatch: string;
   confirmPassword: string;
+  uploadAdImage: string;
+  adImage: string;
+  imagePreview: string;
+  changeImage: string;
+  noImageUploaded: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -88,7 +94,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     theme: "Theme",
     lightMode: "Light Mode",
     darkMode: "Dark Mode",
-    searchPlaceholder: "Search by zip code or service type...",
+    searchPlaceholder: "Search by address or service type...",
     search: "Search",
     serviceProviders: "Service Providers",
     serviceSeekers: "Service Seekers",
@@ -100,7 +106,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     name: "Full Name",
     qualifications: "Qualifications/Skills",
     phoneNumber: "Phone Number",
-    zipCode: "Zip Code",
+    address: "Address / Service Location",
+    serviceAreas: "Service Areas (comma-separated)",
     postAd: "Post Ad",
     adTitle: "Ad Title",
     adDescription: "Ad Description",
@@ -136,7 +143,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     serviceCategory: "Service Category",
     detectedCategory: "Detected Category",
     confirmCategory: "Confirm Category",
-    searchByZipOrKeyword: "Search by Zip Code or Keyword",
+    searchByAddressOrKeyword: "Search by Address or Keyword",
     recentSearches: "Recent Searches",
     clearHistory: "Clear History",
     noAdsYet: "You haven't posted any ads yet.",
@@ -146,6 +153,11 @@ export const translations: Record<'en' | 'ar', Translations> = {
     passwordTooShort: "Password must be at least 6 characters",
     passwordsDoNotMatch: "Passwords do not match",
     confirmPassword: "Confirm Password",
+    uploadAdImage: "Upload Ad Image",
+    adImage: "Ad Image",
+    imagePreview: "Image Preview",
+    changeImage: "Change Image",
+    noImageUploaded: "No image uploaded yet.",
   },
   ar: {
     appName: "خدماب",
@@ -161,7 +173,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     theme: "المظهر",
     lightMode: "الوضع النهاري",
     darkMode: "الوضع الليلي",
-    searchPlaceholder: "ابحث بالرمز البريدي أو نوع الخدمة...",
+    searchPlaceholder: "ابحث بالعنوان أو نوع الخدمة...",
     search: "بحث",
     serviceProviders: "مقدمو الخدمات",
     serviceSeekers: "الباحثون عن الخدمات",
@@ -173,7 +185,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     name: "الاسم الكامل",
     qualifications: "المؤهلات/المهارات",
     phoneNumber: "رقم الهاتف",
-    zipCode: "الرمز البريدي",
+    address: "العنوان / موقع الخدمة",
+    serviceAreas: "مناطق الخدمة (مفصولة بفاصلة)",
     postAd: "نشر إعلان",
     adTitle: "عنوان الإعلان",
     adDescription: "وصف الإعلان",
@@ -209,7 +222,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     serviceCategory: "فئة الخدمة",
     detectedCategory: "الفئة المكتشفة",
     confirmCategory: "تأكيد الفئة",
-    searchByZipOrKeyword: "ابحث بالرمز البريدي أو كلمة مفتاحية",
+    searchByAddressOrKeyword: "ابحث بالعنوان أو كلمة مفتاحية",
     recentSearches: "عمليات البحث الأخيرة",
     clearHistory: "مسح السجل",
     noAdsYet: "لم تقم بنشر أي إعلانات بعد.",
@@ -219,6 +232,11 @@ export const translations: Record<'en' | 'ar', Translations> = {
     passwordTooShort: "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل",
     passwordsDoNotMatch: "كلمتا المرور غير متطابقتين",
     confirmPassword: "تأكيد كلمة المرور",
+    uploadAdImage: "رفع صورة الإعلان",
+    adImage: "صورة الإعلان",
+    imagePreview: "معاينة الصورة",
+    changeImage: "تغيير الصورة",
+    noImageUploaded: "لم يتم رفع صورة بعد.",
   },
 };
 

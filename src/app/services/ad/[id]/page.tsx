@@ -7,10 +7,11 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { ServiceAd, UserProfile, getAdById, getUserProfileById } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import Image from 'next/image';
-import { ArrowLeft, MapPin, Wrench, Zap, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle } from 'lucide-react';
+import NextImage from 'next/image'; // Renamed
+import { ArrowLeft, MapPin, Wrench, Zap, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Building } from 'lucide-react';
 import Link from 'next/link';
 import { Timestamp } from 'firebase/firestore';
+import { Separator } from '@/components/ui/separator';
 
 export default function ServiceAdDetailsPage() {
   const t = useTranslation();
@@ -58,22 +59,22 @@ export default function ServiceAdDetailsPage() {
   
   const formatDate = (dateValue: Timestamp | string | undefined): string => {
     if (!dateValue) return 'N/A';
+    let date: Date;
     if (typeof dateValue === 'string') {
-      // Check if it's already a simple date string or ISO string
-      const d = new Date(dateValue);
-      if (!isNaN(d.getTime())) return d.toLocaleDateString();
-      return dateValue; // If not a valid date string, return as is
+      date = new Date(dateValue);
+    } else if (dateValue instanceof Timestamp) {
+      date = dateValue.toDate();
+    } else {
+       return 'Invalid Date';
     }
-    if (dateValue instanceof Timestamp) {
-      return dateValue.toDate().toLocaleDateString();
-    }
-    return 'Invalid Date';
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
 
   if (isLoading) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen">
+      <div className="flex flex-col justify-center items-center min-h-[calc(100vh-15rem)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
         <p className="text-lg text-muted-foreground">{t.loading}</p>
       </div>
@@ -83,10 +84,10 @@ export default function ServiceAdDetailsPage() {
   if (error) {
     return (
       <div className="text-center py-10 max-w-md mx-auto">
-        <Card className="shadow-lg">
+        <Card className="shadow-lg border-destructive/50">
           <CardHeader>
             <CardTitle className="flex items-center justify-center gap-2 text-xl text-destructive">
-              <AlertTriangle className="h-6 w-6" />
+              <AlertTriangle className="h-8 w-8" />
               {t.errorOccurred}
             </CardTitle>
           </CardHeader>
@@ -109,7 +110,7 @@ export default function ServiceAdDetailsPage() {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center justify-center gap-2 text-xl">
-              <Info className="h-6 w-6 text-primary" />
+              <Info className="h-8 w-8 text-primary" />
                {t.noResultsFound}
             </CardTitle>
           </CardHeader>
@@ -129,102 +130,126 @@ export default function ServiceAdDetailsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-8">
-      <Button variant="outline" onClick={() => router.back()} className="mb-6">
-        <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4" /> Back
+      <Button variant="outline" onClick={() => router.back()} className="mb-6 group transition-all hover:shadow-md">
+        <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:text-primary transition-colors" /> Back to Search
       </Button>
 
-      <Card className="overflow-hidden shadow-xl">
-        <div className="relative w-full h-64 md:h-96">
-          <Image
+      <Card className="overflow-hidden shadow-xl transform hover:scale-[1.01] transition-transform duration-300">
+        <div className="relative w-full h-72 md:h-96 group overflow-hidden">
+          <NextImage
             src={ad.imageUrl || "https://placehold.co/800x600.png"}
             alt={ad.title}
             layout="fill"
             objectFit="cover"
+            className="group-hover:scale-110 transition-transform duration-700 ease-in-out"
             data-ai-hint={ad.category === 'Plumbing' ? "plumbing project" : "electrical setup"}
+            priority
           />
-           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-           <div className="absolute bottom-0 left-0 p-6">
-             <h1 className="text-3xl md:text-4xl font-bold font-headline text-white mb-2">{ad.title}</h1>
-             <div className="flex items-center gap-2 text-sm text-gray-200 bg-black/30 px-3 py-1 rounded-full backdrop-blur-sm w-fit">
-                {ad.category === 'Plumbing' ? <Wrench className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
-                <span>{t[ad.category.toLowerCase() as keyof typeof t]}</span>
-                <span className="mx-1">&bull;</span>
-                <MapPin className="h-4 w-4" />
-                <span>{ad.zipCode}</span>
+           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+           <div className="absolute bottom-0 left-0 p-6 w-full">
+             <h1 className="text-3xl md:text-4xl font-bold font-headline text-white mb-2 drop-shadow-lg">{ad.title}</h1>
+             <div className="flex items-center gap-3 text-sm text-gray-200">
+                <span className="flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm shadow">
+                    {ad.category === 'Plumbing' ? <Wrench className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
+                    <span>{t[ad.category.toLowerCase() as keyof typeof t]}</span>
+                </span>
+                <span className="flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm shadow">
+                    <MapPin className="h-4 w-4" />
+                    <span>{ad.address}</span>
+                </span>
              </div>
            </div>
         </div>
         
         <CardContent className="p-6 space-y-6">
           <div>
-            <h2 className="text-xl font-semibold flex items-center gap-2 mb-2">
-                <Info className="h-5 w-5 text-primary"/> {t.adDescription}
+            <h2 className="text-xl font-semibold flex items-center gap-2 mb-3 text-primary">
+                <Info className="h-6 w-6"/> {t.adDescription}
             </h2>
-            <p className="text-foreground leading-relaxed whitespace-pre-wrap">{ad.description}</p>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap text-md">{ad.description}</p>
+            <p className="text-sm text-muted-foreground mt-4">
                 Posted on: {formatDate(ad.postedDate)}
             </p>
           </div>
 
+          <Separator />
+
           {provider && (
-            <Card className="bg-secondary/50 p-0">
-              <CardHeader>
-                <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                    <UserCircle className="h-6 w-6 text-primary" /> {t.serviceProvider}
+            <Card className="bg-card p-0 border-none shadow-none">
+              <CardHeader className="px-0 pt-0 pb-4">
+                <CardTitle className="text-2xl font-semibold flex items-center gap-3 text-primary">
+                    <UserCircle className="h-7 w-7" /> {t.serviceProvider}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Image 
+              <CardContent className="px-0 pb-0 space-y-4">
+                <div className="flex items-center gap-4">
+                  <NextImage 
                     src={provider.profilePictureUrl || "https://placehold.co/80x80.png"} 
                     alt={provider.name} 
-                    width={60} 
-                    height={60} 
-                    className="rounded-full border"
+                    width={80} 
+                    height={80} 
+                    className="rounded-full border-2 border-primary shadow-md object-cover"
                     data-ai-hint="person portrait"
                   />
                   <div>
-                    <h3 className="text-lg font-medium">{provider.name}</h3>
-                    <p className="text-sm text-muted-foreground">{provider.email}</p>
+                    <h3 className="text-xl font-medium text-foreground">{provider.name}</h3>
+                    {provider.email && (
+                      <a href={`mailto:${provider.email}`} className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 mt-1">
+                        <Mail className="h-4 w-4" /> {provider.email}
+                      </a>
+                    )}
+                    {provider.phoneNumber && (
+                        <a href={`tel:${provider.phoneNumber}`} className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 mt-1">
+                            <Phone className="h-4 w-4" /> {provider.phoneNumber}
+                        </a>
+                    )}
                   </div>
                 </div>
                 
-                {provider.phoneNumber && <p className="text-sm flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {provider.phoneNumber}</p>}
-                
                 {provider.qualifications && (
                   <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-1">{t.qualifications}:</h4>
-                    <p className="text-sm bg-background p-3 rounded-md border whitespace-pre-wrap">{provider.qualifications}</p>
+                    <h4 className="text-md font-semibold text-muted-foreground mb-1">{t.qualifications}:</h4>
+                    <p className="text-md bg-muted/50 p-4 rounded-md border whitespace-pre-wrap text-foreground/90">{provider.qualifications}</p>
                   </div>
                 )}
 
                 {provider.serviceCategories && provider.serviceCategories.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-1">{t.serviceCategory}s:</h4>
+                    <h4 className="text-md font-semibold text-muted-foreground mb-1.5">{t.serviceCategory}s:</h4>
                     <div className="flex flex-wrap gap-2">
                       {provider.serviceCategories.map(cat => (
-                        <span key={cat} className="px-2 py-1 bg-accent text-accent-foreground text-xs rounded-full">
+                        <span key={cat} className="px-3 py-1 bg-accent text-accent-foreground text-sm rounded-full shadow-sm">
                           {t[cat.toLowerCase() as keyof typeof t]}
                         </span>
                       ))}
                     </div>
                   </div>
                 )}
-                 {provider.zipCodesServed && provider.zipCodesServed.length > 0 && (
+                 {provider.serviceAreas && provider.serviceAreas.length > 0 && (
                    <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Serves Zip Codes:</h4>
-                    <p className="text-sm">{provider.zipCodesServed.join(', ')}</p>
+                    <h4 className="text-md font-semibold text-muted-foreground mb-1.5">Serves Areas:</h4>
+                    <p className="text-md text-foreground/90">{provider.serviceAreas.join(', ')}</p>
                   </div>
                  )}
               </CardContent>
-              <CardFooter>
-                 <Button className="w-full sm:w-auto">Contact {provider.name.split(' ')[0]}</Button>
-                 {/* Add actual contact functionality later e.g. mailto or chat */}
+              <CardFooter className="px-0 pt-6">
+                 <Button size="lg" className="w-full sm:w-auto text-base py-3 group hover:shadow-lg transition-all transform hover:scale-105">
+                    Contact {provider.name.split(' ')[0]}
+                    <ArrowRight className="ltr:ml-2 rtl:mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform"/>
+                 </Button>
               </CardFooter>
             </Card>
           )}
+           {!provider && !isLoading && (
+             <div className="text-center py-6">
+                <UserCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2"/>
+                <p className="text-muted-foreground">Provider details are not available.</p>
+             </div>
+           )}
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    

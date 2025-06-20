@@ -12,11 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, ServiceCategory } from '@/lib/data'; 
-import { auth, db } from '@/lib/firebase'; // auth, db can be undefined
+import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore'; 
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
 import { Loader2, UserCircle, Save } from 'lucide-react';
-import Image from 'next/image';
+import NextImage from 'next/image'; // Renamed to avoid conflict
 import { z } from 'zod';
 
 const ProfileFormSchema = z.object({
@@ -24,7 +24,7 @@ const ProfileFormSchema = z.object({
   email: z.string().email({ message: "invalidEmail" }), 
   phoneNumber: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')),
   qualifications: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')),
-  zipCodesServedString: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')), 
+  serviceAreasString: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')), // Changed
   serviceCategories: z.array(z.enum(['Plumbing', 'Electrical'])).min(0).optional(), 
 });
 
@@ -40,7 +40,7 @@ export default function ProviderProfilePage() {
   const [email, setEmail] = useState(''); 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [qualifications, setQualifications] = useState('');
-  const [zipCodesServedString, setZipCodesServedString] = useState(''); 
+  const [serviceAreasString, setServiceAreasString] = useState(''); // Changed from zipCodesServedString
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined>(undefined);
   
@@ -66,7 +66,7 @@ export default function ProviderProfilePage() {
               setName(firestoreProfile.name || user.displayName || ''); 
               setPhoneNumber(firestoreProfile.phoneNumber || '');
               setQualifications(firestoreProfile.qualifications || '');
-              setZipCodesServedString((firestoreProfile.zipCodesServed || []).join(', '));
+              setServiceAreasString((firestoreProfile.serviceAreas || []).join(', ')); // Changed
               setServiceCategories(firestoreProfile.serviceCategories || []);
               setProfilePictureUrl(firestoreProfile.profilePictureUrl);
             } else {
@@ -115,7 +115,7 @@ export default function ProviderProfilePage() {
       email, 
       phoneNumber, 
       qualifications, 
-      zipCodesServedString,
+      serviceAreasString, // Changed
       serviceCategories 
     });
 
@@ -135,29 +135,23 @@ export default function ProviderProfilePage() {
     const { data } = validationResult;
     const updatedProfileData: Partial<UserProfile> = {
       name: data.name,
-      // email is managed by auth, but can be stored for consistency
       email: authUser.email, 
       phoneNumber: data.phoneNumber,
       qualifications: data.qualifications,
-      zipCodesServed: data.zipCodesServedString ? data.zipCodesServedString.split(',').map(zip => zip.trim()).filter(Boolean) : [],
+      serviceAreas: data.serviceAreasString ? data.serviceAreasString.split(',').map(area => area.trim()).filter(Boolean) : [], // Changed
       serviceCategories: data.serviceCategories || [], 
-      profilePictureUrl: profilePictureUrl,
-      // role should already be set during registration, merge to preserve it
-      // uid: authUser.uid, // Not needed in setDoc data if merging
+      profilePictureUrl: profilePictureUrl, // Note: Image upload for profile picture not implemented yet
     };
 
     try {
-      // Update Firebase Auth display name if it changed
       if (authUser.displayName !== data.name) {
         await updateAuthProfile(authUser, { displayName: data.name });
       }
 
       const userDocRef = doc(db, "users", authUser.uid);
-      // Use setDoc with merge:true to update or create if it doesn't exist (though it should)
-      // and to avoid overwriting fields not in updatedProfileData (like 'role' or 'createdAt')
       await setDoc(userDocRef, { ...updatedProfileData, updatedAt: Timestamp.now() }, { merge: true }); 
       
-      localStorage.setItem('userName', data.name); // Update localStorage
+      localStorage.setItem('userName', data.name);
 
       toast({ title: t.profileUpdatedSuccessfully });
     } catch (error) {
@@ -169,12 +163,12 @@ export default function ProviderProfilePage() {
   };
   
   if (isFetching) {
-    return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /> <span className="ml-2">{t.loading}</span></div>;
+    return <div className="flex items-center justify-center h-full min-h-[calc(100vh-10rem)]"><Loader2 className="h-8 w-8 animate-spin text-primary" /> <span className="ml-2">{t.loading}</span></div>;
   }
 
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto py-8">
       <Card className="shadow-xl">
         <CardHeader>
           <div className="flex items-center gap-3 mb-4">
@@ -185,12 +179,12 @@ export default function ProviderProfilePage() {
             </div>
           </div>
           <div className="flex justify-center">
-            <Image 
+            <NextImage 
               src={profilePictureUrl || "https://placehold.co/150x150.png"} 
               alt="Profile Picture" 
               width={120} 
               height={120} 
-              className="rounded-full border-4 border-primary shadow-md"
+              className="rounded-full border-4 border-primary shadow-md object-cover"
               data-ai-hint="profile avatar"
             />
           </div>
@@ -205,7 +199,7 @@ export default function ProviderProfilePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="name">{t.name}</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} disabled={!isFirebaseReady} />
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} disabled={!isFirebaseReady || isLoading} />
                 {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
               </div>
               <div className="space-y-2">
@@ -217,13 +211,13 @@ export default function ProviderProfilePage() {
 
             <div className="space-y-2">
               <Label htmlFor="phoneNumber">{t.phoneNumber}</Label>
-              <Input id="phoneNumber" type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} disabled={!isFirebaseReady}/>
+              <Input id="phoneNumber" type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} disabled={!isFirebaseReady || isLoading}/>
               {errors.phoneNumber && <p className="text-sm text-destructive">{errors.phoneNumber}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="qualifications">{t.qualifications}</Label>
-              <Textarea id="qualifications" value={qualifications} onChange={(e) => setQualifications(e.target.value)} rows={4} disabled={!isFirebaseReady}/>
+              <Textarea id="qualifications" value={qualifications} onChange={(e) => setQualifications(e.target.value)} rows={4} disabled={!isFirebaseReady || isLoading}/>
               {errors.qualifications && <p className="text-sm text-destructive">{errors.qualifications}</p>}
             </div>
             
@@ -232,7 +226,7 @@ export default function ProviderProfilePage() {
               <Select
                 value={serviceCategories.length > 0 ? serviceCategories[0] : ""} 
                 onValueChange={handleServiceCategoriesChange}
-                disabled={!isFirebaseReady}
+                disabled={!isFirebaseReady || isLoading}
               >
                 <SelectTrigger id="serviceCategoriesTrigger">
                   <SelectValue placeholder={`${t.selectCategory}`} />
@@ -242,14 +236,14 @@ export default function ProviderProfilePage() {
                   <SelectItem value="Electrical">{t.electrical}</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">Select your primary service category. For multiple categories, future updates will enhance this section.</p>
+              <p className="text-xs text-muted-foreground">Select your primary service category.</p>
               {errors.serviceCategories && <p className="text-sm text-destructive">{errors.serviceCategories}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="zipCodesServed">{t.zipCode} Served (comma-separated)</Label>
-              <Input id="zipCodesServed" value={zipCodesServedString} onChange={(e) => setZipCodesServedString(e.target.value)} placeholder="e.g., 90210, 90001" disabled={!isFirebaseReady}/>
-              {errors.zipCodesServedString && <p className="text-sm text-destructive">{errors.zipCodesServedString}</p>}
+              <Label htmlFor="serviceAreas">{t.serviceAreas}</Label>
+              <Input id="serviceAreas" value={serviceAreasString} onChange={(e) => setServiceAreasString(e.target.value)} placeholder="e.g., Downtown, North Suburbs" disabled={!isFirebaseReady || isLoading}/>
+              {errors.serviceAreasString && <p className="text-sm text-destructive">{errors.serviceAreasString}</p>}
             </div>
 
             <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !isFirebaseReady}>
@@ -262,3 +256,5 @@ export default function ProviderProfilePage() {
     </div>
   );
 }
+
+    
