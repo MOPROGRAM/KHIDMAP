@@ -10,7 +10,7 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { ServiceAd, getAllServiceAds, UserProfile, getUserProfileById, ServiceCategory } from '@/lib/data';
 import Link from 'next/link';
 import NextImage from 'next/image'; 
-import { Search as SearchIcon, MapPin, Briefcase, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, HardHat, Layers } from 'lucide-react';
+import { Search as SearchIcon, MapPin, Briefcase, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, HardHat, Layers, ImageOff } from 'lucide-react';
 
 interface SearchHistoryItem {
   query: string;
@@ -267,15 +267,21 @@ export default function ServiceSearchPage() {
                 className="overflow-hidden shadow-xl hover:shadow-2xl border transition-all duration-300 ease-in-out flex flex-col group transform hover:-translate-y-1.5"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="relative w-full h-60 overflow-hidden">
-                   <NextImage
-                    src={ad.imageUrl || "https://placehold.co/600x400.png"}
-                    alt={ad.title}
-                    layout="fill"
-                    objectFit="cover"
-                    className="group-hover:scale-110 transition-transform duration-500 ease-in-out"
-                    data-ai-hint={`${ad.category} items tools`}
-                  />
+                <div className="relative w-full h-60 overflow-hidden bg-muted/30">
+                  {ad.imageUrl ? (
+                    <NextImage
+                      src={ad.imageUrl}
+                      alt={ad.title}
+                      layout="fill"
+                      objectFit="cover"
+                      className="group-hover:scale-110 transition-transform duration-500 ease-in-out"
+                      data-ai-hint={`${ad.category} items tools`}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageOff className="h-16 w-16 text-muted-foreground/50" />
+                    </div>
+                  )}
                   <div className="absolute top-3 right-3 rtl:left-3 rtl:right-auto bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold rounded-full shadow-md flex items-center gap-1.5">
                     <Icon className="h-3.5 w-3.5" />
                     {categoryName}

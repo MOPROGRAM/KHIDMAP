@@ -191,14 +191,20 @@ export default function ProviderProfilePage() {
             </div>
           </div>
           <div className="flex justify-center">
-            <NextImage 
-              src={profilePictureUrl || "https://placehold.co/150x150.png"} 
-              alt={t.profilePictureAlt} 
-              width={120} 
-              height={120} 
-              className="rounded-full border-4 border-primary shadow-md object-cover"
-              data-ai-hint="profile avatar"
-            />
+            {profilePictureUrl ? (
+              <NextImage 
+                src={profilePictureUrl} 
+                alt={t.profilePictureAlt} 
+                width={120} 
+                height={120} 
+                className="rounded-full border-4 border-primary shadow-md object-cover"
+                data-ai-hint="profile avatar"
+              />
+            ) : (
+              <div className="w-[120px] h-[120px] rounded-full border-4 border-primary shadow-md bg-muted flex items-center justify-center">
+                <UserCircle className="h-16 w-16 text-muted-foreground/70" />
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>
