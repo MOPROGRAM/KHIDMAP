@@ -16,15 +16,15 @@ import { ServiceCategory, addServiceAd, UserProfile, uploadAdImage } from '@/lib
 import { Loader2, Wand2, PlusCircle, UploadCloud, Image as ImageIcon } from 'lucide-react';
 import { z } from 'zod';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import NextImage from 'next/image'; // Changed from 'next/image' to 'NextImage' to avoid conflict with ImageIcon
+import { doc, getDoc, Timestamp } from 'firebase/firestore';
+import NextImage from 'next/image';
 
 const AdFormSchema = z.object({
   title: z.string().min(1, { message: "requiredField" }),
   description: z.string().min(10, { message: "descriptionTooShortAd" }),
   address: z.string().min(1, { message: "requiredField" }),
   category: z.enum(['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HomeCleaning', 'Construction', 'Plastering', 'Other'], { errorMap: (issue, ctx) => ({ message: issue.code === 'invalid_enum_value' ? ctx.data || "requiredField" : "requiredField" }) }),
-  imageUrl: z.string().url({ message: "invalidImageUrl" }).optional(),
+  imageUrl: z.string().url({ message: "invalidImageUrl" }).optional().nullable(),
 });
 
 export default function NewAdPage() {
@@ -45,7 +45,7 @@ export default function NewAdPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [providerId, setProviderId] = useState<string | null>(null);
-  const [providerName, setProviderName] = useState<string | null>(null);
+  const [providerName, setProviderName] = useState<string | null>(null); // State for provider name
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,7 +60,7 @@ export default function NewAdPage() {
           const userDocSnap = await getDoc(userDocRef);
           if (userDocSnap.exists()) {
             const userData = userDocSnap.data() as UserProfile;
-            setProviderName(userData.name);
+            setProviderName(userData.name); // Set provider name from Firestore
           } else {
              setProviderName(user.displayName || t.anonymousProvider); 
           }
@@ -103,7 +103,8 @@ export default function NewAdPage() {
     try {
       const result: CategorizeAdOutput = await categorizeAd({ description });
       setDetectedCategory(result.category);
-      toast({ title: t.detectedCategoryTitle, description: `${t.serviceCategory}: ${t[result.category.toLowerCase() as keyof typeof t] || result.category}` });
+      const categoryKey = result.category.toLowerCase() as keyof Translations;
+      toast({ title: t.detectedCategoryTitle, description: `${t.serviceCategory}: ${t[categoryKey] || result.category}` });
     } catch (error) {
       console.error("Error detecting category:", error);
       toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotDetectCategory });
@@ -122,18 +123,22 @@ export default function NewAdPage() {
     setIsUploadingImage(false);
     setErrors({});
 
-    if (!providerId || !providerName) {
+    if (!providerId || !providerName) { // Check for providerName as well
       toast({ variant: "destructive", title: t.errorOccurred, description: t.providerInfoMissing });
       setIsLoading(false);
       return;
     }
 
-    let uploadedImageUrl: string | undefined = undefined;
+    let uploadedImageUrl: string | undefined | null = null; // Initialize as null for schema
     if (adImageFile) {
       setIsUploadingImage(true);
       try {
-        const tempAdId = `ad_${Date.now()}`; 
-        uploadedImageUrl = await uploadAdImage(adImageFile, providerId, tempAdId);
+        // Create a preliminary document in Firestore to get an ID for the image path
+        // This ensures the image path is associated with the final ad ID.
+        const tempAdRef = doc(collection(db, "serviceAds")); // Generate a new doc ref
+        const adFirestoreId = tempAdRef.id;
+
+        uploadedImageUrl = await uploadAdImage(adImageFile, providerId, adFirestoreId);
       } catch (error) {
         console.error("Error uploading image:", error);
         toast({ variant: "destructive", title: t.errorOccurred, description: t.failedUploadImage });
@@ -143,8 +148,14 @@ export default function NewAdPage() {
       }
       setIsUploadingImage(false);
     }
-
-    const validationResult = AdFormSchema.safeParse({ title, description, address, category, imageUrl: uploadedImageUrl });
+    
+    const validationResult = AdFormSchema.safeParse({ 
+        title, 
+        description, 
+        address, 
+        category, 
+        imageUrl: uploadedImageUrl 
+    });
 
     if (!validationResult.success) {
       const fieldErrors: Record<string, string> = {};
@@ -155,18 +166,20 @@ export default function NewAdPage() {
       });
       setErrors(fieldErrors);
       setIsLoading(false);
+      // If image was uploaded but form validation failed for other reasons, consider deleting the uploaded image.
+      // For simplicity now, we are not deleting it.
       return;
     }
     
     try {
       await addServiceAd({
         providerId,
-        providerName, 
+        providerName, // Pass the fetched provider name
         title: validationResult.data.title,
         description: validationResult.data.description,
         category: validationResult.data.category as ServiceCategory,
         address: validationResult.data.address,
-        imageUrl: validationResult.data.imageUrl,
+        imageUrl: validationResult.data.imageUrl === null ? undefined : validationResult.data.imageUrl, // Handle null from schema
       });
       toast({ title: t.adPostedSuccessfully, description: t.adLiveShortly });
       router.push('/dashboard/provider/ads'); 
@@ -190,14 +203,14 @@ export default function NewAdPage() {
   ];
 
   return (
-    <div className="max-w-2xl mx-auto py-8">
+    <div className="max-w-2xl mx-auto py-8 animate-fadeIn">
       <Card className="shadow-xl">
         <CardHeader>
           <div className="flex items-center gap-2">
             <PlusCircle className="h-8 w-8 text-primary" />
             <CardTitle className="text-3xl font-headline">{t.newAd}</CardTitle>
           </div>
-          <CardDescription>{t.newAdDescriptionPage.replace("{appName}", t.appName)}</CardDescription>
+          <CardDescription>{t.newAdDescriptionPage?.replace("{appName}", t.appName)}</CardDescription>
         </CardHeader>
         <CardContent>
           {!isFirebaseReady && (
@@ -218,8 +231,8 @@ export default function NewAdPage() {
               {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
             </div>
             
-            <Button type="button" variant="outline" onClick={handleDetectCategory} disabled={isCategorizing || !description || !isFirebaseReady || isLoading} className="w-full sm:w-auto">
-              {isCategorizing ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Wand2 className="ltr:mr-2 rtl:ml-2 h-4 w-4" />}
+            <Button type="button" variant="outline" onClick={handleDetectCategory} disabled={isCategorizing || !description || !isFirebaseReady || isLoading} className="w-full sm:w-auto group">
+              {isCategorizing ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Wand2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:animate-pulse-glow"/>}
               {t.detectCategoryAI}
             </Button>
 
@@ -254,23 +267,33 @@ export default function NewAdPage() {
             <div className="space-y-2">
               <Label htmlFor="adImage">{t.adImage}</Label>
               <div 
-                className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md cursor-pointer hover:border-primary transition-colors"
+                className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-input border-dashed rounded-md cursor-pointer hover:border-primary transition-colors group"
                 onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    setAdImageFile(e.dataTransfer.files[0]);
+                    const reader = new FileReader();
+                    reader.onloadend = () => setAdImagePreview(reader.result as string);
+                    reader.readAsDataURL(e.dataTransfer.files[0]);
+                  }
+                }}
               >
                 <div className="space-y-1 text-center">
                   {adImagePreview ? (
-                    <NextImage src={adImagePreview} alt={t.imagePreview} width={200} height={200} className="mx-auto h-24 w-auto object-contain rounded-md" />
+                    <NextImage src={adImagePreview} alt={t.imagePreview || "Image preview"} width={200} height={200} className="mx-auto h-24 w-auto object-contain rounded-md shadow-md" />
                   ) : (
-                    <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground group-hover:text-primary transition-colors" />
                   )}
                   <div className="flex text-sm text-muted-foreground">
                     <span className="relative rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-ring">
-                      <span>{t.uploadAdImage}</span>
+                      <span>{adImagePreview ? t.changeImage : t.uploadAdImage}</span>
                       <Input id="adImage" name="adImage" type="file" className="sr-only" ref={fileInputRef} onChange={handleImageChange} accept="image/*" disabled={!isFirebaseReady || isLoading} />
                     </span>
-                    <p className="pl-1 rtl:pr-1">{t.orDragAndDrop}</p>
+                    {!adImagePreview && <p className="pl-1 rtl:pr-1">{t.orDragAndDrop}</p>}
                   </div>
-                  <p className="text-xs text-muted-foreground">{t.imageUploadHint}</p>
+                  {!adImagePreview && <p className="text-xs text-muted-foreground">{t.imageUploadHint}</p>}
                 </div>
               </div>
               {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl}</p>}
@@ -282,8 +305,9 @@ export default function NewAdPage() {
               )}
             </div>
 
-            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !providerId || !isFirebaseReady || isUploadingImage}>
-              {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : t.postAd}
+            <Button type="submit" className="w-full text-lg py-3 transform active:scale-95" disabled={isLoading || !providerId || !isFirebaseReady || isUploadingImage}>
+              {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <PlusCircle className="ltr:mr-2 rtl:ml-2 h-5 w-5"/>}
+              {t.postAd}
             </Button>
           </form>
         </CardContent>
@@ -291,3 +315,5 @@ export default function NewAdPage() {
     </div>
   );
 }
+
+    

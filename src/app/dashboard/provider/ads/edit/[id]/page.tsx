@@ -13,11 +13,22 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { categorizeAd, CategorizeAdOutput, ServiceCategoriesEnumType } from '@/ai/flows/categorize-ad';
 import { ServiceAd, ServiceCategory, getAdById, updateServiceAd, uploadAdImage, deleteAdImage } from '@/lib/data';
-import { Loader2, Wand2, Edit3, Save, UploadCloud, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Wand2, Edit3, Save, UploadCloud, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { z } from 'zod';
 import { auth, db } from '@/lib/firebase';
 import { User } from 'firebase/auth';
 import NextImage from 'next/image';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const EditAdFormSchema = z.object({
   title: z.string().min(1, { message: "requiredField" }),
@@ -51,6 +62,7 @@ export default function EditAdPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
+  const [providerName, setProviderName] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -91,6 +103,7 @@ export default function EditAdPage() {
         setCategory(fetchedAd.category);
         setCurrentImageUrl(fetchedAd.imageUrl);
         setAdImagePreview(fetchedAd.imageUrl || null);
+        setProviderName(fetchedAd.providerName || null); // Set provider name
       } else {
         toast({ variant: "destructive", title: t.errorOccurred, description: t.adNotFound });
         router.push('/dashboard/provider/ads');
@@ -122,6 +135,31 @@ export default function EditAdPage() {
     }
   };
 
+  const handleRemoveImage = async () => {
+    if (currentImageUrl && ad?.id) {
+       // Optimistically update UI
+       setAdImageFile(null);
+       setAdImagePreview(null);
+       setCurrentImageUrl(undefined);
+
+      try {
+        await deleteAdImage(currentImageUrl);
+        await updateServiceAd(ad.id, { imageUrl: undefined }); // Remove from Firestore
+        toast({ title: "Image Removed", description: "Ad image has been removed."});
+      } catch(error) {
+        console.error("Error removing image:", error);
+        toast({variant: "destructive", title: t.errorOccurred, description: "Failed to remove image."});
+        // Revert UI if error
+        setAdImagePreview(currentImageUrl || null); 
+        setCurrentImageUrl(currentImageUrl);
+      }
+    } else {
+       setAdImageFile(null);
+       setAdImagePreview(null);
+    }
+  }
+
+
   const handleDetectCategory = async () => {
     if (!description) {
       setErrors(prev => ({ ...prev, description: t.requiredField }));
@@ -133,7 +171,8 @@ export default function EditAdPage() {
     try {
       const result: CategorizeAdOutput = await categorizeAd({ description });
       setDetectedCategory(result.category);
-      toast({ title: t.detectedCategoryTitle, description: `${t.serviceCategory}: ${t[result.category.toLowerCase() as keyof typeof t] || result.category}` });
+      const categoryKey = result.category.toLowerCase() as keyof Translations;
+      toast({ title: t.detectedCategoryTitle, description: `${t.serviceCategory}: ${t[categoryKey] || result.category}` });
     } catch (error) {
       console.error("Error detecting category:", error);
       toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotDetectCategory });
@@ -171,9 +210,20 @@ export default function EditAdPage() {
         return;
       }
       setIsUploadingImage(false);
+    } else if (adImageFile === null && currentImageUrl !== undefined && adImagePreview === null) {
+      // This means user explicitly removed the image by clearing preview, but didn't trigger handleRemoveImage directly.
+      // The image should be marked for deletion and newImageUrl set to undefined.
+      newImageUrl = undefined;
     }
 
-    const validationResult = EditAdFormSchema.safeParse({ title, description, address, category, imageUrl: newImageUrl });
+
+    const validationResult = EditAdFormSchema.safeParse({ 
+        title, 
+        description, 
+        address, 
+        category, 
+        imageUrl: newImageUrl 
+    });
 
     if (!validationResult.success) {
       const fieldErrors: Record<string, string> = {};
@@ -194,13 +244,17 @@ export default function EditAdPage() {
         category: validationResult.data.category as ServiceCategory,
         address: validationResult.data.address,
         imageUrl: validationResult.data.imageUrl === null ? undefined : validationResult.data.imageUrl,
+        providerName: providerName || currentUser.displayName || t.anonymousProvider, // Ensure providerName is updated
       };
       
       await updateServiceAd(ad.id, updateData);
 
       if (oldImageUrlToDelete && oldImageUrlToDelete !== newImageUrl) { 
         await deleteAdImage(oldImageUrlToDelete); 
+      } else if (newImageUrl === undefined && currentImageUrl && !adImageFile) { // Case: image was removed
+        await deleteAdImage(currentImageUrl);
       }
+
 
       toast({ title: t.adUpdatedTitle, description: t.adUpdatedSuccess });
       router.push('/dashboard/provider/ads'); 
@@ -241,7 +295,7 @@ export default function EditAdPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-8">
+    <div className="max-w-2xl mx-auto py-8 animate-fadeIn">
       <Card className="shadow-xl">
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -264,8 +318,8 @@ export default function EditAdPage() {
               {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
             </div>
             
-            <Button type="button" variant="outline" onClick={handleDetectCategory} disabled={isCategorizing || !description || isLoading} className="w-full sm:w-auto">
-              {isCategorizing ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Wand2 className="ltr:mr-2 rtl:ml-2 h-4 w-4" />}
+            <Button type="button" variant="outline" onClick={handleDetectCategory} disabled={isCategorizing || !description || isLoading} className="w-full sm:w-auto group">
+              {isCategorizing ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Wand2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:animate-pulse-glow" />}
               {t.detectCategoryAI}
             </Button>
 
@@ -300,26 +354,56 @@ export default function EditAdPage() {
             <div className="space-y-2">
               <Label htmlFor="adImageEdit">{t.adImage}</Label>
               <div 
-                className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md cursor-pointer hover:border-primary transition-colors"
+                className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-input border-dashed rounded-md cursor-pointer hover:border-primary transition-colors group"
                 onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleImageChange({ target: { files: e.dataTransfer.files } } as any);
+                  }
+                }}
               >
                 <div className="space-y-1 text-center">
                   {adImagePreview ? (
-                    <NextImage src={adImagePreview} alt={t.imagePreview} width={200} height={200} className="mx-auto h-24 w-auto object-contain rounded-md" />
+                    <div className="relative group/img">
+                        <NextImage src={adImagePreview} alt={t.imagePreview || "Image Preview"} width={200} height={200} className="mx-auto h-24 w-auto object-contain rounded-md shadow-md" />
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 h-7 w-7 rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Remove Image?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Are you sure you want to remove the current ad image? This action will permanently delete the image if you save the changes.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleRemoveImage} className="bg-destructive hover:bg-destructive/90">
+                                    Remove Image
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                   ) : (
                      <div className="flex flex-col items-center">
-                        <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground group-hover:text-primary transition-colors" />
                         <p className="text-sm text-muted-foreground">{t.noImageUploaded}</p>
                      </div>
                   )}
                   <div className="flex text-sm text-muted-foreground">
                     <span className="relative rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-ring">
-                      <span>{currentImageUrl || adImagePreview ? t.changeImage : t.uploadAdImage}</span>
+                      <span>{adImagePreview ? t.changeImage : t.uploadAdImage}</span>
                       <Input id="adImageEdit" name="adImageEdit" type="file" className="sr-only" ref={fileInputRef} onChange={handleImageChange} accept="image/*" disabled={isLoading} />
                     </span>
-                     {!currentImageUrl && !adImagePreview && <p className="pl-1 rtl:pr-1">{t.orDragAndDrop}</p>}
+                     {!adImagePreview && <p className="pl-1 rtl:pr-1">{t.orDragAndDrop}</p>}
                   </div>
-                   {!currentImageUrl && !adImagePreview && <p className="text-xs text-muted-foreground">{t.imageUploadHint}</p>}
+                   {!adImagePreview && <p className="text-xs text-muted-foreground">{t.imageUploadHint}</p>}
                 </div>
               </div>
               {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl}</p>}
@@ -331,8 +415,8 @@ export default function EditAdPage() {
               )}
             </div>
 
-            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || isFetchingAd || isUploadingImage}>
-              {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Save className="ltr:mr-2 rtl:ml-2 h-4 w-4"/> }
+            <Button type="submit" className="w-full text-lg py-3 transform active:scale-95" disabled={isLoading || isFetchingAd || isUploadingImage}>
+              {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <Save className="ltr:mr-2 rtl:ml-2 h-5 w-5"/> }
               {t.saveChanges}
             </Button>
           </form>
@@ -341,3 +425,5 @@ export default function EditAdPage() {
     </div>
   );
 }
+
+    

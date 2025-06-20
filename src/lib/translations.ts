@@ -37,9 +37,9 @@ export type Translations = {
   carpentry: string;
   painting: string;
   homeCleaning: string;
-  construction: string; 
-  plastering: string; 
-  other: string; 
+  construction: string;
+  plastering: string;
+  other: string;
   myAds: string;
   editAd: string;
   newAd: string;
@@ -208,6 +208,21 @@ export type Translations = {
   dashboardBannerAlt?: string; // "Dashboard banner with tools or workspace imagery"
   descriptionTooShortAd?: string; // "Description must be at least 10 characters for an ad."
   invalidImageUrl?: string; // "Invalid image URL."
+
+  // Contact Page Translations
+  contactPageTitle?: string;
+  contactPageDescription?: string;
+  yourName?: string;
+  yourEmail?: string;
+  subject?: string;
+  message?: string;
+  sendMessage?: string;
+  messageSentSuccessTitle?: string;
+  messageSentSuccessDescription?: string;
+  messageSentErrorTitle?: string;
+  messageSentErrorDescription?: string;
+  contactFormIntro?: string;
+  formSubmitActivationNote?: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -419,7 +434,20 @@ export const translations: Record<'en' | 'ar', Translations> = {
     dashboardTaglineSeeker: "Find the best services for your needs easily.",
     dashboardBannerAlt: "Dashboard banner with tools or workspace imagery",
     descriptionTooShortAd: "Description must be at least 10 characters for an ad.",
-    invalidImageUrl: "Invalid image URL."
+    invalidImageUrl: "Invalid image URL.",
+    contactPageTitle: "Contact Us",
+    contactPageDescription: "Have questions or feedback? Reach out to us!",
+    yourName: "Your Name",
+    yourEmail: "Your Email",
+    subject: "Subject",
+    message: "Message",
+    sendMessage: "Send Message",
+    messageSentSuccessTitle: "Message Sent!",
+    messageSentSuccessDescription: "Thank you for your message. We'll get back to you soon.",
+    messageSentErrorTitle: "Error Sending Message",
+    messageSentErrorDescription: "Sorry, there was an issue sending your message. Please try again later.",
+    contactFormIntro: "We'd love to hear from you! Please fill out the form below and we'll get in touch as soon as possible.",
+    formSubmitActivationNote: "Note: For this form to work, the owner of mobusinessarena@gmail.com needs to activate it once via an email from FormSubmit.co after the first submission attempt."
   },
   ar: {
     appName: "خدماب",
@@ -629,6 +657,21 @@ export const translations: Record<'en' | 'ar', Translations> = {
     dashboardTaglineSeeker: "ابحث عن أفضل الخدمات لاحتياجاتك بسهولة.",
     dashboardBannerAlt: "بانر لوحة التحكم مع أدوات أو صور لمساحة عمل",
     descriptionTooShortAd: "يجب أن يتكون الوصف من 10 أحرف على الأقل للإعلان.",
-    invalidImageUrl: "رابط صورة غير صالح."
+    invalidImageUrl: "رابط صورة غير صالح.",
+    contactPageTitle: "اتصل بنا",
+    contactPageDescription: "هل لديك أسئلة أو ملاحظات؟ تواصل معنا!",
+    yourName: "اسمك",
+    yourEmail: "بريدك الإلكتروني",
+    subject: "الموضوع",
+    message: "الرسالة",
+    sendMessage: "إرسال الرسالة",
+    messageSentSuccessTitle: "تم إرسال الرسالة!",
+    messageSentSuccessDescription: "شكراً لك على رسالتك. سنعود إليك قريباً.",
+    messageSentErrorTitle: "خطأ في إرسال الرسالة",
+    messageSentErrorDescription: "عذراً، حدث خطأ أثناء إرسال رسالتك. يرجى المحاولة مرة أخرى لاحقاً.",
+    contactFormIntro: "يسعدنا أن نسمع منك! يرجى ملء النموذج أدناه وسنتواصل معك في أقرب وقت ممكن.",
+    formSubmitActivationNote: "ملاحظة: لكي يعمل هذا النموذج، يحتاج مالك mobusinessarena@gmail.com إلى تفعيله مرة واحدة عبر بريد إلكتروني من FormSubmit.co بعد أول محاولة إرسال."
   },
 };
+
+    
