@@ -25,7 +25,7 @@ const ProfileFormSchema = z.object({
   phoneNumber: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')),
   qualifications: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')),
   serviceAreasString: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')),
-  serviceCategories: z.array(z.enum(['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HomeCleaning', 'Other'])).min(0).optional(), 
+  serviceCategories: z.array(z.enum(['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HomeCleaning', 'Construction', 'Plastering', 'Other'])).min(0).optional(), 
 });
 
 
@@ -94,14 +94,7 @@ export default function ProviderProfilePage() {
   const handleServiceCategoriesChange = (value: string) => {
     const categoryValue = value as ServiceCategory;
     if (value) {
-      // For single select, replace the array with the new value
       setServiceCategories([categoryValue]);
-      // For multi-select, you would toggle:
-      // setServiceCategories(prev => 
-      //   prev.includes(categoryValue) 
-      //     ? prev.filter(sc => sc !== categoryValue) 
-      //     : [...prev, categoryValue]
-      // );
     } else {
       setServiceCategories([]);
     }
@@ -149,7 +142,7 @@ export default function ProviderProfilePage() {
       serviceAreas: data.serviceAreasString ? data.serviceAreasString.split(',').map(area => area.trim()).filter(Boolean) : [],
       serviceCategories: data.serviceCategories || [], 
       profilePictureUrl: profilePictureUrl, 
-      role: 'provider', // ensure role is set or maintained
+      role: 'provider',
     };
 
     try {
@@ -181,6 +174,8 @@ export default function ProviderProfilePage() {
     { value: 'Carpentry', labelKey: 'carpentry' },
     { value: 'Painting', labelKey: 'painting' },
     { value: 'HomeCleaning', labelKey: 'homeCleaning' },
+    { value: 'Construction', labelKey: 'construction'},
+    { value: 'Plastering', labelKey: 'plastering'},
     { value: 'Other', labelKey: 'other' },
   ];
 
@@ -241,7 +236,7 @@ export default function ProviderProfilePage() {
             <div className="space-y-2">
               <Label htmlFor="serviceCategories">{t.serviceCategory}</Label>
               <Select
-                value={serviceCategories.length > 0 ? serviceCategories[0] : ""} // Assuming single select for now
+                value={serviceCategories.length > 0 ? serviceCategories[0] : ""} 
                 onValueChange={handleServiceCategoriesChange}
                 disabled={!isFirebaseReady || isLoading}
               >
@@ -274,3 +269,4 @@ export default function ProviderProfilePage() {
     </div>
   );
 }
+

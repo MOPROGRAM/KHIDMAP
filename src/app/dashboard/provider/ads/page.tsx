@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { ServiceAd, ServiceCategory } from '@/lib/data'; 
 import { getAdsByProviderId, deleteServiceAd } from '@/lib/data';
-import { Briefcase, PlusCircle, Edit3, Trash2, Wrench, Zap, Loader2, MapPin, Brush, Hammer, SprayCan, GripVertical, ImageOff } from 'lucide-react'; // Changed Sparkles to SprayCan
+import { Briefcase, PlusCircle, Edit3, Trash2, Wrench, Zap, Loader2, MapPin, Brush, Hammer, SprayCan, GripVertical, ImageOff, HardHat, Layers } from 'lucide-react';
 import NextImage from 'next/image'; 
 import {
   AlertDialog,
@@ -31,7 +31,9 @@ const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Electrical: Zap,
   Carpentry: Hammer,
   Painting: Brush,
-  HomeCleaning: SprayCan, // Changed Sparkles to SprayCan
+  HomeCleaning: SprayCan,
+  Construction: HardHat,
+  Plastering: Layers,
   Other: GripVertical,
 };
 
@@ -72,7 +74,7 @@ export default function MyAdsPage() {
     if (!adToDelete) return;
 
     try {
-      await deleteServiceAd(adId, adToDelete.imageUrl); // Pass imageUrl to deleteServiceAd
+      await deleteServiceAd(adId, adToDelete.imageUrl);
       setAds(prevAds => prevAds.filter(ad => ad.id !== adId));
       toast({ title: "Ad Deleted", description: "The advertisement has been successfully deleted." });
     } catch (error) {
@@ -221,3 +223,4 @@ export default function MyAdsPage() {
     </div>
   );
 }
+

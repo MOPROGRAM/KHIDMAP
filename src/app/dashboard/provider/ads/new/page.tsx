@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { categorizeAd, CategorizeAdOutput, ServiceCategoriesEnumType } from '@/ai/flows/categorize-ad';
 import { ServiceCategory, addServiceAd, UserProfile, uploadAdImage } from '@/lib/data';
@@ -23,7 +23,7 @@ const AdFormSchema = z.object({
   title: z.string().min(1, { message: "requiredField" }),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   address: z.string().min(1, { message: "requiredField" }),
-  category: z.enum(['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HomeCleaning', 'Other'], { errorMap: (issue, ctx) => ({ message: issue.code === 'invalid_enum_value' ? ctx.data || "requiredField" : "requiredField" }) }),
+  category: z.enum(['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HomeCleaning', 'Construction', 'Plastering', 'Other'], { errorMap: (issue, ctx) => ({ message: issue.code === 'invalid_enum_value' ? ctx.data || "requiredField" : "requiredField" }) }),
   imageUrl: z.string().url({ message: "Invalid image URL" }).optional(),
 });
 
@@ -164,7 +164,7 @@ export default function NewAdPage() {
         providerName, 
         title: validationResult.data.title,
         description: validationResult.data.description,
-        category: validationResult.data.category as ServiceCategory, // Cast as ServiceCategory which should be a superset or match
+        category: validationResult.data.category as ServiceCategory,
         address: validationResult.data.address,
         imageUrl: validationResult.data.imageUrl,
       });
@@ -184,6 +184,8 @@ export default function NewAdPage() {
     { value: 'Carpentry', labelKey: 'carpentry' },
     { value: 'Painting', labelKey: 'painting' },
     { value: 'HomeCleaning', labelKey: 'homeCleaning' },
+    { value: 'Construction', labelKey: 'construction'},
+    { value: 'Plastering', labelKey: 'plastering'},
     { value: 'Other', labelKey: 'other' },
   ];
 
@@ -291,3 +293,4 @@ export default function NewAdPage() {
     </div>
   );
 }
+

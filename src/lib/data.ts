@@ -2,10 +2,11 @@
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, deleteDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import type { ServiceCategoriesEnumType } from '@/ai/flows/categorize-ad'; // Import the enum type
 
-// Added "Carpentry", "Painting", "HomeCleaning"
-export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning';
-export type UserRole = 'provider' | 'seeker' | 'admin'; // Added 'admin' role potentially
+// Updated ServiceCategory type to include new categories and 'Other'
+export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
+export type UserRole = 'provider' | 'seeker' | 'admin';
 
 export interface UserProfile {
   uid: string;
@@ -14,13 +15,13 @@ export interface UserProfile {
   role: UserRole;
   phoneNumber?: string;
   qualifications?: string;
-  serviceCategories?: ServiceCategory[];
+  serviceCategories?: ServiceCategory[]; // Use the updated ServiceCategory type
   serviceAreas?: string[]; 
   profilePictureUrl?: string;
   searchHistory?: { query: string; date: string }[];
   createdAt?: Timestamp | string;
   updatedAt?: Timestamp | string;
-  emailVerified?: boolean; // For Firebase Auth email verification status
+  emailVerified?: boolean;
 }
 
 export interface ServiceAd {
@@ -29,7 +30,7 @@ export interface ServiceAd {
   providerName?: string;
   title: string;
   description: string;
-  category: ServiceCategory;
+  category: ServiceCategory; // Use the updated ServiceCategory type
   address: string; 
   imageUrl?: string; 
   postedDate: Timestamp | string;
@@ -61,7 +62,7 @@ export const getUserProfileById = async (uid: string): Promise<UserProfile | nul
         createdAt,
         updatedAt,
         searchHistory,
-        emailVerified: data.emailVerified || false, // Default to false if not present
+        emailVerified: data.emailVerified || false,
       } as UserProfile;
     } else {
       console.log(`No user profile found for UID: ${uid}`);
@@ -79,7 +80,7 @@ export const uploadAdImage = async (file: File, providerId: string, adIdOrTemp: 
   if (!auth?.currentUser) throw new Error("User not authenticated for image upload.");
   if (!providerId || !adIdOrTemp) throw new Error("Provider ID and Ad ID/Temp ID are required for image path.");
   const storage = getStorage();
-  const imagePath = `serviceAds/${providerId}/${adIdOrTemp}/${Date.now()}_${file.name}`; // Added timestamp for uniqueness
+  const imagePath = `serviceAds/${providerId}/${adIdOrTemp}/${Date.now()}_${file.name}`;
   const storageRef = ref(storage, imagePath);
   
   await uploadBytes(storageRef, file);
@@ -168,11 +169,10 @@ export const getAdsByProviderId = async (providerId: string): Promise<ServiceAd[
 };
 
 
-export const deleteServiceAd = async (adId: string): Promise<void> => {
+export const deleteServiceAd = async (adId: string, imageUrl?: string): Promise<void> => {
   if (!db) throw new Error("Firestore is not initialized.");
-  const ad = await getAdById(adId);
-  if (ad?.imageUrl) {
-    await deleteAdImage(ad.imageUrl);
+  if (imageUrl) {
+    await deleteAdImage(imageUrl);
   }
   try {
     const adDocRef = doc(db, "serviceAds", adId);
@@ -225,12 +225,11 @@ export const getAllServiceAds = async (): Promise<ServiceAd[]> => {
       const data = docSnap.data();
       
       let providerName = data.providerName;
-      // Ensure providerId exists before trying to fetch profile
       if (!providerName && data.providerId) { 
         const providerProfile = await getUserProfileById(data.providerId);
         providerName = providerProfile?.name || 'N/A';
       } else if (!providerName) {
-        providerName = 'N/A'; // Fallback if providerId is also missing
+        providerName = 'N/A';
       }
 
       ads.push({
@@ -248,3 +247,4 @@ export const getAllServiceAds = async (): Promise<ServiceAd[]> => {
     throw new Error("Failed to fetch service ads.");
   }
 };
+

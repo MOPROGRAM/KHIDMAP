@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useTranslation, Translations } from '@/hooks/useTranslation'; // Import Translations type
+import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { categorizeAd, CategorizeAdOutput, ServiceCategoriesEnumType } from '@/ai/flows/categorize-ad';
 import { ServiceAd, ServiceCategory, getAdById, updateServiceAd, uploadAdImage, deleteAdImage } from '@/lib/data';
@@ -23,8 +23,8 @@ const EditAdFormSchema = z.object({
   title: z.string().min(1, { message: "requiredField" }),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
   address: z.string().min(1, { message: "requiredField" }),
-  category: z.enum(['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HomeCleaning', 'Other'], { errorMap: (issue, ctx) => ({ message: issue.code === 'invalid_enum_value' ? ctx.data || "requiredField" : "requiredField" }) }),
-  imageUrl: z.string().url({ message: "Invalid image URL" }).optional().nullable(), // Allow nullable for easier handling
+  category: z.enum(['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HomeCleaning', 'Construction', 'Plastering', 'Other'], { errorMap: (issue, ctx) => ({ message: issue.code === 'invalid_enum_value' ? ctx.data || "requiredField" : "requiredField" }) }),
+  imageUrl: z.string().url({ message: "Invalid image URL" }).optional().nullable(),
 });
 
 export default function EditAdPage() {
@@ -156,7 +156,7 @@ export default function EditAdPage() {
     setIsUploadingImage(false);
     setErrors({});
 
-    let newImageUrl: string | undefined | null = currentImageUrl; // Keep current if no new file
+    let newImageUrl: string | undefined | null = currentImageUrl; 
     const oldImageUrlToDelete = adImageFile && currentImageUrl ? currentImageUrl : undefined;
 
     if (adImageFile) {
@@ -194,12 +194,12 @@ export default function EditAdPage() {
         description: validationResult.data.description,
         category: validationResult.data.category as ServiceCategory,
         address: validationResult.data.address,
-        imageUrl: validationResult.data.imageUrl === null ? undefined : validationResult.data.imageUrl, // Store undefined if null
+        imageUrl: validationResult.data.imageUrl === null ? undefined : validationResult.data.imageUrl,
       };
       
       await updateServiceAd(ad.id, updateData);
 
-      if (oldImageUrlToDelete && oldImageUrlToDelete !== newImageUrl) { // Only delete if a new image was successfully uploaded and it's different
+      if (oldImageUrlToDelete && oldImageUrlToDelete !== newImageUrl) { 
         await deleteAdImage(oldImageUrlToDelete); 
       }
 
@@ -219,6 +219,8 @@ export default function EditAdPage() {
     { value: 'Carpentry', labelKey: 'carpentry' },
     { value: 'Painting', labelKey: 'painting' },
     { value: 'HomeCleaning', labelKey: 'homeCleaning' },
+    { value: 'Construction', labelKey: 'construction'},
+    { value: 'Plastering', labelKey: 'plastering'},
     { value: 'Other', labelKey: 'other' },
   ];
 
@@ -342,3 +344,4 @@ export default function EditAdPage() {
     </div>
   );
 }
+

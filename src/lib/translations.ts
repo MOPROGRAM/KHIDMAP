@@ -33,9 +33,12 @@ export type Translations = {
   category: string;
   plumbing: string;
   electrical: string;
-  carpentry: string; // New
-  painting: string; // New
-  homeCleaning: string; // New
+  carpentry: string;
+  painting: string;
+  homeCleaning: string;
+  construction: string; // New
+  plastering: string; // New
+  other: string; 
   myAds: string;
   editAd: string;
   newAd: string;
@@ -80,14 +83,13 @@ export type Translations = {
   imagePreview: string;
   changeImage: string;
   noImageUploaded: string;
-  emailVerificationSent: string; // New
-  checkYourEmailForVerification: string; // New
-  contactUs: string; // New
-  adminDashboard: string; // New
-  welcomeAdmin: string; // New
-  adminPlaceholder: string; // New
-  selectService: string; // New
-  other: string; // New
+  emailVerificationSent: string;
+  checkYourEmailForVerification: string;
+  contactUs: string;
+  adminDashboard: string;
+  welcomeAdmin: string;
+  adminPlaceholder: string;
+  selectService: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -128,6 +130,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     carpentry: "Carpentry",
     painting: "Painting",
     homeCleaning: "Home Cleaning",
+    construction: "Construction",
+    plastering: "Plastering",
+    other: "Other Services",
     myAds: "My Ads",
     editAd: "Edit Ad",
     newAd: "New Ad",
@@ -179,7 +184,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     welcomeAdmin: "Welcome, Admin!",
     adminPlaceholder: "This is the admin dashboard. More features coming soon.",
     selectService: "Select Service",
-    other: "Other",
   },
   ar: {
     appName: "خدماب",
@@ -218,6 +222,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     carpentry: "نجارة",
     painting: "دهان",
     homeCleaning: "تنظيف منازل",
+    construction: "بناء",
+    plastering: "محارة",
+    other: "خدمات أخرى",
     myAds: "إعلاناتي",
     editAd: "تعديل الإعلان",
     newAd: "إعلان جديد",
@@ -269,6 +276,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     welcomeAdmin: "مرحباً أيها الأدمن!",
     adminPlaceholder: "هذه هي لوحة تحكم الأدمن. المزيد من الميزات قريباً.",
     selectService: "اختر خدمة",
-    other: "أخرى",
   },
 };
+

@@ -10,7 +10,7 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { ServiceAd, getAllServiceAds, UserProfile, getUserProfileById, ServiceCategory } from '@/lib/data';
 import Link from 'next/link';
 import NextImage from 'next/image'; 
-import { Search as SearchIcon, MapPin, Briefcase, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical } from 'lucide-react'; // Changed Sparkles to SprayCan
+import { Search as SearchIcon, MapPin, Briefcase, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, HardHat, Layers } from 'lucide-react';
 
 interface SearchHistoryItem {
   query: string;
@@ -22,7 +22,9 @@ const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Electrical: Zap,
   Carpentry: Hammer,
   Painting: Brush,
-  HomeCleaning: SprayCan, // Changed Sparkles to SprayCan
+  HomeCleaning: SprayCan,
+  Construction: HardHat,
+  Plastering: Layers,
   Other: GripVertical,
 };
 
@@ -53,7 +55,7 @@ export default function ServiceSearchPage() {
   const updateSearchHistory = (query: string) => {
     if (!query.trim()) return;
     const newItem: SearchHistoryItem = { query, date: new Date().toISOString() };
-    const newHistory = [newItem, ...searchHistory.filter(item => item.query.toLowerCase() !== query.toLowerCase())].slice(0, 5); // Limit to 5 recent searches
+    const newHistory = [newItem, ...searchHistory.filter(item => item.query.toLowerCase() !== query.toLowerCase())].slice(0, 5);
     setSearchHistory(newHistory);
     localStorage.setItem('fullSearchHistory', JSON.stringify(newHistory));
   };
@@ -82,7 +84,7 @@ export default function ServiceSearchPage() {
       const initialQuery = searchParams.get('q');
       if (initialQuery) {
         setSearchTerm(initialQuery);
-        filterAds(initialQuery, ads, providerMap); // Pass t here
+        filterAds(initialQuery, ads, providerMap);
         setCurrentSearchQuery(initialQuery);
       } else {
         setFilteredAds(ads);
@@ -97,7 +99,7 @@ export default function ServiceSearchPage() {
       setIsLoading(false);
       setInitialLoad(false);
     }
-  }, [searchParams]); 
+  }, [searchParams, t]); 
 
   const filterAds = (query: string, adsToFilter: ServiceAd[], currentProviderDetails: Record<string, UserProfile>) => {
     if (!query.trim()) {
@@ -133,7 +135,7 @@ export default function ServiceSearchPage() {
     if (!initialLoad) setIsLoading(true);
 
     setTimeout(() => {
-      filterAds(query, allAds, providerDetails); // Pass t here
+      filterAds(query, allAds, providerDetails);
       if (query.trim()) {
         updateSearchHistory(query);
         router.push(`/services/search?q=${encodeURIComponent(query)}`, { scroll: false });
@@ -316,3 +318,4 @@ export default function ServiceSearchPage() {
     </div>
   );
 }
+

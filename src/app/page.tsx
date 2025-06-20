@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
-import { ArrowRight, Search, Wrench, Zap, Hammer, Brush, SprayCan } from 'lucide-react'; // Changed Sparkles to SprayCan
+import { ArrowRight, Search, Wrench, Zap, Hammer, Brush, SprayCan, HardHat, Layers, GripVertical } from 'lucide-react';
 import Image from 'next/image';
 
 export default function HomePage() {
@@ -15,7 +15,10 @@ export default function HomePage() {
     { icon: <Zap className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'electrical', description: "Safe and reliable electrical solutions for your home and business." },
     { icon: <Hammer className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'carpentry', description: "Skilled carpentry for furniture, repairs, and custom projects." },
     { icon: <Brush className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'painting', description: "Professional painting services for a fresh new look." },
-    { icon: <SprayCan className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'homeCleaning', description: "Reliable home cleaning services for a spotless living space." }, // Changed Sparkles to SprayCan
+    { icon: <SprayCan className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'homeCleaning', description: "Reliable home cleaning services for a spotless living space." },
+    { icon: <HardHat className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'construction', description: "Comprehensive construction services from foundation to finish." },
+    { icon: <Layers className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'plastering', description: "Quality plastering for smooth and durable walls and ceilings." },
+    { icon: <GripVertical className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'other', description: "Various other services to meet your unique needs." },
   ];
 
 
@@ -107,8 +110,8 @@ export default function HomePage() {
 
       <section className="w-full max-w-5xl px-4 animate-fadeIn animation-delay-1000">
         <h2 className="text-3xl md:text-4xl font-headline font-semibold mb-12 text-foreground">{t.services}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {serviceCards.slice(0, 5).map((service, index) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          {serviceCards.map((service, index) => (
             <div 
               key={index} 
               className="p-6 bg-card rounded-xl shadow-lg border border-border transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 group"
@@ -127,7 +130,7 @@ export default function HomePage() {
         .animation-delay-400 { animation-delay: 0.4s; }
         .animation-delay-600 { animation-delay: 0.6s; }
         .animation-delay-800 { animation-delay: 0.8s; }
-        .animation-delay-1000 { animation-delay: 1.0s; } /* Corrected from 1s to 1.0s for consistency if desired, though 1s is fine */
+        .animation-delay-1000 { animation-delay: 1.0s; }
         [class*="animation-delay"] {
           animation-fill-mode: backwards; 
         }
@@ -135,3 +138,4 @@ export default function HomePage() {
     </div>
   );
 }
+
