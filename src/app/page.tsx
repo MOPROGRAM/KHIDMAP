@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -22,13 +21,6 @@ export default function HomePage() {
     { icon: <GripVertical className="h-8 w-8 text-primary" />, titleKey: 'other', descriptionKey: 'otherServicesDescription' },
   ];
   
-  const howItWorks = [
-      { title: "ابحث عن الخدمة", description: "استخدم البحث الذكي للعثور على الحرفيين في منطقتك.", icon: <Search className="h-8 w-8 text-primary"/> },
-      { title: "تواصل وقيم", description: "تواصل مع مقدمي الخدمة مباشرة وقيم تجربتك لمساعدة الآخرين.", icon: <CheckCircle className="h-8 w-8 text-primary"/> },
-      { title: "انضم كمزود", description: "اعرض مهاراتك وخدماتك لآلاف العملاء المحتملين.", icon: <ArrowRight className="h-8 w-8 text-primary"/> },
-  ]
-
-
   return (
     <div className="flex flex-col items-center space-y-20 md:space-y-28 py-8 md:py-16">
       
@@ -77,21 +69,6 @@ export default function HomePage() {
                     priority
                 />
             </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-       <section className="w-full max-w-5xl px-4 text-center animate-fadeIn animation-delay-800">
-        <h2 className="text-3xl md:text-4xl font-bold font-headline mb-4 text-foreground">كيف يعمل؟</h2>
-        <p className="text-lg text-muted-foreground mb-12 max-w-2xl mx-auto">طريقة سهلة ومباشرة لربط الحرفيين بالعملاء</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {howItWorks.map((step, index) => (
-            <div key={index} className="p-6 bg-card rounded-lg border transition-all duration-300 hover:shadow-lg hover:-translate-y-1.5">
-              <div className="mb-4">{step.icon}</div>
-              <h3 className="text-xl font-bold mb-2 text-foreground">{step.title}</h3>
-              <p className="text-muted-foreground">{step.description}</p>
-            </div>
-          ))}
         </div>
       </section>
 
