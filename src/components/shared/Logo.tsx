@@ -14,7 +14,7 @@ const Logo = () => {
         "
       >
         <div className="bg-background rounded-md px-1 flex items-center justify-center">
-          <span className="font-headline font-extrabold text-xl text-foreground leading-[0.95]">
+          <span className="font-headline font-extrabold text-xl text-foreground leading-[0.9]">
             {t.appName}
           </span>
         </div>
