@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -58,22 +57,6 @@ export default function HomePage() {
             </Button>
         </div>
       </section>
-
-      {/* Visual Element */}
-      <div 
-        className="w-full max-w-6xl px-4 animate-fade-in-up" 
-        style={{ animationDelay: '0.4s', animationFillMode: 'backwards' }}
-      >
-          <div className="relative w-full h-[400px] rounded-2xl overflow-hidden">
-              <NextImage
-                  src="https://placehold.co/1200x600.png"
-                  alt="Abstract services visual"
-                  layout="fill"
-                  objectFit="cover"
-                  data-ai-hint="abstract geometric blue"
-              />
-          </div>
-      </div>
 
       {/* Services Section */}
       <section className="w-full max-w-6xl px-4 py-24 md:py-32">
