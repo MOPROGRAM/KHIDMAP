@@ -1,15 +1,24 @@
-
 "use client";
 import Link from 'next/link';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Layers } from 'lucide-react';
 
 const Logo = () => {
   const t = useTranslation();
   return (
-    <Link href="/" className="flex items-center gap-2 text-xl font-bold text-foreground hover:text-foreground/80 transition-colors">
-      <Layers className="h-6 w-6 text-primary" />
-      <span className="font-headline font-bold">{t.appName}</span>
+    <Link href="/" className="inline-block" aria-label="Homepage Logo">
+      <div 
+        className="
+          flex items-center justify-center 
+          px-4 py-1.5 rounded-md
+          bg-[linear-gradient(to_bottom,hsl(var(--accent))_50%,hsl(25_95%_45%)_50%)]
+          dark:bg-[linear-gradient(to_bottom,hsl(var(--accent))_50%,hsl(25_95%_50%)_50%)]
+          text-white 
+          font-headline font-bold text-xl
+          transition-transform duration-200 ease-in-out hover:scale-105 shadow-sm
+        "
+      >
+        <span className="py-1">{t.appName}</span>
+      </div>
     </Link>
   );
 };
