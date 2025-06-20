@@ -6,16 +6,25 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useTranslation } from '@/hooks/useTranslation';
-import { ServiceAd, getAllServiceAds, UserProfile, getUserProfileById } from '@/lib/data';
+import { useTranslation, Translations } from '@/hooks/useTranslation';
+import { ServiceAd, getAllServiceAds, UserProfile, getUserProfileById, ServiceCategory } from '@/lib/data';
 import Link from 'next/link';
-import NextImage from 'next/image'; // Renamed
-import { Search as SearchIcon, MapPin, Briefcase, Wrench, Zap, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
+import NextImage from 'next/image'; 
+import { Search as SearchIcon, MapPin, Briefcase, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, Sparkles, GripVertical } from 'lucide-react';
 
 interface SearchHistoryItem {
   query: string;
-  date: string; // ISO string
+  date: string; 
 }
+
+const categoryIcons: Record<ServiceCategory, React.ElementType> = {
+  Plumbing: Wrench,
+  Electrical: Zap,
+  Carpentry: Hammer,
+  Painting: Brush,
+  HomeCleaning: Sparkles,
+  Other: GripVertical,
+};
 
 export default function ServiceSearchPage() {
   const t = useTranslation();
@@ -56,16 +65,18 @@ export default function ServiceSearchPage() {
       const ads = await getAllServiceAds();
       setAllAds(ads);
       
-      const providerIds = [...new Set(ads.map(ad => ad.providerId))];
-      const providerPromises = providerIds.map(id => getUserProfileById(id));
-      const providersArray = await Promise.all(providerPromises);
+      const providerIds = [...new Set(ads.map(ad => ad.providerId).filter(id => !!id))] as string[]; // Filter out undefined/null providerIds
       
       const providerMap: Record<string, UserProfile> = {};
-      providersArray.forEach(provider => {
-        if (provider) {
-          providerMap[provider.uid] = provider;
-        }
-      });
+      if (providerIds.length > 0) {
+        const providerPromises = providerIds.map(id => getUserProfileById(id));
+        const providersArray = await Promise.all(providerPromises);
+        providersArray.forEach(provider => {
+          if (provider) {
+            providerMap[provider.uid] = provider;
+          }
+        });
+      }
       setProviderDetails(providerMap);
 
       const initialQuery = searchParams.get('q');
@@ -86,7 +97,7 @@ export default function ServiceSearchPage() {
       setIsLoading(false);
       setInitialLoad(false);
     }
-  }, [searchParams]);
+  }, [searchParams]); // Removed t from dependencies as it's stable
 
   useEffect(() => {
     fetchInitialAdsAndProviders();
@@ -99,12 +110,16 @@ export default function ServiceSearchPage() {
     }
     const lowerCaseQuery = query.toLowerCase();
     const results = adsToFilter.filter(ad => {
-      const providerName = ad.providerName?.toLowerCase() || currentProviderDetails[ad.providerId]?.name.toLowerCase() || '';
+      const provider = ad.providerId ? currentProviderDetails[ad.providerId] : null;
+      const providerName = ad.providerName?.toLowerCase() || provider?.name.toLowerCase() || '';
+      const categoryKey = ad.category.toLowerCase() as keyof Translations;
+      const translatedCategory = t[categoryKey]?.toLowerCase() || ad.category.toLowerCase();
+
       return (
         ad.title.toLowerCase().includes(lowerCaseQuery) ||
         ad.description.toLowerCase().includes(lowerCaseQuery) ||
         ad.address.toLowerCase().includes(lowerCaseQuery) || 
-        t[ad.category.toLowerCase() as keyof typeof t].toLowerCase().includes(lowerCaseQuery) ||
+        translatedCategory.includes(lowerCaseQuery) ||
         providerName.includes(lowerCaseQuery)
       );
     });
@@ -116,6 +131,7 @@ export default function ServiceSearchPage() {
     setCurrentSearchQuery(query);
     if (!initialLoad) setIsLoading(true);
 
+    // Debounce or delay filtering slightly for better UX
     setTimeout(() => {
       filterAds(query, allAds, providerDetails);
       if (query.trim()) {
@@ -228,8 +244,11 @@ export default function ServiceSearchPage() {
       {!isLoading && !error && filteredAds.length > 0 && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredAds.map((ad) => {
-            const provider = providerDetails[ad.providerId];
+            const provider = ad.providerId ? providerDetails[ad.providerId] : null;
             const providerName = ad.providerName || provider?.name || t.provider;
+            const Icon = categoryIcons[ad.category] || GripVertical;
+            const categoryKey = ad.category.toLowerCase() as keyof Translations;
+            const categoryName = t[categoryKey] || ad.category;
             return (
               <Card key={ad.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out flex flex-col group transform hover:-translate-y-1">
                 <div className="relative w-full h-56 overflow-hidden">
@@ -239,11 +258,11 @@ export default function ServiceSearchPage() {
                     layout="fill"
                     objectFit="cover"
                     className="group-hover:scale-105 transition-transform duration-500 ease-in-out"
-                    data-ai-hint={ad.category === 'Plumbing' ? "plumbing work" : "electrical work"}
+                    data-ai-hint={`${ad.category} items tools`}
                   />
-                  <div className="absolute top-3 right-3 rtl:left-3 rtl:right-auto bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold rounded-full shadow-md">
-                    {ad.category === 'Plumbing' ? <Wrench className="inline h-3 w-3 ltr:mr-1 rtl:ml-1" /> : <Zap className="inline h-3 w-3 ltr:mr-1 rtl:ml-1" />}
-                    {t[ad.category.toLowerCase() as keyof typeof t]}
+                  <div className="absolute top-3 right-3 rtl:left-3 rtl:right-auto bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold rounded-full shadow-md flex items-center gap-1">
+                    <Icon className="h-3 w-3" />
+                    {categoryName}
                   </div>
                 </div>
                 <CardHeader className="pb-2">
@@ -275,5 +294,3 @@ export default function ServiceSearchPage() {
     </div>
   );
 }
-
-    

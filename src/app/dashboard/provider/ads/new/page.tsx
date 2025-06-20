@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
-import { categorizeAd, CategorizeAdOutput } from '@/ai/flows/categorize-ad';
+import { categorizeAd, CategorizeAdOutput, ServiceCategoriesEnumType } from '@/ai/flows/categorize-ad';
 import { ServiceCategory, addServiceAd, UserProfile, uploadAdImage } from '@/lib/data';
 import { Loader2, Wand2, PlusCircle, UploadCloud, Image as ImageIcon } from 'lucide-react';
 import { z } from 'zod';
@@ -22,8 +22,8 @@ import Image from 'next/image';
 const AdFormSchema = z.object({
   title: z.string().min(1, { message: "requiredField" }),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
-  address: z.string().min(1, { message: "requiredField" }), // Changed from zipCode
-  category: z.enum(['Plumbing', 'Electrical'], { errorMap: (issue, ctx) => ({ message: issue.code === 'invalid_enum_value' ? ctx.data || "requiredField" : "requiredField" }) }),
+  address: z.string().min(1, { message: "requiredField" }),
+  category: z.enum(['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HomeCleaning', 'Other'], { errorMap: (issue, ctx) => ({ message: issue.code === 'invalid_enum_value' ? ctx.data || "requiredField" : "requiredField" }) }),
   imageUrl: z.string().url({ message: "Invalid image URL" }).optional(),
 });
 
@@ -34,9 +34,9 @@ export default function NewAdPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [address, setAddress] = useState(''); // Changed from zipCode
+  const [address, setAddress] = useState('');
   const [category, setCategory] = useState<ServiceCategory | ''>('');
-  const [detectedCategory, setDetectedCategory] = useState<ServiceCategory | null>(null);
+  const [detectedCategory, setDetectedCategory] = useState<ServiceCategoriesEnumType | null>(null);
   const [adImageFile, setAdImageFile] = useState<File | null>(null);
   const [adImagePreview, setAdImagePreview] = useState<string | null>(null);
   
@@ -103,7 +103,7 @@ export default function NewAdPage() {
     try {
       const result: CategorizeAdOutput = await categorizeAd({ description });
       setDetectedCategory(result.category);
-      toast({ title: t.detectedCategory, description: `${t.serviceCategory}: ${t[result.category.toLowerCase() as keyof typeof t]}` });
+      toast({ title: t.detectedCategory, description: `${t.serviceCategory}: ${t[result.category.toLowerCase() as keyof typeof t] || result.category}` });
     } catch (error) {
       console.error("Error detecting category:", error);
       toast({ variant: "destructive", title: t.errorOccurred, description: "Could not detect category automatically." });
@@ -132,8 +132,7 @@ export default function NewAdPage() {
     if (adImageFile) {
       setIsUploadingImage(true);
       try {
-        // Using a temporary ad ID for image path, or you could generate one client-side
-        const tempAdId = `temp_${Date.now()}`; 
+        const tempAdId = `ad_${Date.now()}`; 
         uploadedImageUrl = await uploadAdImage(adImageFile, providerId, tempAdId);
       } catch (error) {
         console.error("Error uploading image:", error);
@@ -165,7 +164,7 @@ export default function NewAdPage() {
         providerName, 
         title: validationResult.data.title,
         description: validationResult.data.description,
-        category: validationResult.data.category,
+        category: validationResult.data.category as ServiceCategory, // Cast as ServiceCategory which should be a superset or match
         address: validationResult.data.address,
         imageUrl: validationResult.data.imageUrl,
       });
@@ -178,6 +177,16 @@ export default function NewAdPage() {
       setIsLoading(false);
     }
   };
+  
+  const serviceCategoryOptions: { value: ServiceCategory; labelKey: keyof Translations }[] = [
+    { value: 'Plumbing', labelKey: 'plumbing' },
+    { value: 'Electrical', labelKey: 'electrical' },
+    { value: 'Carpentry', labelKey: 'carpentry' },
+    { value: 'Painting', labelKey: 'painting' },
+    { value: 'HomeCleaning', labelKey: 'homeCleaning' },
+    { value: 'Other', labelKey: 'other' },
+  ];
+
 
   return (
     <div className="max-w-2xl mx-auto py-8">
@@ -215,8 +224,8 @@ export default function NewAdPage() {
 
             {detectedCategory && (
               <div className="p-3 bg-accent/10 border border-accent rounded-md text-sm">
-                <p className="font-medium">{t.detectedCategory}: <span className="text-accent font-semibold">{t[detectedCategory.toLowerCase() as keyof typeof t]}</span></p>
-                <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => setCategory(detectedCategory)}>{t.confirmCategory}</Button>
+                <p className="font-medium">{t.detectedCategory}: <span className="text-accent font-semibold">{t[detectedCategory.toLowerCase() as keyof typeof t] || detectedCategory}</span></p>
+                <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => setCategory(detectedCategory as ServiceCategory)}>{t.confirmCategory}</Button>
               </div>
             )}
 
@@ -227,8 +236,9 @@ export default function NewAdPage() {
                   <SelectValue placeholder={t.selectCategory} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Plumbing">{t.plumbing}</SelectItem>
-                  <SelectItem value="Electrical">{t.electrical}</SelectItem>
+                  {serviceCategoryOptions.map(opt => (
+                     <SelectItem key={opt.value} value={opt.value}>{t[opt.labelKey]}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               {errors.category && <p className="text-sm text-destructive">{errors.category}</p>}
@@ -281,5 +291,3 @@ export default function NewAdPage() {
     </div>
   );
 }
-
-    

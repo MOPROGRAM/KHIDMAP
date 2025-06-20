@@ -33,6 +33,9 @@ export type Translations = {
   category: string;
   plumbing: string;
   electrical: string;
+  carpentry: string; // New
+  painting: string; // New
+  homeCleaning: string; // New
   myAds: string;
   editAd: string;
   newAd: string;
@@ -77,6 +80,14 @@ export type Translations = {
   imagePreview: string;
   changeImage: string;
   noImageUploaded: string;
+  emailVerificationSent: string; // New
+  checkYourEmailForVerification: string; // New
+  contactUs: string; // New
+  adminDashboard: string; // New
+  welcomeAdmin: string; // New
+  adminPlaceholder: string; // New
+  selectService: string; // New
+  other: string; // New
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -94,7 +105,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     theme: "Theme",
     lightMode: "Light Mode",
     darkMode: "Dark Mode",
-    searchPlaceholder: "Search by address or service type...",
+    searchPlaceholder: "Search by address, service type...",
     search: "Search",
     serviceProviders: "Service Providers",
     serviceSeekers: "Service Seekers",
@@ -107,13 +118,16 @@ export const translations: Record<'en' | 'ar', Translations> = {
     qualifications: "Qualifications/Skills",
     phoneNumber: "Phone Number",
     address: "Address / Service Location",
-    serviceAreas: "Service Areas (comma-separated)",
+    serviceAreas: "Service Areas (e.g., City Center, North District)",
     postAd: "Post Ad",
     adTitle: "Ad Title",
     adDescription: "Ad Description",
     category: "Category",
     plumbing: "Plumbing",
     electrical: "Electrical",
+    carpentry: "Carpentry",
+    painting: "Painting",
+    homeCleaning: "Home Cleaning",
     myAds: "My Ads",
     editAd: "Edit Ad",
     newAd: "New Ad",
@@ -124,7 +138,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     viewDetails: "View Details",
     errorOccurred: "An error occurred. Please try again.",
     welcomeTo: "Welcome to",
-    findSkilledArtisans: "Find skilled artisans for your plumbing and electrical needs.",
+    findSkilledArtisans: "Find skilled artisans for your needs.",
     orPostYourServices: "Or post your services and reach new customers.",
     getStarted: "Get Started",
     browseServices: "Browse Services",
@@ -158,6 +172,14 @@ export const translations: Record<'en' | 'ar', Translations> = {
     imagePreview: "Image Preview",
     changeImage: "Change Image",
     noImageUploaded: "No image uploaded yet.",
+    emailVerificationSent: "Email Verification Sent",
+    checkYourEmailForVerification: "A verification link has been sent to your email. Please check your inbox (and spam folder) to activate your account.",
+    contactUs: "Contact Us",
+    adminDashboard: "Admin Dashboard",
+    welcomeAdmin: "Welcome, Admin!",
+    adminPlaceholder: "This is the admin dashboard. More features coming soon.",
+    selectService: "Select Service",
+    other: "Other",
   },
   ar: {
     appName: "خدماب",
@@ -173,7 +195,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     theme: "المظهر",
     lightMode: "الوضع النهاري",
     darkMode: "الوضع الليلي",
-    searchPlaceholder: "ابحث بالعنوان أو نوع الخدمة...",
+    searchPlaceholder: "ابحث بالعنوان، نوع الخدمة...",
     search: "بحث",
     serviceProviders: "مقدمو الخدمات",
     serviceSeekers: "الباحثون عن الخدمات",
@@ -186,13 +208,16 @@ export const translations: Record<'en' | 'ar', Translations> = {
     qualifications: "المؤهلات/المهارات",
     phoneNumber: "رقم الهاتف",
     address: "العنوان / موقع الخدمة",
-    serviceAreas: "مناطق الخدمة (مفصولة بفاصلة)",
+    serviceAreas: "مناطق الخدمة (مثال: وسط المدينة، الحي الشمالي)",
     postAd: "نشر إعلان",
     adTitle: "عنوان الإعلان",
     adDescription: "وصف الإعلان",
     category: "الفئة",
     plumbing: "سباكة",
     electrical: "كهرباء",
+    carpentry: "نجارة",
+    painting: "دهان",
+    homeCleaning: "تنظيف منازل",
     myAds: "إعلاناتي",
     editAd: "تعديل الإعلان",
     newAd: "إعلان جديد",
@@ -203,7 +228,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     viewDetails: "عرض التفاصيل",
     errorOccurred: "حدث خطأ. يرجى المحاولة مرة أخرى.",
     welcomeTo: "مرحباً بك في",
-    findSkilledArtisans: "ابحث عن حرفيين ماهرين لاحتياجات السباكة والكهرباء الخاصة بك.",
+    findSkilledArtisans: "ابحث عن حرفيين ماهرين لاحتياجاتك.",
     orPostYourServices: "أو انشر خدماتك وتواصل مع عملاء جدد.",
     getStarted: "ابدأ الآن",
     browseServices: "تصفح الخدمات",
@@ -237,7 +262,13 @@ export const translations: Record<'en' | 'ar', Translations> = {
     imagePreview: "معاينة الصورة",
     changeImage: "تغيير الصورة",
     noImageUploaded: "لم يتم رفع صورة بعد.",
+    emailVerificationSent: "تم إرسال رسالة التحقق",
+    checkYourEmailForVerification: "تم إرسال رابط التحقق إلى بريدك الإلكتروني. يرجى التحقق من صندوق الوارد (ومجلد الرسائل غير المرغوب فيها) لتفعيل حسابك.",
+    contactUs: "اتصل بنا",
+    adminDashboard: "لوحة تحكم الأدمن",
+    welcomeAdmin: "مرحباً أيها الأدمن!",
+    adminPlaceholder: "هذه هي لوحة تحكم الأدمن. المزيد من الميزات قريباً.",
+    selectService: "اختر خدمة",
+    other: "أخرى",
   },
 };
-
-    

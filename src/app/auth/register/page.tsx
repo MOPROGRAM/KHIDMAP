@@ -11,10 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { auth, db } from '@/lib/firebase'; // auth can be undefined
-import { createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { UserPlus, Eye, EyeOff, Loader2, MailCheck } from 'lucide-react';
+import { auth, db } from '@/lib/firebase'; 
+import { createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, User as FirebaseUser, sendEmailVerification } from 'firebase/auth';
+import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { z } from "zod";
 
 const RegisterSchema = z.object({
@@ -46,6 +46,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isAuthInitialized, setIsAuthInitialized] = useState(false);
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
 
 
   useEffect(() => {
@@ -56,9 +57,9 @@ export default function RegisterPage() {
     if (auth) {
       setIsAuthInitialized(true);
       const unsubscribe = onAuthStateChanged(auth, (user) => {
-        if (user) {
-          // router.push('/dashboard'); // Optional: redirect if already logged in
-        }
+        // if (user) { // Optional: redirect if already logged in
+        //    router.push('/dashboard'); 
+        // }
       });
       return () => unsubscribe();
     } else {
@@ -81,6 +82,7 @@ export default function RegisterPage() {
     }
     setIsLoading(true);
     setErrors({});
+    setShowVerificationMessage(false);
 
     const validationResult = RegisterSchema.safeParse({ name, email, password, confirmPassword, role });
 
@@ -109,20 +111,27 @@ export default function RegisterPage() {
         name: validationResult.data.name,
         email: firebaseUser.email,
         role: validationResult.data.role,
-        createdAt: new Date().toISOString(),
+        createdAt: Timestamp.now(), // Use Firestore Timestamp
+        emailVerified: firebaseUser.emailVerified, // Store initial verification status
       });
 
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userId', firebaseUser.uid);
-      localStorage.setItem('userName', validationResult.data.name);
-      localStorage.setItem('userEmail', firebaseUser.email || '');
-      localStorage.setItem('userRole', validationResult.data.role);
+      await sendEmailVerification(firebaseUser);
+      setShowVerificationMessage(true);
+      
+      // Don't log in immediately, wait for verification.
+      // localStorage.setItem('isLoggedIn', 'true');
+      // localStorage.setItem('userId', firebaseUser.uid);
+      // localStorage.setItem('userName', validationResult.data.name);
+      // localStorage.setItem('userEmail', firebaseUser.email || '');
+      // localStorage.setItem('userRole', validationResult.data.role);
 
       toast({
-        title: "Registration Successful",
-        description: `Welcome, ${validationResult.data.name}! Your account has been created.`,
+        title: t.emailVerificationSent,
+        description: t.checkYourEmailForVerification,
+        duration: 10000, // Longer duration for this important message
       });
-      router.push(validationResult.data.role === 'provider' ? '/dashboard/provider/profile' : '/dashboard');
+      // router.push(validationResult.data.role === 'provider' ? '/dashboard/provider/profile' : '/dashboard');
+      // Instead of redirecting, show the verification message on the same page.
 
     } catch (error: any) {
       console.error("Firebase registration error:", error);
@@ -161,61 +170,74 @@ export default function RegisterPage() {
                 Authentication service is currently unavailable. Please try again later or contact support.
             </div>
           )}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">{t.name}</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
-              {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+          {showVerificationMessage ? (
+            <div className="p-6 my-6 text-center bg-green-100 dark:bg-green-900/30 border border-green-500 rounded-md shadow-md">
+              <MailCheck className="h-12 w-12 text-green-600 dark:text-green-400 mx-auto mb-3" />
+              <h3 className="text-xl font-semibold text-green-700 dark:text-green-300 mb-2">{t.emailVerificationSent}</h3>
+              <p className="text-muted-foreground">{t.checkYourEmailForVerification}</p>
+              <Button asChild className="mt-6">
+                <Link href="/auth/login">{t.login}</Link>
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">{t.email}</Label>
-              <Input id="email" type="email" placeholder="m@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">{t.password}</Label>
-              <div className="relative">
-                <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required />
-                <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </Button>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="name">{t.name}</Label>
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
               </div>
-              {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-            </div>
-             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">{t.confirmPassword}</Label>
-              <div className="relative">
-                <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-                <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </Button>
+              <div className="space-y-2">
+                <Label htmlFor="email">{t.email}</Label>
+                <Input id="email" type="email" placeholder="m@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
               </div>
-              {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
-            </div>
-            <div className="space-y-3">
-              <Label>{t.registerAs}</Label>
-              <RadioGroup value={role} onValueChange={(value) => setRole(value as 'provider' | 'seeker')} className="flex gap-4">
-                <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                  <RadioGroupItem value="provider" id="role-provider" />
-                  <Label htmlFor="role-provider" className="font-normal">{t.provider}</Label>
+              <div className="space-y-2">
+                <Label htmlFor="password">{t.password}</Label>
+                <div className="relative">
+                  <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required />
+                  <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </Button>
                 </div>
-                <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                  <RadioGroupItem value="seeker" id="role-seeker" />
-                  <Label htmlFor="role-seeker" className="font-normal">{t.seeker}</Label>
+                {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">{t.confirmPassword}</Label>
+                <div className="relative">
+                  <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                  <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </Button>
                 </div>
-              </RadioGroup>
-              {errors.role && <p className="text-sm text-destructive">{errors.role}</p>}
-            </div>
-            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !isAuthInitialized}>
-              {isLoading ?  <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : t.register}
-            </Button>
-          </form>
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            {t.alreadyHaveAccount}{' '}
-            <Link href="/auth/login" className="font-medium text-primary hover:underline">
-              {t.login}
-            </Link>
-          </p>
+                {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
+              </div>
+              <div className="space-y-3">
+                <Label>{t.registerAs}</Label>
+                <RadioGroup value={role} onValueChange={(value) => setRole(value as 'provider' | 'seeker')} className="flex gap-4">
+                  <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                    <RadioGroupItem value="provider" id="role-provider" />
+                    <Label htmlFor="role-provider" className="font-normal">{t.provider}</Label>
+                  </div>
+                  <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                    <RadioGroupItem value="seeker" id="role-seeker" />
+                    <Label htmlFor="role-seeker" className="font-normal">{t.seeker}</Label>
+                  </div>
+                </RadioGroup>
+                {errors.role && <p className="text-sm text-destructive">{errors.role}</p>}
+              </div>
+              <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !isAuthInitialized}>
+                {isLoading ?  <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : t.register}
+              </Button>
+            </form>
+          )}
+          {!showVerificationMessage && (
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              {t.alreadyHaveAccount}{' '}
+              <Link href="/auth/login" className="font-medium text-primary hover:underline">
+                {t.login}
+              </Link>
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

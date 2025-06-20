@@ -4,18 +4,19 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, User, Briefcase, Search, History, LogOut, Settings, PlusCircle, Loader2 } from 'lucide-react';
+import { Home, User, Briefcase, Search, History, LogOut, Settings, PlusCircle, Loader2, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import Logo from '@/components/shared/Logo';
 import { Separator } from '@/components/ui/separator';
-import { auth, db } from '@/lib/firebase'; // auth can be undefined
+import { auth, db } from '@/lib/firebase'; 
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { useToast } from "@/hooks/use-toast";
+import { ADMIN_EMAIL } from '@/lib/config';
 
-type UserRole = 'provider' | 'seeker';
+type UserRole = 'provider' | 'seeker' | 'admin';
 
 interface NavItem {
   href: string;
@@ -33,21 +34,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
 
   useEffect(() => {
     if (!auth || !db) {
       console.warn("Firebase Auth or DB is not initialized. Dashboard layout may not function correctly.");
       setIsLoading(false);
-      // If auth is critical for dashboard, redirect to login or show error
-      // toast({ variant: "destructive", title: "Configuration Error", description: "Core services are unavailable." });
-      // router.replace('/auth/login'); // Potentially too aggressive, depends on app logic
       return;
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setAuthUser(user);
+        setIsEmailVerified(user.emailVerified); // Check email verification status
+
         const roleFromStorage = localStorage.getItem('userRole') as UserRole | null;
         if (roleFromStorage) {
             setUserRole(roleFromStorage);
@@ -58,7 +59,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const userDocSnap = await getDoc(userDocRef);
           if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
-            const roleFromFirestore = userData.role as UserRole;
+            // Check if current user is admin
+            const roleFromFirestore = user.email === ADMIN_EMAIL ? 'admin' : (userData.role as UserRole);
+            
             setUserRole(roleFromFirestore);
             localStorage.setItem('userRole', roleFromFirestore);
             localStorage.setItem('userName', userData.name || user.displayName || '');
@@ -72,12 +75,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         } catch (error) {
           console.error("Error fetching user role from Firestore:", error);
           setUserRole(null); 
-          // Potentially redirect if role is critical and fetch failed
-          // toast({ variant: "destructive", title: "Error", description: "Failed to fetch user details." });
         }
       } else {
         setAuthUser(null);
         setUserRole(null);
+        setIsEmailVerified(false);
         localStorage.removeItem('isLoggedIn');
         localStorage.removeItem('userId');
         localStorage.removeItem('userName');
@@ -92,12 +94,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
 
   const navItems: NavItem[] = [
-    { href: '/dashboard', labelKey: 'dashboard', icon: <Home className="h-5 w-5" />, roles: ['provider', 'seeker'] },
+    { href: '/dashboard', labelKey: 'dashboard', icon: <Home className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
     { href: '/dashboard/provider/profile', labelKey: 'profile', icon: <User className="h-5 w-5" />, roles: ['provider'] },
     { href: '/dashboard/provider/ads', labelKey: 'myAds', icon: <Briefcase className="h-5 w-5" />, roles: ['provider'] },
     { href: '/dashboard/provider/ads/new', labelKey: 'newAd', icon: <PlusCircle className="h-5 w-5" />, roles: ['provider'] },
     { href: '/services/search', labelKey: 'search', icon: <Search className="h-5 w-5" />, roles: ['seeker'] },
     { href: '/dashboard/seeker/history', labelKey: 'searchHistory', icon: <History className="h-5 w-5" />, roles: ['seeker'] },
+    { href: '/admin/dashboard', labelKey: 'adminDashboard', icon: <ShieldCheck className="h-5 w-5" />, roles: ['admin'] },
   ];
   
   const handleLogout = async () => {
@@ -123,7 +126,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
   
-  if (!auth && !isLoading) { // If auth is definitely not available after initial check
+  if (!auth && !isLoading) { 
     return (
       <div className="flex h-screen flex-col items-center justify-center text-center p-4">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
@@ -134,7 +137,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  if (!authUser && !isLoading) { // Should be redirected by onAuthStateChanged, but as a fallback
+  if (!authUser && !isLoading) { 
     return (
       <div className="flex h-screen items-center justify-center">
         <p>Redirecting to login...</p>
@@ -176,6 +179,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </Button>
       </aside>
       <div className="flex-1 p-4 md:p-8 overflow-y-auto">
+        {/* Email verification check - can be made more prominent */}
+        {authUser && !isEmailVerified && (
+          <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-600 rounded-md">
+            <p className="font-medium">Please verify your email address.</p>
+            <p className="text-sm">A verification link was sent to {authUser.email}. Check your inbox (and spam folder).</p>
+            <Button variant="link" size="sm" className="p-0 h-auto text-yellow-700 dark:text-yellow-300 hover:underline" onClick={async () => {
+              if (auth?.currentUser) {
+                try {
+                  await sendEmailVerification(auth.currentUser);
+                  toast({ title: "Verification Email Resent", description: "Please check your email."});
+                } catch (error) {
+                  toast({ variant: "destructive", title: "Error", description: "Could not resend verification email."});
+                }
+              }
+            }}>
+              Resend verification email
+            </Button>
+          </div>
+        )}
         {children}
       </div>
     </div>

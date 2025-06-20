@@ -9,14 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, ServiceCategory } from '@/lib/data'; 
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore'; 
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
 import { Loader2, UserCircle, Save } from 'lucide-react';
-import NextImage from 'next/image'; // Renamed to avoid conflict
+import NextImage from 'next/image'; 
 import { z } from 'zod';
 
 const ProfileFormSchema = z.object({
@@ -24,8 +24,8 @@ const ProfileFormSchema = z.object({
   email: z.string().email({ message: "invalidEmail" }), 
   phoneNumber: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')),
   qualifications: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')),
-  serviceAreasString: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')), // Changed
-  serviceCategories: z.array(z.enum(['Plumbing', 'Electrical'])).min(0).optional(), 
+  serviceAreasString: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')),
+  serviceCategories: z.array(z.enum(['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HomeCleaning', 'Other'])).min(0).optional(), 
 });
 
 
@@ -40,7 +40,7 @@ export default function ProviderProfilePage() {
   const [email, setEmail] = useState(''); 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [qualifications, setQualifications] = useState('');
-  const [serviceAreasString, setServiceAreasString] = useState(''); // Changed from zipCodesServedString
+  const [serviceAreasString, setServiceAreasString] = useState('');
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined>(undefined);
   
@@ -66,7 +66,7 @@ export default function ProviderProfilePage() {
               setName(firestoreProfile.name || user.displayName || ''); 
               setPhoneNumber(firestoreProfile.phoneNumber || '');
               setQualifications(firestoreProfile.qualifications || '');
-              setServiceAreasString((firestoreProfile.serviceAreas || []).join(', ')); // Changed
+              setServiceAreasString((firestoreProfile.serviceAreas || []).join(', ')); 
               setServiceCategories(firestoreProfile.serviceCategories || []);
               setProfilePictureUrl(firestoreProfile.profilePictureUrl);
             } else {
@@ -92,8 +92,16 @@ export default function ProviderProfilePage() {
   }, [router, t, toast]);
 
   const handleServiceCategoriesChange = (value: string) => {
+    const categoryValue = value as ServiceCategory;
     if (value) {
-      setServiceCategories([value as ServiceCategory]);
+      // For single select, replace the array with the new value
+      setServiceCategories([categoryValue]);
+      // For multi-select, you would toggle:
+      // setServiceCategories(prev => 
+      //   prev.includes(categoryValue) 
+      //     ? prev.filter(sc => sc !== categoryValue) 
+      //     : [...prev, categoryValue]
+      // );
     } else {
       setServiceCategories([]);
     }
@@ -115,7 +123,7 @@ export default function ProviderProfilePage() {
       email, 
       phoneNumber, 
       qualifications, 
-      serviceAreasString, // Changed
+      serviceAreasString, 
       serviceCategories 
     });
 
@@ -138,9 +146,10 @@ export default function ProviderProfilePage() {
       email: authUser.email, 
       phoneNumber: data.phoneNumber,
       qualifications: data.qualifications,
-      serviceAreas: data.serviceAreasString ? data.serviceAreasString.split(',').map(area => area.trim()).filter(Boolean) : [], // Changed
+      serviceAreas: data.serviceAreasString ? data.serviceAreasString.split(',').map(area => area.trim()).filter(Boolean) : [],
       serviceCategories: data.serviceCategories || [], 
-      profilePictureUrl: profilePictureUrl, // Note: Image upload for profile picture not implemented yet
+      profilePictureUrl: profilePictureUrl, 
+      role: 'provider', // ensure role is set or maintained
     };
 
     try {
@@ -166,6 +175,14 @@ export default function ProviderProfilePage() {
     return <div className="flex items-center justify-center h-full min-h-[calc(100vh-10rem)]"><Loader2 className="h-8 w-8 animate-spin text-primary" /> <span className="ml-2">{t.loading}</span></div>;
   }
 
+  const serviceCategoryOptions: { value: ServiceCategory; labelKey: keyof Translations }[] = [
+    { value: 'Plumbing', labelKey: 'plumbing' },
+    { value: 'Electrical', labelKey: 'electrical' },
+    { value: 'Carpentry', labelKey: 'carpentry' },
+    { value: 'Painting', labelKey: 'painting' },
+    { value: 'HomeCleaning', labelKey: 'homeCleaning' },
+    { value: 'Other', labelKey: 'other' },
+  ];
 
   return (
     <div className="max-w-3xl mx-auto py-8">
@@ -224,7 +241,7 @@ export default function ProviderProfilePage() {
             <div className="space-y-2">
               <Label htmlFor="serviceCategories">{t.serviceCategory}</Label>
               <Select
-                value={serviceCategories.length > 0 ? serviceCategories[0] : ""} 
+                value={serviceCategories.length > 0 ? serviceCategories[0] : ""} // Assuming single select for now
                 onValueChange={handleServiceCategoriesChange}
                 disabled={!isFirebaseReady || isLoading}
               >
@@ -232,11 +249,12 @@ export default function ProviderProfilePage() {
                   <SelectValue placeholder={`${t.selectCategory}`} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Plumbing">{t.plumbing}</SelectItem>
-                  <SelectItem value="Electrical">{t.electrical}</SelectItem>
+                   {serviceCategoryOptions.map(opt => (
+                     <SelectItem key={opt.value} value={opt.value}>{t[opt.labelKey]}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">Select your primary service category.</p>
+              <p className="text-xs text-muted-foreground">Select your primary service category. For multiple, manage via separate ads.</p>
               {errors.serviceCategories && <p className="text-sm text-destructive">{errors.serviceCategories}</p>}
             </div>
 
@@ -256,5 +274,3 @@ export default function ProviderProfilePage() {
     </div>
   );
 }
-
-    

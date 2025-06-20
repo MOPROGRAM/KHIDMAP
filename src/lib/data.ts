@@ -3,8 +3,9 @@ import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, deleteDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
-export type ServiceCategory = 'Plumbing' | 'Electrical';
-export type UserRole = 'provider' | 'seeker';
+// Added "Carpentry", "Painting", "HomeCleaning"
+export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning';
+export type UserRole = 'provider' | 'seeker' | 'admin'; // Added 'admin' role potentially
 
 export interface UserProfile {
   uid: string;
@@ -14,26 +15,26 @@ export interface UserProfile {
   phoneNumber?: string;
   qualifications?: string;
   serviceCategories?: ServiceCategory[];
-  serviceAreas?: string[]; // Changed from zipCodesServed
+  serviceAreas?: string[]; 
   profilePictureUrl?: string;
   searchHistory?: { query: string; date: string }[];
   createdAt?: Timestamp | string;
   updatedAt?: Timestamp | string;
+  emailVerified?: boolean; // For Firebase Auth email verification status
 }
 
 export interface ServiceAd {
   id: string;
   providerId: string;
+  providerName?: string;
   title: string;
   description: string;
   category: ServiceCategory;
-  address: string; // Changed from zipCode
-  imageUrl?: string; // For a single image for now
-  // imageUrls?: string[]; // For multiple images/videos in the future
+  address: string; 
+  imageUrl?: string; 
   postedDate: Timestamp | string;
   createdAt?: Timestamp | string;
   updatedAt?: Timestamp | string;
-  providerName?: string;
 }
 
 
@@ -46,12 +47,12 @@ export const getUserProfileById = async (uid: string): Promise<UserProfile | nul
     if (docSnap.exists()) {
       const data = docSnap.data();
       
-      const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt;
-      const updatedAt = data.updatedAt instanceof Timestamp ? data.updatedAt.toDate().toISOString() : data.updatedAt;
+      const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toISOString() : data.createdAt;
+      const updatedAt = data.updatedAt instanceof Timestamp ? data.updatedAt.toISOString() : data.updatedAt;
       
       const searchHistory = (data.searchHistory || []).map((item: any) => ({
         ...item,
-        date: item.date instanceof Timestamp ? item.date.toDate().toISOString() : item.date,
+        date: item.date instanceof Timestamp ? item.date.toISOString() : item.date,
       }));
 
       return {
@@ -60,6 +61,7 @@ export const getUserProfileById = async (uid: string): Promise<UserProfile | nul
         createdAt,
         updatedAt,
         searchHistory,
+        emailVerified: data.emailVerified || false, // Default to false if not present
       } as UserProfile;
     } else {
       console.log(`No user profile found for UID: ${uid}`);
@@ -73,12 +75,11 @@ export const getUserProfileById = async (uid: string): Promise<UserProfile | nul
 
 // --- ServiceAd Firestore Functions ---
 
-// Helper function to upload image to Firebase Storage
 export const uploadAdImage = async (file: File, providerId: string, adIdOrTemp: string): Promise<string> => {
   if (!auth?.currentUser) throw new Error("User not authenticated for image upload.");
+  if (!providerId || !adIdOrTemp) throw new Error("Provider ID and Ad ID/Temp ID are required for image path.");
   const storage = getStorage();
-  // Use adIdOrTemp which could be a temporary ID before ad creation or the actual adId during edit
-  const imagePath = `serviceAds/${providerId}/${adIdOrTemp}/${file.name}`;
+  const imagePath = `serviceAds/${providerId}/${adIdOrTemp}/${Date.now()}_${file.name}`; // Added timestamp for uniqueness
   const storageRef = ref(storage, imagePath);
   
   await uploadBytes(storageRef, file);
@@ -87,8 +88,8 @@ export const uploadAdImage = async (file: File, providerId: string, adIdOrTemp: 
 };
 
 export const deleteAdImage = async (imageUrl: string): Promise<void> => {
-  if (!imageUrl.startsWith('gs://') && !imageUrl.startsWith('https://firebasestorage.googleapis.com')) {
-    console.warn("Not a Firebase Storage URL, skipping delete:", imageUrl);
+  if (!imageUrl || (!imageUrl.startsWith('gs://') && !imageUrl.startsWith('https://firebasestorage.googleapis.com'))) {
+    console.warn("Not a valid Firebase Storage URL or empty, skipping delete:", imageUrl);
     return;
   }
   try {
@@ -96,12 +97,10 @@ export const deleteAdImage = async (imageUrl: string): Promise<void> => {
     const imageRef = ref(storage, imageUrl);
     await deleteObject(imageRef);
   } catch (error: any) {
-    // It's okay if the image doesn't exist (e.g., already deleted)
     if (error.code === 'storage/object-not-found') {
       console.log("Image not found, skipping delete:", imageUrl);
     } else {
       console.error("Error deleting ad image from Storage: ", error);
-      // Don't throw an error that blocks ad deletion if image deletion fails
     }
   }
 };
@@ -113,7 +112,7 @@ export const addServiceAd = async (adData: {
   title: string;
   description: string;
   category: ServiceCategory;
-  address: string; // Changed
+  address: string; 
   imageUrl?: string;
 }): Promise<string> => {
   if (!db) throw new Error("Firestore is not initialized.");
@@ -123,7 +122,6 @@ export const addServiceAd = async (adData: {
       postedDate: serverTimestamp(),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      // imageUrl is already provided in adData if uploaded
     });
     return adDocRef.id;
   } catch (error) {
@@ -158,9 +156,9 @@ export const getAdsByProviderId = async (providerId: string): Promise<ServiceAd[
       return {
         id: docSnap.id,
         ...data,
-        postedDate: (data.postedDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-        createdAt: (data.createdAt as Timestamp)?.toDate().toISOString() || undefined,
-        updatedAt: (data.updatedAt as Timestamp)?.toDate().toISOString() || undefined,
+        postedDate: (data.postedDate as Timestamp)?.toISOString() || new Date().toISOString(),
+        createdAt: (data.createdAt as Timestamp)?.toISOString() || undefined,
+        updatedAt: (data.updatedAt as Timestamp)?.toISOString() || undefined,
       } as ServiceAd;
     });
   } catch (error) {
@@ -203,9 +201,9 @@ export const getAdById = async (adId: string): Promise<ServiceAd | null> => {
       return {
         id: docSnap.id,
         ...adData,
-        postedDate: (adData.postedDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-        createdAt: (adData.createdAt as Timestamp)?.toDate().toISOString() || undefined,
-        updatedAt: (adData.updatedAt as Timestamp)?.toDate().toISOString() || undefined,
+        postedDate: (adData.postedDate as Timestamp)?.toISOString() || new Date().toISOString(),
+        createdAt: (adData.createdAt as Timestamp)?.toISOString() || undefined,
+        updatedAt: (adData.updatedAt as Timestamp)?.toISOString() || undefined,
       } as ServiceAd;
     } else {
       console.log("No such ad document!");
@@ -227,17 +225,20 @@ export const getAllServiceAds = async (): Promise<ServiceAd[]> => {
       const data = docSnap.data();
       
       let providerName = data.providerName;
-      if (!providerName && data.providerId) {
+      // Ensure providerId exists before trying to fetch profile
+      if (!providerName && data.providerId) { 
         const providerProfile = await getUserProfileById(data.providerId);
         providerName = providerProfile?.name || 'N/A';
+      } else if (!providerName) {
+        providerName = 'N/A'; // Fallback if providerId is also missing
       }
 
       ads.push({
         id: docSnap.id,
         ...data,
-        postedDate: (data.postedDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-        createdAt: (data.createdAt as Timestamp)?.toDate().toISOString() || undefined,
-        updatedAt: (data.updatedAt as Timestamp)?.toDate().toISOString() || undefined,
+        postedDate: (data.postedDate as Timestamp)?.toISOString() || new Date().toISOString(),
+        createdAt: (data.createdAt as Timestamp)?.toISOString() || undefined,
+        updatedAt: (data.updatedAt as Timestamp)?.toISOString() || undefined,
         providerName: providerName,
       } as ServiceAd);
     }
@@ -247,5 +248,3 @@ export const getAllServiceAds = async (): Promise<ServiceAd[]> => {
     throw new Error("Failed to fetch service ads.");
   }
 };
-
-    

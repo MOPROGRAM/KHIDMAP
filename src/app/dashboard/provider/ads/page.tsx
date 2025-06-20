@@ -6,10 +6,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useTranslation } from '@/hooks/useTranslation';
-import { ServiceAd, getAdsByProviderId, deleteServiceAd } from '@/lib/data';
-import { Briefcase, PlusCircle, Edit3, Trash2, Wrench, Zap, Loader2, MapPin } from 'lucide-react';
-import NextImage from 'next/image'; // Renamed to avoid conflict
+import { useTranslation, Translations } from '@/hooks/useTranslation';
+import { ServiceAd, ServiceCategory } from '@/lib/data'; // Removed unused getAdsByProviderId, deleteServiceAd
+import { getAdsByProviderId, deleteServiceAd } from '@/lib/data';
+import { Briefcase, PlusCircle, Edit3, Trash2, Wrench, Zap, Loader2, MapPin, Brush, Hammer, Sparkles, GripVertical } from 'lucide-react';
+import NextImage from 'next/image'; 
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,13 +26,22 @@ import { useToast } from '@/hooks/use-toast';
 import { Timestamp } from 'firebase/firestore';
 import { auth } from '@/lib/firebase';
 
+const categoryIcons: Record<ServiceCategory, React.ElementType> = {
+  Plumbing: Wrench,
+  Electrical: Zap,
+  Carpentry: Hammer,
+  Painting: Brush,
+  HomeCleaning: Sparkles,
+  Other: GripVertical,
+};
+
 export default function MyAdsPage() {
   const t = useTranslation();
   const router = useRouter();
   const { toast } = useToast();
   const [ads, setAds] = useState<ServiceAd[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [providerId, setProviderId] = useState<string | null>(null);
+  // const [providerId, setProviderId] = useState<string | null>(null); // No longer needed directly here
 
   const fetchAds = useCallback(async (id: string) => {
     setIsLoading(true);
@@ -49,7 +59,7 @@ export default function MyAdsPage() {
   useEffect(() => {
     const unsubscribe = auth?.onAuthStateChanged(user => {
       if (user) {
-        setProviderId(user.uid);
+        // setProviderId(user.uid); // Not needed for fetchAds directly
         fetchAds(user.uid);
       } else {
         toast({ variant: "destructive", title: "Error", description: "User not identified. Please log in again." });
@@ -129,7 +139,11 @@ export default function MyAdsPage() {
         </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-          {ads.map((ad) => (
+          {ads.map((ad) => {
+            const Icon = categoryIcons[ad.category] || GripVertical;
+            const categoryKey = ad.category.toLowerCase() as keyof Translations;
+            const categoryName = t[categoryKey] || ad.category;
+            return (
             <Card key={ad.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col group">
               <div className="relative w-full h-56 overflow-hidden">
                 <NextImage
@@ -138,11 +152,11 @@ export default function MyAdsPage() {
                   layout="fill"
                   objectFit="cover"
                   className="group-hover:scale-105 transition-transform duration-500 ease-in-out"
-                  data-ai-hint={ad.category === 'Plumbing' ? "plumbing tools" : "electrical equipment"}
+                  data-ai-hint={`${ad.category} service work`}
                 />
-                <div className="absolute top-2 right-2 rtl:left-2 rtl:right-auto bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold rounded-full shadow-md">
-                  {ad.category === 'Plumbing' ? <Wrench className="inline h-3 w-3 ltr:mr-1 rtl:ml-1" /> : <Zap className="inline h-3 w-3 ltr:mr-1 rtl:ml-1" />}
-                  {t[ad.category.toLowerCase() as keyof typeof t]}
+                <div className="absolute top-2 right-2 rtl:left-2 rtl:right-auto bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold rounded-full shadow-md flex items-center gap-1">
+                  <Icon className="h-3 w-3" />
+                  {categoryName}
                 </div>
               </div>
               <CardHeader className="pb-3">
@@ -184,11 +198,10 @@ export default function MyAdsPage() {
                 </AlertDialog>
               </div>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
-
-    

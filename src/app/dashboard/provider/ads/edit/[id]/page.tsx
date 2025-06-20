@@ -9,22 +9,22 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useTranslation, Translations } from '@/hooks/useTranslation'; // Import Translations type
 import { useToast } from "@/hooks/use-toast";
-import { categorizeAd, CategorizeAdOutput } from '@/ai/flows/categorize-ad';
+import { categorizeAd, CategorizeAdOutput, ServiceCategoriesEnumType } from '@/ai/flows/categorize-ad';
 import { ServiceAd, ServiceCategory, getAdById, updateServiceAd, uploadAdImage, deleteAdImage } from '@/lib/data';
 import { Loader2, Wand2, Edit3, Save, UploadCloud, Image as ImageIcon } from 'lucide-react';
 import { z } from 'zod';
 import { auth, db } from '@/lib/firebase';
 import { User } from 'firebase/auth';
-import NextImage from 'next/image'; // Renamed to avoid conflict
+import NextImage from 'next/image';
 
 const EditAdFormSchema = z.object({
   title: z.string().min(1, { message: "requiredField" }),
   description: z.string().min(10, { message: "Description must be at least 10 characters." }),
-  address: z.string().min(1, { message: "requiredField" }), // Changed
-  category: z.enum(['Plumbing', 'Electrical'], { errorMap: (issue, ctx) => ({ message: issue.code === 'invalid_enum_value' ? ctx.data || "requiredField" : "requiredField" }) }),
-  imageUrl: z.string().url({ message: "Invalid image URL" }).optional(),
+  address: z.string().min(1, { message: "requiredField" }),
+  category: z.enum(['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HomeCleaning', 'Other'], { errorMap: (issue, ctx) => ({ message: issue.code === 'invalid_enum_value' ? ctx.data || "requiredField" : "requiredField" }) }),
+  imageUrl: z.string().url({ message: "Invalid image URL" }).optional().nullable(), // Allow nullable for easier handling
 });
 
 export default function EditAdPage() {
@@ -37,9 +37,9 @@ export default function EditAdPage() {
   const [ad, setAd] = useState<ServiceAd | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [address, setAddress] = useState(''); // Changed
+  const [address, setAddress] = useState('');
   const [category, setCategory] = useState<ServiceCategory | ''>('');
-  const [detectedCategory, setDetectedCategory] = useState<ServiceCategory | null>(null);
+  const [detectedCategory, setDetectedCategory] = useState<ServiceCategoriesEnumType | null>(null);
   const [adImageFile, setAdImageFile] = useState<File | null>(null);
   const [adImagePreview, setAdImagePreview] = useState<string | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>(undefined);
@@ -87,7 +87,7 @@ export default function EditAdPage() {
         setAd(fetchedAd);
         setTitle(fetchedAd.title);
         setDescription(fetchedAd.description);
-        setAddress(fetchedAd.address); // Changed
+        setAddress(fetchedAd.address);
         setCategory(fetchedAd.category);
         setCurrentImageUrl(fetchedAd.imageUrl);
         setAdImagePreview(fetchedAd.imageUrl || null);
@@ -119,9 +119,6 @@ export default function EditAdPage() {
         setAdImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-    } else {
-      // If no new file is selected, keep the existing preview if available
-      // setAdImagePreview(currentImageUrl || null); // this might revert immediately
     }
   };
 
@@ -136,7 +133,7 @@ export default function EditAdPage() {
     try {
       const result: CategorizeAdOutput = await categorizeAd({ description });
       setDetectedCategory(result.category);
-      toast({ title: t.detectedCategory, description: `${t.serviceCategory}: ${t[result.category.toLowerCase() as keyof typeof t]}` });
+      toast({ title: t.detectedCategory, description: `${t.serviceCategory}: ${t[result.category.toLowerCase() as keyof typeof t] || result.category}` });
     } catch (error) {
       console.error("Error detecting category:", error);
       toast({ variant: "destructive", title: t.errorOccurred, description: "Could not detect category automatically." });
@@ -159,15 +156,12 @@ export default function EditAdPage() {
     setIsUploadingImage(false);
     setErrors({});
 
-    let newImageUrl = currentImageUrl;
+    let newImageUrl: string | undefined | null = currentImageUrl; // Keep current if no new file
+    const oldImageUrlToDelete = adImageFile && currentImageUrl ? currentImageUrl : undefined;
+
     if (adImageFile) {
       setIsUploadingImage(true);
       try {
-        // If there was an old image, and a new one is uploaded, delete the old one
-        if (currentImageUrl && currentImageUrl !== adImagePreview) { // Check if preview changed due to new file
-             // No need to await this, can happen in background
-             // await deleteAdImage(currentImageUrl); 
-        }
         newImageUrl = await uploadAdImage(adImageFile, currentUser.uid, ad.id);
       } catch (error) {
         console.error("Error uploading new image:", error);
@@ -198,20 +192,15 @@ export default function EditAdPage() {
       const updateData: Partial<Omit<ServiceAd, 'id' | 'providerId' | 'postedDate' | 'createdAt'>> = {
         title: validationResult.data.title,
         description: validationResult.data.description,
-        category: validationResult.data.category,
-        address: validationResult.data.address, // Changed
-        imageUrl: validationResult.data.imageUrl,
+        category: validationResult.data.category as ServiceCategory,
+        address: validationResult.data.address,
+        imageUrl: validationResult.data.imageUrl === null ? undefined : validationResult.data.imageUrl, // Store undefined if null
       };
       
-      // If a new image was uploaded AND the old image existed, try to delete old one AFTER successful update
-      // This is safer: only delete old image if update definitely succeeds with new image URL.
-      const oldImageUrlToDelete = (adImageFile && currentImageUrl && currentImageUrl !== newImageUrl) ? currentImageUrl : undefined;
-
-
       await updateServiceAd(ad.id, updateData);
 
-      if (oldImageUrlToDelete) {
-        await deleteAdImage(oldImageUrlToDelete); // Delete old image after successful update
+      if (oldImageUrlToDelete && oldImageUrlToDelete !== newImageUrl) { // Only delete if a new image was successfully uploaded and it's different
+        await deleteAdImage(oldImageUrlToDelete); 
       }
 
       toast({ title: "Ad Updated", description: "Your ad has been successfully updated." });
@@ -224,6 +213,15 @@ export default function EditAdPage() {
     }
   };
   
+  const serviceCategoryOptions: { value: ServiceCategory; labelKey: keyof Translations }[] = [
+    { value: 'Plumbing', labelKey: 'plumbing' },
+    { value: 'Electrical', labelKey: 'electrical' },
+    { value: 'Carpentry', labelKey: 'carpentry' },
+    { value: 'Painting', labelKey: 'painting' },
+    { value: 'HomeCleaning', labelKey: 'homeCleaning' },
+    { value: 'Other', labelKey: 'other' },
+  ];
+
   if (isFetchingAd || !isFirebaseReady) {
     return (
       <div className="flex items-center justify-center h-full min-h-[calc(100vh-10rem)]">
@@ -273,8 +271,8 @@ export default function EditAdPage() {
 
             {detectedCategory && (
               <div className="p-3 bg-accent/10 border border-accent rounded-md text-sm">
-                <p className="font-medium">{t.detectedCategory}: <span className="text-accent font-semibold">{t[detectedCategory.toLowerCase() as keyof typeof t]}</span></p>
-                <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => setCategory(detectedCategory)}>{t.confirmCategory}</Button>
+                <p className="font-medium">{t.detectedCategory}: <span className="text-accent font-semibold">{t[detectedCategory.toLowerCase() as keyof typeof t] || detectedCategory}</span></p>
+                <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => setCategory(detectedCategory as ServiceCategory)}>{t.confirmCategory}</Button>
               </div>
             )}
 
@@ -285,8 +283,9 @@ export default function EditAdPage() {
                   <SelectValue placeholder={t.selectCategory} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Plumbing">{t.plumbing}</SelectItem>
-                  <SelectItem value="Electrical">{t.electrical}</SelectItem>
+                   {serviceCategoryOptions.map(opt => (
+                     <SelectItem key={opt.value} value={opt.value}>{t[opt.labelKey]}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               {errors.category && <p className="text-sm text-destructive">{errors.category}</p>}
@@ -315,12 +314,12 @@ export default function EditAdPage() {
                   )}
                   <div className="flex text-sm text-muted-foreground">
                     <span className="relative rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-ring">
-                      <span>{currentImageUrl ? t.changeImage : t.uploadAdImage}</span>
+                      <span>{currentImageUrl || adImagePreview ? t.changeImage : t.uploadAdImage}</span>
                       <Input id="adImageEdit" name="adImageEdit" type="file" className="sr-only" ref={fileInputRef} onChange={handleImageChange} accept="image/*" disabled={isLoading} />
                     </span>
-                    {!currentImageUrl && <p className="pl-1 rtl:pr-1">or drag and drop</p>}
+                     {!currentImageUrl && !adImagePreview && <p className="pl-1 rtl:pr-1">or drag and drop</p>}
                   </div>
-                  {!currentImageUrl && <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</p>}
+                   {!currentImageUrl && !adImagePreview && <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</p>}
                 </div>
               </div>
               {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl}</p>}
@@ -343,5 +342,3 @@ export default function EditAdPage() {
     </div>
   );
 }
-
-    

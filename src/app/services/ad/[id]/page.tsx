@@ -3,15 +3,24 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useTranslation } from '@/hooks/useTranslation';
-import { ServiceAd, UserProfile, getAdById, getUserProfileById } from '@/lib/data';
+import { useTranslation, Translations } from '@/hooks/useTranslation';
+import { ServiceAd, UserProfile, getAdById, getUserProfileById, ServiceCategory } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import NextImage from 'next/image'; // Renamed
-import { ArrowLeft, MapPin, Wrench, Zap, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Building } from 'lucide-react';
+import NextImage from 'next/image'; 
+import { ArrowLeft, MapPin, Wrench, Zap, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, Sparkles, GripVertical, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { Timestamp } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
+
+const categoryIcons: Record<ServiceCategory, React.ElementType> = {
+  Plumbing: Wrench,
+  Electrical: Zap,
+  Carpentry: Hammer,
+  Painting: Brush,
+  HomeCleaning: Sparkles,
+  Other: GripVertical,
+};
 
 export default function ServiceAdDetailsPage() {
   const t = useTranslation();
@@ -127,6 +136,9 @@ export default function ServiceAdDetailsPage() {
     );
   }
 
+  const Icon = categoryIcons[ad.category] || GripVertical;
+  const categoryKey = ad.category.toLowerCase() as keyof Translations;
+  const categoryName = t[categoryKey] || ad.category;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-8">
@@ -142,7 +154,7 @@ export default function ServiceAdDetailsPage() {
             layout="fill"
             objectFit="cover"
             className="group-hover:scale-110 transition-transform duration-700 ease-in-out"
-            data-ai-hint={ad.category === 'Plumbing' ? "plumbing project" : "electrical setup"}
+            data-ai-hint={`${ad.category} service project`}
             priority
           />
            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
@@ -150,8 +162,8 @@ export default function ServiceAdDetailsPage() {
              <h1 className="text-3xl md:text-4xl font-bold font-headline text-white mb-2 drop-shadow-lg">{ad.title}</h1>
              <div className="flex items-center gap-3 text-sm text-gray-200">
                 <span className="flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm shadow">
-                    {ad.category === 'Plumbing' ? <Wrench className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
-                    <span>{t[ad.category.toLowerCase() as keyof typeof t]}</span>
+                    <Icon className="h-4 w-4" />
+                    <span>{categoryName}</span>
                 </span>
                 <span className="flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm shadow">
                     <MapPin className="h-4 w-4" />
@@ -217,11 +229,17 @@ export default function ServiceAdDetailsPage() {
                   <div>
                     <h4 className="text-md font-semibold text-muted-foreground mb-1.5">{t.serviceCategory}s:</h4>
                     <div className="flex flex-wrap gap-2">
-                      {provider.serviceCategories.map(cat => (
-                        <span key={cat} className="px-3 py-1 bg-accent text-accent-foreground text-sm rounded-full shadow-sm">
-                          {t[cat.toLowerCase() as keyof typeof t]}
+                      {provider.serviceCategories.map(cat => {
+                        const ProviderCatIcon = categoryIcons[cat] || GripVertical;
+                        const providerCatKey = cat.toLowerCase() as keyof Translations;
+                        const providerCatName = t[providerCatKey] || cat;
+                        return (
+                        <span key={cat} className="px-3 py-1 bg-accent text-accent-foreground text-sm rounded-full shadow-sm flex items-center gap-1">
+                          <ProviderCatIcon className="h-3 w-3" />
+                          {providerCatName}
                         </span>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -233,9 +251,11 @@ export default function ServiceAdDetailsPage() {
                  )}
               </CardContent>
               <CardFooter className="px-0 pt-6">
-                 <Button size="lg" className="w-full sm:w-auto text-base py-3 group hover:shadow-lg transition-all transform hover:scale-105">
-                    Contact {provider.name.split(' ')[0]}
-                    <ArrowRight className="ltr:ml-2 rtl:mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform"/>
+                 <Button size="lg" className="w-full sm:w-auto text-base py-3 group hover:shadow-lg transition-all transform hover:scale-105" asChild>
+                    <a href={`mailto:${provider.email}?subject=Inquiry about your ad: ${ad.title}`}>
+                        Contact {provider.name.split(' ')[0]}
+                        <ArrowRight className="ltr:ml-2 rtl:mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform"/>
+                    </a>
                  </Button>
               </CardFooter>
             </Card>
@@ -251,5 +271,3 @@ export default function ServiceAdDetailsPage() {
     </div>
   );
 }
-
-    
