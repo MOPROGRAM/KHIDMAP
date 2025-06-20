@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -6,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { ArrowRight, Search, Wrench, Zap, Hammer, Brush, SprayCan, HardHat, Layers, GripVertical } from 'lucide-react';
-import Image from 'next/image';
 
 export default function HomePage() {
   const t = useTranslation();
@@ -46,21 +44,6 @@ export default function HomePage() {
                   <ArrowRight className="ltr:ml-2 rtl:mr-2 h-5 w-5" />
                 </Link>
             </Button>
-        </div>
-      </section>
-      
-      {/* Image Section */}
-      <section className="w-full max-w-6xl px-4 animate-fadeIn animation-delay-400">
-        <div className="relative aspect-[16/9] w-full">
-            <Image 
-                src="https://placehold.co/1200x675.png"
-                alt="Modern app interface"
-                layout="fill"
-                objectFit="cover"
-                className="rounded-2xl"
-                data-ai-hint="abstract graphic"
-                priority
-            />
         </div>
       </section>
 
