@@ -13,7 +13,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    --primary: 245 70% 55%; /* Adjusted to Blue-Violet */
+    --primary: 235 70% 55%; /* Adjusted to a more Blue-Violet */
     --primary-foreground: 0 0% 98%; /* White for text on primary */
 
     --secondary: 0 0% 90%; /* Lighter gray for secondary elements */
@@ -33,11 +33,11 @@
 
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 245 70% 55%; /* Adjusted to Blue-Violet for rings */
+    --ring: 235 70% 55%; /* Adjusted to a more Blue-Violet for rings */
 
     --radius: 0.5rem;
 
-    --chart-1: 245 70% 55%; /* Adjusted to Blue-Violet for charts */
+    --chart-1: 235 70% 55%; /* Adjusted to a more Blue-Violet for charts */
     --chart-2: 141 58% 46%; /* Green */
     --chart-3: 30 90% 55%; /* Orange (using the new --orange) */
     --chart-4: 280 65% 60%; /* Different Purple/Pink */
@@ -62,8 +62,8 @@
     --popover: 240 6% 12%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 245 70% 65%; /* Lighter Blue-Violet for dark mode */
-    --primary-foreground: 245 10% 10%; /* Darker text for contrast on light purplish-blue */
+    --primary: 235 70% 65%; /* Lighter, more Blue-Violet for dark mode */
+    --primary-foreground: 235 10% 10%; /* Darker text for contrast on light purplish-blue */
 
     --secondary: 240 6% 15%; /* Darker secondary */
     --secondary-foreground: 0 0% 98%;
@@ -82,9 +82,9 @@
 
     --border: 240 4% 20%;
     --input: 240 4% 20%;
-    --ring: 245 70% 65%; /* Lighter Blue-Violet for rings in dark mode */
+    --ring: 235 70% 65%; /* Lighter, more Blue-Violet for rings in dark mode */
 
-    --chart-1: 245 70% 65%; /* Lighter Blue-Violet for charts in dark mode */
+    --chart-1: 235 70% 65%; /* Lighter, more Blue-Violet for charts in dark mode */
     --chart-2: 141 58% 53%; /* Green */
     --chart-3: 30 90% 65%; /* Orange (using the new --orange) */
     --chart-4: 280 65% 70%;
