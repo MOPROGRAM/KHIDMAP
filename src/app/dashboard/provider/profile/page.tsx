@@ -15,7 +15,7 @@ import { UserProfile, ServiceCategory } from '@/lib/data';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore'; 
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
-import { Loader2, UserCircle, Save } from 'lucide-react';
+import { Loader2, UserCircle, Save, AlertTriangle } from 'lucide-react';
 import NextImage from 'next/image'; 
 import { z } from 'zod';
 
@@ -47,11 +47,11 @@ export default function ProviderProfilePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isFirebaseReady, setIsFirebaseReady] = useState(false);
+  const [isCoreServicesAvailable, setIsCoreServicesAvailable] = useState(false);
 
   useEffect(() => {
     if (auth && db) {
-      setIsFirebaseReady(true);
+      setIsCoreServicesAvailable(true);
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           setAuthUser(user);
@@ -84,10 +84,9 @@ export default function ProviderProfilePage() {
       });
       return () => unsubscribe();
     } else {
-      setIsFirebaseReady(false);
+      setIsCoreServicesAvailable(false);
       setIsFetching(false);
       console.warn("Firebase Auth or DB not initialized in ProviderProfilePage.");
-      toast({ variant: "destructive", title: t.serviceUnavailableTitle, description: t.profileServiceNotReady });
     }
   }, [router, t, toast]);
 
@@ -103,7 +102,7 @@ export default function ProviderProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFirebaseReady || !auth || !db || !authUser) {
+    if (!isCoreServicesAvailable || !auth || !db || !authUser) {
       toast({ variant: "destructive", title: t.errorOccurred, description: t.userNotAuthOrServiceUnavailable });
       setIsLoading(false);
       return;
@@ -136,13 +135,14 @@ export default function ProviderProfilePage() {
     const { data } = validationResult;
     const updatedProfileData: Partial<UserProfile> = {
       name: data.name,
-      email: authUser.email, 
+      email: authUser.email, // Email should come from authUser, not the form, as it's not editable here
       phoneNumber: data.phoneNumber,
       qualifications: data.qualifications,
       serviceAreas: data.serviceAreasString ? data.serviceAreasString.split(',').map(area => area.trim()).filter(Boolean) : [],
       serviceCategories: data.serviceCategories || [], 
       profilePictureUrl: profilePictureUrl, 
-      role: 'provider',
+      role: 'provider', // Ensure role is set, especially for new profiles
+      updatedAt: Timestamp.now(),
     };
 
     try {
@@ -151,8 +151,10 @@ export default function ProviderProfilePage() {
       }
 
       const userDocRef = doc(db, "users", authUser.uid);
-      await setDoc(userDocRef, { ...updatedProfileData, updatedAt: Timestamp.now() }, { merge: true }); 
+      // Use setDoc with merge:true to create or update
+      await setDoc(userDocRef, updatedProfileData , { merge: true }); 
       
+      // Update localStorage for immediate UI reflection of name change
       localStorage.setItem('userName', data.name);
 
       toast({ title: t.profileUpdatedSuccessfully, description: t.profileChangesSaved });
@@ -164,7 +166,7 @@ export default function ProviderProfilePage() {
     }
   };
   
-  if (isFetching) {
+  if (isFetching && isCoreServicesAvailable) { // Only show main loader if services are expected
     return <div className="flex items-center justify-center h-full min-h-[calc(100vh-10rem)]"><Loader2 className="h-8 w-8 animate-spin text-primary" /> <span className="ml-2">{t.loading}</span></div>;
   }
 
@@ -187,14 +189,14 @@ export default function ProviderProfilePage() {
             <UserCircle className="h-10 w-10 text-primary" />
             <div>
               <CardTitle className="text-3xl font-headline">{t.profile}</CardTitle>
-              <CardDescription>{t.profilePageDescription.replace("{appName}", t.appName)}</CardDescription>
+              <CardDescription>{t.profilePageDescription?.replace("{appName}", t.appName)}</CardDescription>
             </div>
           </div>
           <div className="flex justify-center">
             {profilePictureUrl ? (
               <NextImage 
                 src={profilePictureUrl} 
-                alt={t.profilePictureAlt} 
+                alt={t.profilePictureAlt || "Profile Picture"} 
                 width={120} 
                 height={120} 
                 className="rounded-full border-4 border-primary shadow-md object-cover"
@@ -208,34 +210,35 @@ export default function ProviderProfilePage() {
           </div>
         </CardHeader>
         <CardContent>
-           {!isFirebaseReady && (
-            <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md text-center">
-              {t.profileEditingUnavailable}
+           {!isCoreServicesAvailable && (
+            <div className="p-4 mb-6 text-sm text-destructive-foreground bg-destructive rounded-md text-center flex items-center gap-2 justify-center">
+                <AlertTriangle className="h-5 w-5" />
+                <span>{t.profileEditingUnavailable}</span>
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="name">{t.name}</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} disabled={!isFirebaseReady || isLoading} />
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} disabled={!isCoreServicesAvailable || isLoading} />
                 {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">{t.email}</Label>
-                <Input id="email" type="email" value={email} readOnly disabled className="bg-muted/50"/>
+                <Input id="email" type="email" value={email} readOnly disabled className="bg-muted/50 cursor-not-allowed"/>
                 {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="phoneNumber">{t.phoneNumber}</Label>
-              <Input id="phoneNumber" type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} disabled={!isFirebaseReady || isLoading}/>
+              <Input id="phoneNumber" type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} disabled={!isCoreServicesAvailable || isLoading}/>
               {errors.phoneNumber && <p className="text-sm text-destructive">{errors.phoneNumber}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="qualifications">{t.qualifications}</Label>
-              <Textarea id="qualifications" value={qualifications} onChange={(e) => setQualifications(e.target.value)} rows={4} disabled={!isFirebaseReady || isLoading}/>
+              <Textarea id="qualifications" value={qualifications} onChange={(e) => setQualifications(e.target.value)} rows={4} disabled={!isCoreServicesAvailable || isLoading}/>
               {errors.qualifications && <p className="text-sm text-destructive">{errors.qualifications}</p>}
             </div>
             
@@ -244,7 +247,7 @@ export default function ProviderProfilePage() {
               <Select
                 value={serviceCategories.length > 0 ? serviceCategories[0] : ""} 
                 onValueChange={handleServiceCategoriesChange}
-                disabled={!isFirebaseReady || isLoading}
+                disabled={!isCoreServicesAvailable || isLoading}
               >
                 <SelectTrigger id="serviceCategoriesTrigger">
                   <SelectValue placeholder={`${t.selectCategory}`} />
@@ -261,11 +264,11 @@ export default function ProviderProfilePage() {
 
             <div className="space-y-2">
               <Label htmlFor="serviceAreas">{t.serviceAreas}</Label>
-              <Input id="serviceAreas" value={serviceAreasString} onChange={(e) => setServiceAreasString(e.target.value)} placeholder={t.serviceAreasPlaceholder} disabled={!isFirebaseReady || isLoading}/>
+              <Input id="serviceAreas" value={serviceAreasString} onChange={(e) => setServiceAreasString(e.target.value)} placeholder={t.serviceAreasPlaceholder} disabled={!isCoreServicesAvailable || isLoading}/>
               {errors.serviceAreasString && <p className="text-sm text-destructive">{errors.serviceAreasString}</p>}
             </div>
 
-            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !isFirebaseReady}>
+            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !isCoreServicesAvailable}>
               {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Save className="ltr:mr-2 rtl:ml-2 h-4 w-4"/>}
               {t.saveChanges}
             </Button>

@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, User, Briefcase, Search, History, LogOut, Settings, PlusCircle, Loader2, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Home, User, Briefcase, Search, History, LogOut, Settings, PlusCircle, Loader2, ShieldCheck, AlertTriangle, ServerCrash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -35,61 +35,67 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [isCoreServicesAvailable, setIsCoreServicesAvailable] = useState(false);
 
 
   useEffect(() => {
-    if (!auth || !db) {
-      console.warn("Firebase Auth or DB is not initialized. Dashboard layout may not function correctly.");
-      setIsLoading(false);
-      return;
-    }
+    if (auth && db) {
+      setIsCoreServicesAvailable(true);
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          setAuthUser(user);
+          setIsEmailVerified(user.emailVerified); 
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setAuthUser(user);
-        setIsEmailVerified(user.emailVerified); 
-
-        const roleFromStorage = localStorage.getItem('userRole') as UserRole | null;
-        if (roleFromStorage) {
-            setUserRole(roleFromStorage);
-        }
-
-        try {
-          const userDocRef = doc(db, "users", user.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            const roleFromFirestore = user.email === ADMIN_EMAIL ? 'admin' : (userData.role as UserRole);
-            
-            setUserRole(roleFromFirestore);
-            localStorage.setItem('userRole', roleFromFirestore);
-            localStorage.setItem('userName', userData.name || user.displayName || '');
-            localStorage.setItem('userEmail', userData.email || user.email || '');
-          } else {
-            console.warn("User profile not found in Firestore for UID:", user.uid, ". Redirecting to login.");
-            if(auth) await signOut(auth); 
-            router.replace('/auth/login');
-            return; 
+          // Try to get role from localStorage first for faster UI update
+          const roleFromStorage = localStorage.getItem('userRole') as UserRole | null;
+          if (roleFromStorage) {
+              setUserRole(roleFromStorage);
           }
-        } catch (error) {
-          console.error("Error fetching user role from Firestore:", error);
-          setUserRole(null); 
+
+          // Then verify/update with Firestore
+          try {
+            const userDocRef = doc(db, "users", user.uid);
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+              const userData = userDocSnap.data();
+              const roleFromFirestore = user.email === ADMIN_EMAIL ? 'admin' : (userData.role as UserRole);
+              
+              setUserRole(roleFromFirestore); // Update with definitive source
+              localStorage.setItem('userRole', roleFromFirestore);
+              localStorage.setItem('userName', userData.name || user.displayName || '');
+              localStorage.setItem('userEmail', userData.email || user.email || '');
+            } else {
+              console.warn("User profile not found in Firestore for UID:", user.uid, ". Logging out user.");
+              if(auth) await signOut(auth); 
+              // router.replace('/auth/login'); // Handled by the else block below
+              return; 
+            }
+          } catch (error) {
+            console.error("Error fetching user role from Firestore:", error);
+            setUserRole(null); // Role couldn't be determined, safer to clear
+            toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotFetchProfile });
+          }
+        } else {
+          setAuthUser(null);
+          setUserRole(null);
+          setIsEmailVerified(false);
+          localStorage.removeItem('isLoggedIn');
+          localStorage.removeItem('userId');
+          localStorage.removeItem('userName');
+          localStorage.removeItem('userEmail');
+          localStorage.removeItem('userRole');
+          router.replace('/auth/login');
         }
-      } else {
-        setAuthUser(null);
-        setUserRole(null);
-        setIsEmailVerified(false);
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('userId');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userRole');
-        router.replace('/auth/login');
-      }
+        setIsLoading(false);
+      });
+      return () => unsubscribe();
+    } else {
+      console.warn("Firebase Auth or DB is not initialized. Dashboard layout cannot function.");
+      setIsCoreServicesAvailable(false);
       setIsLoading(false);
-    });
-    return () => unsubscribe();
-  }, [router, toast]);
+      // No redirection here, let the conditional rendering below handle it.
+    }
+  }, [router, toast, t]);
 
 
   const navItems: NavItem[] = [
@@ -109,7 +115,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     try {
       await signOut(auth);
-      router.push('/auth/login');
+      // onAuthStateChanged will handle redirection
     } catch (error) {
       console.error("Error signing out from dashboard: ", error);
       toast({ variant: "destructive", title: t.logoutFailed, description: (error as Error).message });
@@ -125,18 +131,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
   
-  if (!auth && !isLoading) { 
+  if (!isCoreServicesAvailable) { 
     return (
       <div className="flex h-screen flex-col items-center justify-center text-center p-4">
-        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        <ServerCrash className="h-16 w-16 text-destructive mb-4" />
         <h1 className="text-2xl font-bold mb-2">{t.serviceUnavailableTitle}</h1>
-        <p className="text-muted-foreground mb-6">{t.coreServicesUnavailable}</p>
+        <p className="text-muted-foreground mb-6">{t.coreServicesUnavailableDashboard}</p>
         <Button onClick={() => router.push('/')}>{t.goToHomepage}</Button>
       </div>
     );
   }
 
   if (!authUser && !isLoading) { 
+     // This case should ideally be handled by the onAuthStateChanged redirect,
+     // but as a fallback:
     return (
       <div className="flex h-screen items-center justify-center">
         <p>{t.redirectingToLogin}</p>
@@ -147,7 +155,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const filteredNavItems = userRole ? navItems.filter(item => item.roles.includes(userRole)) : navItems.filter(item => item.href === '/dashboard');
 
   return (
-    <div className="flex min-h-[calc(100vh-8rem)]">
+    <div className="flex min-h-[calc(100vh-4rem)]"> {/* Adjusted for header height */}
       <aside className="w-64 border-r bg-background p-4 space-y-4 hidden md:flex flex-col sticky top-16 h-[calc(100vh-4rem)]">
         <div className="px-2 py-1">
           <Logo />
@@ -168,7 +176,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Button>
           ))}
            {!userRole && authUser && ( 
-            <p className="text-xs text-muted-foreground p-2">{t.verifyingUserRole}</p>
+            <div className="p-2 text-xs text-muted-foreground flex items-center gap-1.5">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>{t.verifyingUserRole}</span>
+            </div>
           )}
         </nav>
         <Separator />
@@ -179,10 +190,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
       <div className="flex-1 p-4 md:p-8 overflow-y-auto">
         {authUser && !isEmailVerified && (
-          <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-600 rounded-md">
+          <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-600 rounded-md shadow">
             <p className="font-medium">{t.verifyEmailPromptTitle}</p>
-            <p className="text-sm">{t.verifyEmailPromptMessage.replace('{email}', authUser.email || '')}</p>
-            <Button variant="link" size="sm" className="p-0 h-auto text-yellow-700 dark:text-yellow-300 hover:underline" onClick={async () => {
+            <p className="text-sm">{t.verifyEmailPromptMessage?.replace('{email}', authUser.email || '')}</p>
+            <Button variant="link" size="sm" className="p-0 h-auto text-yellow-700 dark:text-yellow-300 hover:underline font-semibold" onClick={async () => {
               if (auth?.currentUser) {
                 try {
                   await sendEmailVerification(auth.currentUser);

@@ -10,8 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, LogInIcon, Loader2 } from 'lucide-react';
-import { auth, db } from '@/lib/firebase'; // auth can be undefined
+import { Eye, EyeOff, LogInIcon, Loader2, AlertTriangle } from 'lucide-react';
+import { auth, db } from '@/lib/firebase'; 
 import { signInWithEmailAndPassword, onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -23,29 +23,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isAuthInitialized, setIsAuthInitialized] = useState(false);
+  const [isAuthServiceAvailable, setIsAuthServiceAvailable] = useState(false);
 
 
   useEffect(() => {
-    if (auth) {
-      setIsAuthInitialized(true);
+    if (auth && db) { // Check for db as well, as it's needed for user role fetching
+      setIsAuthServiceAvailable(true);
       const unsubscribe = onAuthStateChanged(auth, (user) => {
-        if (user) {
-          // User is signed in, redirect to dashboard or relevant page
-          // router.push('/dashboard'); // Avoid redirecting if already on a page that requires auth state check
-        }
+        // Redirect logic handled by DashboardLayout or if login is successful
       });
       return () => unsubscribe();
     } else {
-      setIsAuthInitialized(false);
-      console.warn("Firebase Auth is not initialized in LoginPage.");
+      setIsAuthServiceAvailable(false);
+      console.warn("Firebase Auth or DB is not initialized in LoginPage.");
     }
-  }, [router]);
+  }, []);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !db) {
+    if (!auth || !db) { // Redundant check, but good for safety
       toast({
         variant: "destructive",
         title: t.serviceUnavailableTitle,
@@ -73,7 +70,7 @@ export default function LoginPage() {
         userNameFromDb = userData.name || userNameFromDb;
         userEmailFromDb = userData.email || userEmailFromDb;
       } else {
-        console.warn("User document not found in Firestore. Role might be missing.");
+        console.warn("User document not found in Firestore. Role might be missing. User will be logged in, but dashboard might redirect or show warnings.");
       }
 
       localStorage.setItem('isLoggedIn', 'true');
@@ -88,7 +85,7 @@ export default function LoginPage() {
       
       toast({
         title: t.loginSuccessful,
-        description: t.welcomeBackUser.replace('{userName}', userNameFromDb || email.split('@')[0]),
+        description: t.welcomeBackUser?.replace('{userName}', userNameFromDb || email.split('@')[0]),
       });
       router.push('/dashboard');
     } catch (error: any) {
@@ -120,9 +117,10 @@ export default function LoginPage() {
           <CardDescription>{t.welcomeTo} {t.appName}! {t.tagline}</CardDescription>
         </CardHeader>
         <CardContent>
-          {!isAuthInitialized && !auth && (
-             <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md text-center">
-                {t.authServiceUnavailable}
+          {!isAuthServiceAvailable && (
+             <div className="p-4 mb-6 text-sm text-destructive-foreground bg-destructive rounded-md text-center flex items-center gap-2 justify-center">
+                <AlertTriangle className="h-5 w-5" />
+                <span>{t.authServiceUnavailable}</span>
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -136,6 +134,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="text-base"
+                disabled={!isAuthServiceAvailable || isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -148,6 +147,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   className="text-base"
+                  disabled={!isAuthServiceAvailable || isLoading}
                 />
                 <Button
                   type="button"
@@ -156,12 +156,13 @@ export default function LoginPage() {
                   className="absolute inset-y-0 right-0 h-full px-3"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? t.hidePassword : t.showPassword}
+                  disabled={!isAuthServiceAvailable || isLoading}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </Button>
               </div>
             </div>
-            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !isAuthInitialized}>
+            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !isAuthServiceAvailable}>
               {isLoading ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : t.login}
             </Button>
           </form>

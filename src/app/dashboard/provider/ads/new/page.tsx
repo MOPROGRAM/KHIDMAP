@@ -13,10 +13,10 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { categorizeAd, CategorizeAdOutput, ServiceCategoriesEnumType } from '@/ai/flows/categorize-ad';
 import { ServiceCategory, addServiceAd, UserProfile, uploadAdImage } from '@/lib/data';
-import { Loader2, Wand2, PlusCircle, UploadCloud, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Wand2, PlusCircle, UploadCloud, Image as ImageIcon, AlertTriangle } from 'lucide-react';
 import { z } from 'zod';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, Timestamp, collection as firestoreCollection } from 'firebase/firestore'; // Renamed collection to firestoreCollection
+import { doc, getDoc, Timestamp, collection as firestoreCollection } from 'firebase/firestore'; 
 import NextImage from 'next/image';
 
 const AdFormSchema = z.object({
@@ -46,35 +46,40 @@ export default function NewAdPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [providerId, setProviderId] = useState<string | null>(null);
   const [providerName, setProviderName] = useState<string | null>(null); 
-  const [isFirebaseReady, setIsFirebaseReady] = useState(false);
+  const [isCoreServicesAvailable, setIsCoreServicesAvailable] = useState(false);
 
-  // fileInputRef is still used by handleImageChange if onChange is on the input
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (auth && db) {
-      setIsFirebaseReady(true);
+      setIsCoreServicesAvailable(true);
       const unsubscribe = auth.onAuthStateChanged(async (user) => {
         if (user) {
           setProviderId(user.uid);
+          // Fetch provider name from Firestore
           const userDocRef = doc(db, "users", user.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data() as UserProfile;
-            setProviderName(userData.name || user.displayName || t.anonymousProvider);
-          } else {
-             setProviderName(user.displayName || t.anonymousProvider); 
+          try {
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+              const userData = userDocSnap.data() as UserProfile;
+              setProviderName(userData.name || user.displayName || t.anonymousProvider);
+            } else {
+               console.warn(`User document for ${user.uid} not found in Firestore for NewAdPage.`);
+               setProviderName(user.displayName || t.anonymousProvider); 
+            }
+          } catch (error) {
+             console.error("Error fetching user profile for NewAdPage:", error);
+             setProviderName(user.displayName || t.anonymousProvider);
           }
         } else {
-          toast({ variant: "destructive", title: t.errorOccurred, description: t.userNotIdentified });
+          toast({ variant: "destructive", title: t.authError, description: t.userNotIdentified });
           router.push('/auth/login');
         }
       });
        return () => unsubscribe();
     } else {
-      setIsFirebaseReady(false);
+      setIsCoreServicesAvailable(false);
       console.warn("Firebase Auth or DB not initialized in NewAdPage.");
-      toast({ variant: "destructive", title: t.serviceUnavailableTitle, description: t.coreServicesUnavailable });
     }
   }, [router, toast, t]);
 
@@ -87,6 +92,7 @@ export default function NewAdPage() {
         setAdImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+      setErrors(prev => ({ ...prev, imageUrl: '' }));
     } else {
       setAdImageFile(null);
       setAdImagePreview(null);
@@ -116,8 +122,9 @@ export default function NewAdPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFirebaseReady || !db) {
+    if (!isCoreServicesAvailable || !db || !auth?.currentUser) { // Check auth.currentUser
       toast({ variant: "destructive", title: t.serviceUnavailableTitle, description: t.cannotPostAdCoreServices });
+      setIsLoading(false);
       return;
     }
     setIsLoading(true);
@@ -131,28 +138,16 @@ export default function NewAdPage() {
     }
 
     let uploadedImageUrl: string | undefined | null = null;
-    let adFirestoreId: string | undefined = undefined;
-
-    if (db) {
-        adFirestoreId = doc(firestoreCollection(db, "serviceAds")).id;
-    } else {
-        toast({ variant: "destructive", title: t.errorOccurred, description: t.coreServicesUnavailable });
-        setIsLoading(false);
-        return;
-    }
+    // Generate a new Firestore ID for the ad, this ID will be used for the image path if an image is uploaded
+    const adFirestoreId = doc(firestoreCollection(db, "serviceAds")).id;
 
     if (adImageFile) {
-      if (!adFirestoreId) { 
-        toast({ variant: "destructive", title: t.errorOccurred, description: "Failed to generate ad ID for image." });
-        setIsLoading(false);
-        return;
-      }
       setIsUploadingImage(true);
       try {
         uploadedImageUrl = await uploadAdImage(adImageFile, providerId, adFirestoreId);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error uploading image:", error);
-        toast({ variant: "destructive", title: t.errorOccurred, description: t.failedUploadImage });
+        toast({ variant: "destructive", title: t.errorOccurred, description: error.message || t.failedUploadImage });
         setIsLoading(false);
         setIsUploadingImage(false);
         return;
@@ -192,9 +187,9 @@ export default function NewAdPage() {
       }, adFirestoreId); 
       toast({ title: t.adPostedSuccessfully, description: t.adLiveShortly });
       router.push('/dashboard/provider/ads'); 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error posting ad:", error);
-      toast({ variant: "destructive", title: t.errorOccurred, description: (error as Error).message || t.failedPostAd });
+      toast({ variant: "destructive", title: t.errorOccurred, description: error.message || t.failedPostAd });
     } finally {
       setIsLoading(false);
     }
@@ -222,25 +217,26 @@ export default function NewAdPage() {
           <CardDescription>{t.newAdDescriptionPage?.replace("{appName}", t.appName)}</CardDescription>
         </CardHeader>
         <CardContent>
-          {!isFirebaseReady && (
-            <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md text-center">
-              {t.postingAdsUnavailable}
+          {!isCoreServicesAvailable && (
+            <div className="p-4 mb-6 text-sm text-destructive-foreground bg-destructive rounded-md text-center flex items-center gap-2 justify-center">
+              <AlertTriangle className="h-5 w-5" />
+              <span>{t.postingAdsUnavailable}</span>
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="title">{t.adTitle}</Label>
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={!isFirebaseReady || isLoading} />
+              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={!isCoreServicesAvailable || isLoading} />
               {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="description">{t.adDescription}</Label>
-              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={5} disabled={!isFirebaseReady || isLoading}/>
+              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={5} disabled={!isCoreServicesAvailable || isLoading}/>
               {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
             </div>
             
-            <Button type="button" variant="outline" onClick={handleDetectCategory} disabled={isCategorizing || !description || !isFirebaseReady || isLoading} className="w-full sm:w-auto group">
+            <Button type="button" variant="outline" onClick={handleDetectCategory} disabled={isCategorizing || !description || !isCoreServicesAvailable || isLoading} className="w-full sm:w-auto group">
               {isCategorizing ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Wand2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:animate-pulse-glow"/>}
               {t.detectCategoryAI}
             </Button>
@@ -254,7 +250,7 @@ export default function NewAdPage() {
 
             <div className="space-y-2">
               <Label htmlFor="category">{t.category}</Label>
-              <Select value={category} onValueChange={(value) => setCategory(value as ServiceCategory)} disabled={!isFirebaseReady || isLoading}>
+              <Select value={category} onValueChange={(value) => setCategory(value as ServiceCategory)} disabled={!isCoreServicesAvailable || isLoading}>
                 <SelectTrigger id="category">
                   <SelectValue placeholder={t.selectCategory} />
                 </SelectTrigger>
@@ -269,30 +265,14 @@ export default function NewAdPage() {
 
             <div className="space-y-2">
               <Label htmlFor="address">{t.address}</Label>
-              <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} disabled={!isFirebaseReady || isLoading} placeholder="e.g., 123 Main St, City" />
+              <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} disabled={!isCoreServicesAvailable || isLoading} placeholder="e.g., 123 Main St, City" />
               {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="adImage">{t.adImage}</Label>
-              <div 
-                className="mt-1 flex flex-col items-center justify-center px-6 pt-5 pb-6 border-2 border-input border-dashed rounded-md group"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                    // Set the file to the input if ref is available
-                    if (fileInputRef.current) {
-                        fileInputRef.current.files = e.dataTransfer.files;
-                        // Manually trigger handleImageChange
-                        handleImageChange({ target: fileInputRef.current } as any);
-                    } else {
-                         handleImageChange({ target: { files: e.dataTransfer.files } } as any);
-                    }
-                  }
-                }}
-              >
-                {adImagePreview ? (
+              <div className="mt-1 flex flex-col items-center justify-center px-6 pt-5 pb-6 border-2 border-input border-dashed rounded-md group">
+                 {adImagePreview ? (
                     <div className="mb-2">
                         <NextImage src={adImagePreview} alt={t.imagePreview || "Image preview"} width={200} height={200} className="mx-auto h-24 w-auto object-contain rounded-md shadow-md" />
                     </div>
@@ -306,10 +286,10 @@ export default function NewAdPage() {
                     ref={fileInputRef} 
                     onChange={handleImageChange} 
                     accept="image/*" 
-                    disabled={!isFirebaseReady || isLoading}
+                    disabled={!isCoreServicesAvailable || isLoading || isUploadingImage}
                     className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                 />
-                <p className="text-xs text-muted-foreground mt-1">{t.orDragAndDrop} {t.imageUploadHint}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t.imageUploadHint}</p>
               </div>
               {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl}</p>}
               {isUploadingImage && (
@@ -320,7 +300,7 @@ export default function NewAdPage() {
               )}
             </div>
 
-            <Button type="submit" className="w-full text-lg py-3 transform active:scale-95" disabled={isLoading || !providerId || !isFirebaseReady || isUploadingImage}>
+            <Button type="submit" className="w-full text-lg py-3 transform active:scale-95" disabled={isLoading || !providerId || !isCoreServicesAvailable || isUploadingImage}>
               {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <PlusCircle className="ltr:mr-2 rtl:ml-2 h-5 w-5"/>}
               {t.postAd}
             </Button>

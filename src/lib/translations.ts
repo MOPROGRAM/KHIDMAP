@@ -125,12 +125,14 @@ export type Translations = {
   anonymousProvider?: string;
   userNotIdentified?: string;
   coreServicesUnavailable?: string;
+  coreServicesUnavailableDashboard?: string; // Specific for dashboard layout
   cannotPostAdCoreServices?: string;
   providerInfoMissing?: string;
   adLiveShortly?: string;
   failedPostAd?: string;
   newAdDescriptionPage?: string; // "Fill out the form to post your service ad on {appName}."
-  postingAdsUnavailable?: string;
+  postingAdsUnavailable?: string; // For new ad page
+  editingAdsUnavailable?: string; // For edit ad page
   failedLoadAds?: string;
   adDeletedTitle?: string;
   adDeletedSuccess?: string;
@@ -153,7 +155,7 @@ export type Translations = {
   failedUpdateProfile?: string;
   profilePageDescription?: string; // "Manage your provider profile details for {appName}."
   profilePictureAlt?: string;
-  profileEditingUnavailable?: string;
+  profileEditingUnavailable?: string; // For profile page
   profileHelpTextCategory?: string; // "Select your primary service category. For multiple, manage via separate ads."
   searchHistoryClearedTitle?: string;
   searchHistoryClearedSuccess?: string;
@@ -185,6 +187,7 @@ export type Translations = {
   accessDenied?: string;
   notAuthorizedViewPage?: string;
   adminDashboardDescription?: string;
+  adminDashboardUnavailable?: string; // For admin dashboard if services down
   logoutFailed?: string;
   goToHomepage?: string;
   redirectingToLogin?: string;
@@ -228,6 +231,8 @@ export type Translations = {
   removeImageTitle?: string;
   removeImageConfirm?: string;
   removeImageButton?: string;
+  tryAgain?: string;
+  backToDashboard?: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -327,7 +332,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     showPassword: "Show password",
     authServiceUnavailable: "Authentication service is currently unavailable. Please try again later or contact support.",
     serviceUnavailableTitle: "Service Unavailable",
-    serviceUnavailableMessage: "Authentication or database service is not configured. Please contact support.",
+    serviceUnavailableMessage: "A core service (like authentication or database) is currently not configured or unavailable. Please try again later or contact support.",
+    coreServicesUnavailableDashboard: "Core services are unavailable. The dashboard cannot be loaded at this time. Please try again later or contact support.",
     loginSuccessful: "Login Successful",
     welcomeBackUser: "Welcome back, {userName}!",
     loginFailedGeneric: "Login Failed. Please check your credentials.",
@@ -356,13 +362,14 @@ export const translations: Record<'en' | 'ar', Translations> = {
     uploadingImage: "Uploading image",
     anonymousProvider: "Anonymous Provider",
     userNotIdentified: "User not identified. Please log in again.",
-    coreServicesUnavailable: "Core services are not ready.",
+    coreServicesUnavailable: "Core services are not ready or unavailable.",
     cannotPostAdCoreServices: "Cannot post ad. Core services are not ready.",
     providerInfoMissing: "Provider information is missing. Please try again.",
     adLiveShortly: "Your ad will be live shortly.",
     failedPostAd: "Failed to post ad.",
     newAdDescriptionPage: "Fill out the form to post your service ad on {appName}.",
-    postingAdsUnavailable: "Posting ads is currently unavailable. Core services are not configured.",
+    postingAdsUnavailable: "Posting ads is currently unavailable because core services are not configured.",
+    editingAdsUnavailable: "Editing ads is currently unavailable because core services are not configured.",
     failedLoadAds: "Failed to load your ads.",
     adDeletedTitle: "Ad Deleted",
     adDeletedSuccess: "The advertisement has been successfully deleted.",
@@ -385,7 +392,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     failedUpdateProfile: "Failed to update profile.",
     profilePageDescription: "Manage your provider profile details for {appName}.",
     profilePictureAlt: "Profile Picture",
-    profileEditingUnavailable: "Profile editing is currently unavailable. Core services are not configured.",
+    profileEditingUnavailable: "Profile editing is currently unavailable because core services are not configured.",
     profileHelpTextCategory: "Select your primary service category. For multiple, manage via separate ads.",
     searchHistoryClearedTitle: "Search History Cleared",
     searchHistoryClearedSuccess: "Your search history has been successfully cleared.",
@@ -417,10 +424,11 @@ export const translations: Record<'en' | 'ar', Translations> = {
     accessDenied: "Access Denied",
     notAuthorizedViewPage: "You are not authorized to view this page.",
     adminDashboardDescription: "Manage users, services, and application settings.",
+    adminDashboardUnavailable: "Admin Dashboard is currently unavailable because core services are not configured.",
     logoutFailed: "Logout Failed",
     goToHomepage: "Go to Homepage",
     redirectingToLogin: "Redirecting to login...",
-    verifyingUserRole: "Verifying user role... Some links may be hidden temporarily.",
+    verifyingUserRole: "Verifying user role...",
     verifyEmailPromptTitle: "Please verify your email address.",
     verifyEmailPromptMessage: "A verification link was sent to {email}. Check your inbox (and spam folder).",
     resendVerificationEmail: "Resend verification email",
@@ -456,6 +464,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     removeImageTitle: "Remove Image?",
     removeImageConfirm: "Are you sure you want to remove the current ad image? This action will permanently delete the image if you save the changes.",
     removeImageButton: "Remove Image",
+    tryAgain: "Try Again",
+    backToDashboard: "Back to Dashboard",
   },
   ar: {
     appName: "خدماب",
@@ -553,7 +563,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     showPassword: "إظهار كلمة المرور",
     authServiceUnavailable: "خدمة المصادقة غير متاحة حاليًا. يرجى المحاولة مرة أخرى لاحقًا أو الاتصال بالدعم.",
     serviceUnavailableTitle: "الخدمة غير متوفرة",
-    serviceUnavailableMessage: "خدمة المصادقة أو قاعدة البيانات غير مهيأة. يرجى الاتصال بالدعم.",
+    serviceUnavailableMessage: "إحدى الخدمات الأساسية (مثل المصادقة أو قاعدة البيانات) غير مهيأة حاليًا أو غير متاحة. يرجى المحاولة مرة أخرى لاحقًا أو الاتصال بالدعم.",
+    coreServicesUnavailableDashboard: "الخدمات الأساسية غير متوفرة. لا يمكن تحميل لوحة التحكم في الوقت الحالي. يرجى المحاولة مرة أخرى لاحقًا أو الاتصال بالدعم.",
     loginSuccessful: "تم تسجيل الدخول بنجاح",
     welcomeBackUser: "مرحباً بعودتك، {userName}!",
     loginFailedGeneric: "فشل تسجيل الدخول. يرجى التحقق من بيانات الاعتماد الخاصة بك.",
@@ -582,13 +593,14 @@ export const translations: Record<'en' | 'ar', Translations> = {
     uploadingImage: "جاري تحميل الصورة",
     anonymousProvider: "مقدم خدمة مجهول",
     userNotIdentified: "لم يتم التعرف على المستخدم. يرجى تسجيل الدخول مرة أخرى.",
-    coreServicesUnavailable: "الخدمات الأساسية غير جاهزة.",
+    coreServicesUnavailable: "الخدمات الأساسية غير جاهزة أو غير متاحة.",
     cannotPostAdCoreServices: "لا يمكن نشر الإعلان. الخدمات الأساسية غير جاهزة.",
     providerInfoMissing: "معلومات مقدم الخدمة مفقودة. يرجى المحاولة مرة أخرى.",
     adLiveShortly: "سيكون إعلانك متاحًا قريبًا.",
     failedPostAd: "فشل نشر الإعلان.",
     newAdDescriptionPage: "املأ النموذج لنشر إعلان خدمتك على {appName}.",
-    postingAdsUnavailable: "نشر الإعلانات غير متاح حاليًا. الخدمات الأساسية غير مهيأة.",
+    postingAdsUnavailable: "نشر الإعلانات غير متاح حاليًا لأن الخدمات الأساسية غير مهيأة.",
+    editingAdsUnavailable: "تعديل الإعلانات غير متاح حاليًا لأن الخدمات الأساسية غير مهيأة.",
     failedLoadAds: "فشل تحميل إعلاناتك.",
     adDeletedTitle: "تم حذف الإعلان",
     adDeletedSuccess: "تم حذف الإعلان بنجاح.",
@@ -611,7 +623,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     failedUpdateProfile: "فشل تحديث الملف الشخصي.",
     profilePageDescription: "إدارة تفاصيل ملف تعريف المزود الخاص بك لـ {appName}.",
     profilePictureAlt: "الصورة الشخصية",
-    profileEditingUnavailable: "تعديل الملف الشخصي غير متاح حاليًا. الخدمات الأساسية غير مهيأة.",
+    profileEditingUnavailable: "تعديل الملف الشخصي غير متاح حاليًا لأن الخدمات الأساسية غير مهيأة.",
     profileHelpTextCategory: "اختر فئة خدمتك الأساسية. لعدة فئات، قم بإدارتها عبر إعلانات منفصلة.",
     searchHistoryClearedTitle: "تم مسح سجل البحث",
     searchHistoryClearedSuccess: "تم مسح سجل البحث الخاص بك بنجاح.",
@@ -643,10 +655,11 @@ export const translations: Record<'en' | 'ar', Translations> = {
     accessDenied: "تم رفض الوصول",
     notAuthorizedViewPage: "أنت غير مصرح لك بعرض هذه الصفحة.",
     adminDashboardDescription: "إدارة المستخدمين والخدمات وإعدادات التطبيق.",
+    adminDashboardUnavailable: "لوحة تحكم المسؤول غير متاحة حاليًا لأن الخدمات الأساسية غير مهيأة.",
     logoutFailed: "فشل تسجيل الخروج",
     goToHomepage: "اذهب إلى الصفحة الرئيسية",
     redirectingToLogin: "جاري التوجيه إلى صفحة تسجيل الدخول...",
-    verifyingUserRole: "جاري التحقق من دور المستخدم... قد تكون بعض الروابط مخفية مؤقتًا.",
+    verifyingUserRole: "جاري التحقق من دور المستخدم...",
     verifyEmailPromptTitle: "يرجى التحقق من عنوان بريدك الإلكتروني.",
     verifyEmailPromptMessage: "تم إرسال رابط التحقق إلى {email}. تحقق من بريدك الوارد (ومجلد الرسائل غير المرغوب فيها).",
     resendVerificationEmail: "إعادة إرسال بريد التحقق",
@@ -682,7 +695,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     removeImageTitle: "إزالة الصورة؟",
     removeImageConfirm: "هل أنت متأكد أنك تريد إزالة صورة الإعلان الحالية؟ سيؤدي هذا الإجراء إلى حذف الصورة نهائيًا إذا قمت بحفظ التغييرات.",
     removeImageButton: "إزالة الصورة",
+    tryAgain: "حاول مرة أخرى",
+    backToDashboard: "العودة إلى لوحة التحكم",
   },
 };
-
-    

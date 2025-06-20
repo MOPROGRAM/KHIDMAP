@@ -12,6 +12,7 @@ import { ArrowLeft, MapPin, Wrench, Zap, Phone, Mail, UserCircle, Info, Loader2,
 import Link from 'next/link';
 import { Timestamp } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
+import { db } from '@/lib/firebase'; // Import db to check initialization
 
 const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Plumbing: Wrench,
@@ -34,8 +35,18 @@ export default function ServiceAdDetailsPage() {
   const [provider, setProvider] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDbAvailable, setIsDbAvailable] = useState(false);
+
+  useEffect(() => {
+      setIsDbAvailable(!!db);
+  }, []);
 
   const fetchAdDetails = useCallback(async () => {
+    if (!isDbAvailable) {
+        setError(t.serviceUnavailableMessage);
+        setIsLoading(false);
+        return;
+    }
     if (!adId) {
       setError(t.adIdMissing);
       setIsLoading(false);
@@ -56,13 +67,13 @@ export default function ServiceAdDetailsPage() {
       } else {
         setError(t.adNotFound);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching ad details:", err);
-      setError((err as Error).message || t.failedLoadAdDetails);
+      setError(err.message || t.failedLoadAdDetails);
     } finally {
       setIsLoading(false);
     }
-  }, [adId, t]);
+  }, [adId, t, isDbAvailable]);
 
   useEffect(() => {
     fetchAdDetails();
@@ -115,7 +126,7 @@ export default function ServiceAdDetailsPage() {
     );
   }
   
-  if (!ad) {
+  if (!ad) { // This covers ad not found after loading and no error (e.g. getAdById returned null)
      return (
       <div className="text-center py-10 max-w-md mx-auto animate-fadeIn">
         <Card className="shadow-xl border">
@@ -260,15 +271,15 @@ export default function ServiceAdDetailsPage() {
               </CardContent>
               <CardFooter className="px-0 pt-8">
                  <Button size="lg" className="w-full sm:w-auto text-base py-3.5 group shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-300" asChild>
-                    <a href={`mailto:${provider.email}?subject=${t.inquiryAboutAd.replace('{adTitle}', ad.title)}`}>
-                        {t.contactProvider.replace('{providerName}', provider.name.split(' ')[0])}
+                    <a href={`mailto:${provider.email}?subject=${t.inquiryAboutAd?.replace('{adTitle}', ad.title)}`}>
+                        {t.contactProvider?.replace('{providerName}', provider.name.split(' ')[0])}
                         <ArrowRight className="ltr:ml-2 rtl:mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform"/>
                     </a>
                  </Button>
               </CardFooter>
             </Card>
           )}
-           {!provider && !isLoading && (
+           {!provider && !isLoading && ( // Show this if provider details could not be fetched
              <div className="text-center py-6">
                 <UserCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2"/>
                 <p className="text-muted-foreground">{t.providerDetailsNotAvailable}</p>

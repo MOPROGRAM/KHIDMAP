@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Eye, EyeOff, Loader2, MailCheck } from 'lucide-react';
+import { UserPlus, Eye, EyeOff, Loader2, MailCheck, AlertTriangle } from 'lucide-react';
 import { auth, db } from '@/lib/firebase'; 
 import { createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, User as FirebaseUser, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
@@ -37,15 +37,15 @@ export default function RegisterPage() {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPasswordState, setConfirmPassword] = useState(''); // Renamed to avoid conflict
+  const [password, setPasswordState] = useState(''); // Renamed to avoid conflict
+  const [confirmPassword, setConfirmPassword] = useState(''); 
   const [role, setRole] = useState<'provider' | 'seeker' | ''>(searchParams.get('role') as 'provider' | 'seeker' || '');
   
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isAuthInitialized, setIsAuthInitialized] = useState(false);
+  const [isAuthServiceAvailable, setIsAuthServiceAvailable] = useState(false);
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
 
 
@@ -54,24 +54,23 @@ export default function RegisterPage() {
     if (initialRole === 'provider' || initialRole === 'seeker') {
       setRole(initialRole);
     }
-    if (auth) {
-      setIsAuthInitialized(true);
+    if (auth && db) {
+      setIsAuthServiceAvailable(true);
       const unsubscribe = onAuthStateChanged(auth, (user) => {
-        // if (user) { // Optional: redirect if already logged in
-        //    router.push('/dashboard'); 
-        // }
+        // Optional: redirect if already logged in
+        // if (user) { router.push('/dashboard'); }
       });
       return () => unsubscribe();
     } else {
-      setIsAuthInitialized(false);
-      console.warn("Firebase Auth is not initialized in RegisterPage.");
+      setIsAuthServiceAvailable(false);
+      console.warn("Firebase Auth or DB is not initialized in RegisterPage.");
     }
   }, [searchParams, router]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !db) {
+    if (!auth || !db) { 
        toast({
         variant: "destructive",
         title: t.serviceUnavailableTitle,
@@ -84,7 +83,7 @@ export default function RegisterPage() {
     setErrors({});
     setShowVerificationMessage(false);
 
-    const validationResult = RegisterSchema.safeParse({ name, email, password, confirmPassword: confirmPasswordState, role });
+    const validationResult = RegisterSchema.safeParse({ name, email, password: password, confirmPassword, role });
 
     if (!validationResult.success) {
       const fieldErrors: Record<string, string> = {};
@@ -156,9 +155,10 @@ export default function RegisterPage() {
           <CardDescription>{t.createAccount} {t.appName}</CardDescription>
         </CardHeader>
         <CardContent>
-           {!isAuthInitialized && !auth && (
-             <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md text-center">
-                {t.authServiceUnavailable}
+           {!isAuthServiceAvailable && (
+             <div className="p-4 mb-6 text-sm text-destructive-foreground bg-destructive rounded-md text-center flex items-center gap-2 justify-center">
+                <AlertTriangle className="h-5 w-5" />
+                <span>{t.authServiceUnavailable}</span>
             </div>
           )}
           {showVerificationMessage ? (
@@ -174,19 +174,19 @@ export default function RegisterPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="name">{t.name}</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required disabled={!isAuthServiceAvailable || isLoading} />
                 {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">{t.email}</Label>
-                <Input id="email" type="email" placeholder="m@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <Input id="email" type="email" placeholder="m@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={!isAuthServiceAvailable || isLoading} />
                 {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">{t.password}</Label>
                 <div className="relative">
-                  <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required />
-                  <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? t.hidePassword : t.showPassword}>
+                  <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPasswordState(e.target.value)} required disabled={!isAuthServiceAvailable || isLoading} />
+                  <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={() => setShowPassword(!showPassword)} disabled={!isAuthServiceAvailable || isLoading}>
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </Button>
                 </div>
@@ -195,8 +195,8 @@ export default function RegisterPage() {
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">{t.confirmPassword}</Label>
                 <div className="relative">
-                  <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} value={confirmPasswordState} onChange={(e) => setConfirmPassword(e.target.value)} required />
-                  <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label={showConfirmPassword ? t.hidePassword : t.showPassword}>
+                  <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required disabled={!isAuthServiceAvailable || isLoading}/>
+                  <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3" onClick={() => setShowConfirmPassword(!showConfirmPassword)} disabled={!isAuthServiceAvailable || isLoading}>
                     {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </Button>
                 </div>
@@ -204,19 +204,19 @@ export default function RegisterPage() {
               </div>
               <div className="space-y-3">
                 <Label>{t.registerAs}</Label>
-                <RadioGroup value={role} onValueChange={(value) => setRole(value as 'provider' | 'seeker')} className="flex gap-4">
+                <RadioGroup value={role} onValueChange={(value) => setRole(value as 'provider' | 'seeker')} className="flex gap-4" disabled={!isAuthServiceAvailable || isLoading}>
                   <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                    <RadioGroupItem value="provider" id="role-provider" />
+                    <RadioGroupItem value="provider" id="role-provider" disabled={!isAuthServiceAvailable || isLoading} />
                     <Label htmlFor="role-provider" className="font-normal">{t.provider}</Label>
                   </div>
                   <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                    <RadioGroupItem value="seeker" id="role-seeker" />
+                    <RadioGroupItem value="seeker" id="role-seeker" disabled={!isAuthServiceAvailable || isLoading}/>
                     <Label htmlFor="role-seeker" className="font-normal">{t.seeker}</Label>
                   </div>
                 </RadioGroup>
                 {errors.role && <p className="text-sm text-destructive">{errors.role}</p>}
               </div>
-              <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !isAuthInitialized}>
+              <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !isAuthServiceAvailable}>
                 {isLoading ?  <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : t.register}
               </Button>
             </form>

@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { ServiceAd, ServiceCategory } from '@/lib/data'; 
 import { getAdsByProviderId, deleteServiceAd } from '@/lib/data';
-import { Briefcase, PlusCircle, Edit3, Trash2, Wrench, Zap, Loader2, MapPin, Brush, Hammer, SprayCan, GripVertical, ImageOff, HardHat, Layers } from 'lucide-react';
+import { Briefcase, PlusCircle, Edit3, Trash2, Wrench, Zap, Loader2, MapPin, Brush, Hammer, SprayCan, GripVertical, ImageOff, HardHat, Layers, AlertTriangle } from 'lucide-react';
 import NextImage from 'next/image'; 
 import {
   AlertDialog,
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Timestamp } from 'firebase/firestore';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 
 const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Plumbing: Wrench,
@@ -43,30 +43,43 @@ export default function MyAdsPage() {
   const { toast } = useToast();
   const [ads, setAds] = useState<ServiceAd[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCoreServicesAvailable, setIsCoreServicesAvailable] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
 
   const fetchAds = useCallback(async (id: string) => {
     setIsLoading(true);
+    setError(null);
     try {
       const providerAds = await getAdsByProviderId(id);
       setAds(providerAds);
-    } catch (error) {
-      console.error("Error fetching ads:", error);
-      toast({ variant: "destructive", title: t.errorOccurred, description: t.failedLoadAds });
+    } catch (err: any) {
+      console.error("Error fetching ads:", err);
+      setError(err.message || t.failedLoadAds);
+      toast({ variant: "destructive", title: t.errorOccurred, description: err.message || t.failedLoadAds });
     } finally {
       setIsLoading(false);
     }
   }, [toast, t]);
 
   useEffect(() => {
-    const unsubscribe = auth?.onAuthStateChanged(user => {
-      if (user) {
-        fetchAds(user.uid);
-      } else {
-        toast({ variant: "destructive", title: t.errorOccurred, description: t.userNotIdentified });
-        router.push('/auth/login');
-      }
-    });
-    return () => unsubscribe?.();
+    if (auth && db) {
+      setIsCoreServicesAvailable(true);
+      const unsubscribe = auth.onAuthStateChanged(user => {
+        if (user) {
+          fetchAds(user.uid);
+        } else {
+          toast({ variant: "destructive", title: t.authError, description: t.userNotIdentified });
+          router.push('/auth/login');
+        }
+      });
+      return () => unsubscribe?.();
+    } else {
+      setIsCoreServicesAvailable(false);
+      setError(t.coreServicesUnavailable);
+      setIsLoading(false);
+      console.warn("Firebase Auth or DB not initialized in MyAdsPage.");
+    }
   }, [router, toast, t, fetchAds]);
 
   const handleDeleteAd = async (adId: string) => {
@@ -77,9 +90,9 @@ export default function MyAdsPage() {
       await deleteServiceAd(adId, adToDelete.imageUrl);
       setAds(prevAds => prevAds.filter(ad => ad.id !== adId));
       toast({ title: t.adDeletedTitle, description: t.adDeletedSuccess });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting ad:", error);
-      toast({ variant: "destructive", title: t.errorOccurred, description: t.failedDeleteAd });
+      toast({ variant: "destructive", title: t.errorOccurred, description: error.message || t.failedDeleteAd });
     }
   };
 
@@ -98,12 +111,30 @@ export default function MyAdsPage() {
   };
 
 
-  if (isLoading && !ads.length) { 
+  if (isLoading) { 
     return (
       <div className="flex items-center justify-center h-full min-h-[calc(100vh-10rem)]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="ml-2">{t.loading}</p>
       </div>
+    );
+  }
+
+  if (!isCoreServicesAvailable || error) {
+     return (
+        <div className="space-y-8 py-8">
+            <Card className="shadow-xl">
+                 <CardHeader className="text-center">
+                    <CardTitle className="text-2xl font-headline text-destructive flex items-center gap-2 justify-center">
+                        <AlertTriangle className="h-7 w-7"/> {t.errorOccurred}
+                    </CardTitle>
+                 </CardHeader>
+                 <CardContent className="text-center">
+                    <p className="text-muted-foreground">{error || t.coreServicesUnavailable}</p>
+                     <Button onClick={() => router.push('/dashboard')} className="mt-4">{t.backToDashboard}</Button>
+                 </CardContent>
+            </Card>
+        </div>
     );
   }
 
@@ -196,7 +227,7 @@ export default function MyAdsPage() {
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>{t.confirmDeleteTitleAd.replace('{adTitle}', ad.title)}</AlertDialogTitle>
+                      <AlertDialogTitle>{t.confirmDeleteTitleAd?.replace('{adTitle}', ad.title)}</AlertDialogTitle>
                       <AlertDialogDescription>
                         {t.confirmDeleteDescriptionAd}
                       </AlertDialogDescription>

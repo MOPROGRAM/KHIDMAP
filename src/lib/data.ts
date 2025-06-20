@@ -41,7 +41,11 @@ export interface ServiceAd {
 
 // --- UserProfile Firestore Functions ---
 export const getUserProfileById = async (uid: string): Promise<UserProfile | null> => {
-  if (!uid || !db) return null;
+  if (!db) {
+    console.error("Firestore (db) is not initialized in getUserProfileById.");
+    throw new Error("Database service is not available.");
+  }
+  if (!uid) return null;
   try {
     const userDocRef = doc(db, "users", uid);
     const docSnap = await getDoc(userDocRef);
@@ -70,17 +74,25 @@ export const getUserProfileById = async (uid: string): Promise<UserProfile | nul
     }
   } catch (error) {
     console.error("Error fetching user profile from Firestore: ", error);
-    return null;
+    throw error; // Re-throw to be caught by caller
   }
 };
 
 // --- ServiceAd Firestore Functions ---
 
 export const uploadAdImage = async (file: File, providerId: string, adId: string): Promise<string> => {
-  if (!auth?.currentUser) throw new Error("User not authenticated for image upload.");
-  if (!providerId || !adId) throw new Error("Provider ID and Ad ID are required for image path.");
+  if (!auth?.currentUser) {
+    console.error("User not authenticated for image upload.");
+    throw new Error("User not authenticated for image upload.");
+  }
+  if (!providerId || !adId) {
+    console.error("Provider ID and Ad ID are required for image path.");
+    throw new Error("Provider ID and Ad ID are required for image path.");
+  }
   const storage = getStorage();
-  const imagePath = `serviceAds/${providerId}/${adId}/${Date.now()}_${file.name}`;
+  // Ensure adId is clean and used consistently in path
+  const cleanAdId = adId.replace(/[^a-zA-Z0-9-_]/g, ''); // Basic sanitization for path
+  const imagePath = `serviceAds/${providerId}/${cleanAdId}/${Date.now()}_${file.name}`;
   const storageRef = ref(storage, imagePath);
   
   try {
@@ -88,13 +100,15 @@ export const uploadAdImage = async (file: File, providerId: string, adId: string
     const downloadURL = await getDownloadURL(storageRef);
     return downloadURL;
   } catch (error) {
-    console.error("Firebase Storage uploadAdImage error:", error); // Log the raw error
+    console.error("Firebase Storage uploadAdImage error (raw):", error);
     let message = "Failed to upload image.";
-    if (error instanceof Error && 'code' in error) {
-      // Firebase errors often have a 'code' property
-      message = `Failed to upload image. Firebase Storage Error: ${(error as any).code} - ${(error as any).message}`;
+     if (error instanceof Error && 'code' in error) {
+        const firebaseError = error as any;
+        message = `Failed to upload image. Firebase Storage Error: ${firebaseError.code} - ${firebaseError.message}`;
+        console.error("Detailed Firebase Storage uploadAdImage error:", message);
     } else if (error instanceof Error) {
-      message = `Failed to upload image: ${error.message}`;
+        message = `Failed to upload image: ${error.message}`;
+         console.error("Generic uploadAdImage error:", message);
     }
     throw new Error(message);
   }
@@ -111,10 +125,11 @@ export const deleteAdImage = async (imageUrl: string): Promise<void> => {
     await deleteObject(imageRef);
   } catch (error: any) {
     if (error.code === 'storage/object-not-found') {
-      console.log("Image not found, skipping delete:", imageUrl);
+      console.log("Image not found in Storage, skipping delete:", imageUrl);
     } else {
       console.error("Error deleting ad image from Storage: ", error);
-      // Do not re-throw here, allow ad deletion/update to proceed if image deletion fails
+      // Do not re-throw here, allow ad deletion/update to proceed if image deletion fails,
+      // but log it as it might indicate an issue with URL management or rules.
     }
   }
 };
@@ -132,8 +147,23 @@ export const addServiceAd = async (
   },
   forcedAdId?: string 
 ): Promise<string> => {
-  if (!db) throw new Error("Firestore is not initialized.");
-  if (!adData.providerName) throw new Error("Provider name is required to post an ad.");
+  if (!db) {
+    console.error("Firestore (db) is not initialized in addServiceAd.");
+    throw new Error("Database service is not available to post ad.");
+  }
+   if (!auth?.currentUser) {
+    console.error("User not authenticated to post ad.");
+    throw new Error("User not authenticated to post ad.");
+  }
+  if (!adData.providerId || adData.providerId !== auth.currentUser.uid) {
+    console.error("Provider ID mismatch or missing.");
+    throw new Error("Provider ID is invalid or does not match authenticated user.");
+  }
+  if (!adData.providerName) {
+    console.error("Provider name is missing for the ad.");
+    throw new Error("Provider name is required to post an ad.");
+  }
+
 
   const dataToSave = {
     ...adData,
@@ -153,13 +183,30 @@ export const addServiceAd = async (
     }
   } catch (error) {
     console.error("Error adding service ad to Firestore: ", error);
-    throw new Error("Failed to post ad.");
+    throw error; // Re-throw to be caught by caller
   }
 };
 
 export const updateServiceAd = async (adId: string, adData: Partial<Omit<ServiceAd, 'id' | 'providerId' | 'postedDate' | 'createdAt'>>): Promise<void> => {
-  if (!db) throw new Error("Firestore is not initialized.");
-  if (!adId) throw new Error("Ad ID is required for update.");
+  if (!db) {
+    console.error("Firestore (db) is not initialized in updateServiceAd.");
+    throw new Error("Database service is not available to update ad.");
+  }
+  if (!auth?.currentUser) {
+    console.error("User not authenticated to update ad.");
+    throw new Error("User not authenticated to update ad.");
+  }
+  if (!adId) {
+    console.error("Ad ID is required for update.");
+    throw new Error("Ad ID is required for update.");
+  }
+  
+  // Optional: Fetch the ad first to ensure the current user owns it, though Firestore rules should also enforce this.
+  // const existingAd = await getAdById(adId);
+  // if (!existingAd || existingAd.providerId !== auth.currentUser.uid) {
+  //   throw new Error("Unauthorized to update this ad or ad not found.");
+  // }
+
   try {
     const adDocRef = doc(db, "serviceAds", adId);
     await updateDoc(adDocRef, {
@@ -168,13 +215,27 @@ export const updateServiceAd = async (adId: string, adData: Partial<Omit<Service
     });
   } catch (error) {
     console.error("Error updating service ad in Firestore: ", error);
-    throw new Error("Failed to update ad.");
+    throw error; // Re-throw
   }
 };
 
 
 export const getAdsByProviderId = async (providerId: string): Promise<ServiceAd[]> => {
-  if (!db) throw new Error("Firestore is not initialized.");
+  if (!db) {
+    console.error("Firestore (db) is not initialized in getAdsByProviderId.");
+    throw new Error("Database service is not available to fetch ads.");
+  }
+  if (!auth?.currentUser) {
+     console.warn("Attempted to fetch ads by provider ID without authenticated user.");
+     // Depending on app logic, you might allow this if providerId is public, or throw error.
+     // For "My Ads", auth is required.
+     throw new Error("User authentication required to fetch their ads.");
+  }
+  if (providerId !== auth.currentUser.uid) {
+     console.error("Attempted to fetch ads for a different provider ID.");
+     throw new Error("Unauthorized to fetch ads for this provider.");
+  }
+
   try {
     const adsQuery = query(collection(db, "serviceAds"), where("providerId", "==", providerId), orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(adsQuery);
@@ -190,13 +251,26 @@ export const getAdsByProviderId = async (providerId: string): Promise<ServiceAd[
     });
   } catch (error) {
     console.error("Error fetching ads by provider ID from Firestore: ", error);
-    throw new Error("Failed to fetch ads.");
+    throw error; // Re-throw
   }
 };
 
 
 export const deleteServiceAd = async (adId: string, imageUrl?: string): Promise<void> => {
-  if (!db) throw new Error("Firestore is not initialized.");
+  if (!db) {
+    console.error("Firestore (db) is not initialized in deleteServiceAd.");
+    throw new Error("Database service is not available to delete ad.");
+  }
+   if (!auth?.currentUser) {
+    console.error("User not authenticated to delete ad.");
+    throw new Error("User not authenticated to delete ad.");
+  }
+  // Optional: Fetch the ad first to ensure the current user owns it.
+  // const existingAd = await getAdById(adId);
+  // if (!existingAd || existingAd.providerId !== auth.currentUser.uid) {
+  //   throw new Error("Unauthorized to delete this ad or ad not found.");
+  // }
+
   if (imageUrl) {
     await deleteAdImage(imageUrl); 
   }
@@ -205,18 +279,18 @@ export const deleteServiceAd = async (adId: string, imageUrl?: string): Promise<
     await deleteDoc(adDocRef);
   } catch (error) {
     console.error("Error deleting service ad from Firestore: ", error);
-    throw new Error("Failed to delete ad.");
+    throw error; // Re-throw
   }
 };
 
 export const getAdById = async (adId: string): Promise<ServiceAd | null> => {
   if (!db) {
-    console.error("Firestore is not initialized in getAdById.");
-    return null;
+    console.error("Firestore (db) is not initialized in getAdById.");
+    throw new Error("Database service is not available.");
   }
   if (!adId) {
     console.error("No adId provided to getAdById.");
-    return null;
+    return null; // Or throw new Error("Ad ID is required.");
   }
   try {
     const adDocRef = doc(db, "serviceAds", adId);
@@ -237,12 +311,15 @@ export const getAdById = async (adId: string): Promise<ServiceAd | null> => {
     }
   } catch (error) {
     console.error("Error fetching ad by ID from Firestore: ", error);
-    return null;
+    throw error; // Re-throw
   }
 };
 
 export const getAllServiceAds = async (): Promise<ServiceAd[]> => {
-  if (!db) throw new Error("Firestore is not initialized.");
+  if (!db) {
+    console.error("Firestore (db) is not initialized in getAllServiceAds.");
+    throw new Error("Database service is not available to fetch all ads.");
+  }
   try {
     const adsQuery = query(collection(db, "serviceAds"), orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(adsQuery);
@@ -275,6 +352,7 @@ export const getAllServiceAds = async (): Promise<ServiceAd[]> => {
     return ads;
   } catch (error) {
     console.error("Error fetching all service ads from Firestore: ", error);
-    throw new Error("Failed to fetch service ads.");
+    throw error; // Re-throw
   }
 };
+

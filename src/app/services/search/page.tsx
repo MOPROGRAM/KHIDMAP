@@ -11,6 +11,7 @@ import { ServiceAd, getAllServiceAds, UserProfile, getUserProfileById, ServiceCa
 import Link from 'next/link';
 import NextImage from 'next/image'; 
 import { Search as SearchIcon, MapPin, Briefcase, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, HardHat, Layers, ImageOff } from 'lucide-react';
+import { db } from '@/lib/firebase'; // Import db to check initialization
 
 interface SearchHistoryItem {
   query: string;
@@ -38,17 +39,21 @@ export default function ServiceSearchPage() {
   const [filteredAds, setFilteredAds] = useState<ServiceAd[]>([]);
   const [providerDetails, setProviderDetails] = useState<Record<string, UserProfile>>({});
   
-  const [isLoading, setIsLoading] = useState(false);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // For search filtering, not initial load
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentSearchQuery, setCurrentSearchQuery] = useState('');
+  const [isDbAvailable, setIsDbAvailable] = useState(false);
 
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
 
   useEffect(() => {
-    const storedHistory = localStorage.getItem('fullSearchHistory');
-    if (storedHistory) {
-      setSearchHistory(JSON.parse(storedHistory));
+    setIsDbAvailable(!!db); // Check if db is initialized
+    if (db) {
+        const storedHistory = localStorage.getItem('fullSearchHistory');
+        if (storedHistory) {
+        setSearchHistory(JSON.parse(storedHistory));
+        }
     }
   }, []);
 
@@ -61,7 +66,13 @@ export default function ServiceSearchPage() {
   };
 
   const fetchInitialAdsAndProviders = useCallback(async () => {
-    setIsLoading(true);
+    if (!isDbAvailable) {
+        setError(t.serviceUnavailableMessage);
+        setInitialLoadComplete(true);
+        setIsLoading(false);
+        return;
+    }
+    setIsLoading(true); // For the entire initial data fetch
     setError(null);
     try {
       const ads = await getAllServiceAds();
@@ -71,7 +82,10 @@ export default function ServiceSearchPage() {
       
       const providerMap: Record<string, UserProfile> = {};
       if (providerIds.length > 0) {
-        const providerPromises = providerIds.map(id => getUserProfileById(id));
+        const providerPromises = providerIds.map(id => getUserProfileById(id).catch(err => {
+            console.warn(`Failed to fetch profile for provider ${id}:`, err);
+            return null; // Return null if a specific provider fetch fails
+        }));
         const providersArray = await Promise.all(providerPromises);
         providersArray.forEach(provider => {
           if (provider) {
@@ -84,23 +98,24 @@ export default function ServiceSearchPage() {
       const initialQuery = searchParams.get('q');
       if (initialQuery) {
         setSearchTerm(initialQuery);
-        filterAds(initialQuery, ads, providerMap);
+        filterAds(initialQuery, ads, providerMap); // Pass providerMap here
         setCurrentSearchQuery(initialQuery);
       } else {
         setFilteredAds(ads);
       }
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching ads or providers:", err);
-      setError((err as Error).message || t.failedLoadServices);
+      setError(err.message || t.failedLoadServices);
       setAllAds([]);
       setFilteredAds([]);
     } finally {
       setIsLoading(false);
-      setInitialLoad(false);
+      setInitialLoadComplete(true);
     }
-  }, [searchParams, t]); 
+  }, [searchParams, t, isDbAvailable]); 
 
+  // filterAds needs to be defined before being used in fetchInitialAdsAndProviders if not memoized with useCallback
   const filterAds = (query: string, adsToFilter: ServiceAd[], currentProviderDetails: Record<string, UserProfile>) => {
     if (!query.trim()) {
       setFilteredAds(adsToFilter);
@@ -125,15 +140,22 @@ export default function ServiceSearchPage() {
   };
   
   useEffect(() => {
-    fetchInitialAdsAndProviders();
-  }, [fetchInitialAdsAndProviders]);
+    // Only fetch if db is available
+    if (isDbAvailable) {
+        fetchInitialAdsAndProviders();
+    } else if (!isDbAvailable && !initialLoadComplete) { // if db is not available and we haven't shown error yet
+        setError(t.serviceUnavailableMessage);
+        setInitialLoadComplete(true);
+    }
+  }, [isDbAvailable, fetchInitialAdsAndProviders, initialLoadComplete, t.serviceUnavailableMessage]);
 
 
   const handleSearch = (query: string) => {
     setSearchTerm(query);
     setCurrentSearchQuery(query);
-    if (!initialLoad) setIsLoading(true);
+    if (initialLoadComplete) setIsLoading(true); // Set loading for search actions after initial load
 
+    // Simulating a delay for search, remove in production if not needed
     setTimeout(() => {
       filterAds(query, allAds, providerDetails);
       if (query.trim()) {
@@ -142,16 +164,24 @@ export default function ServiceSearchPage() {
       } else {
          router.push(`/services/search`, { scroll: false });
       }
-      if (!initialLoad) setIsLoading(false);
+      if (initialLoadComplete) setIsLoading(false);
     }, 300); 
   };
   
   const onSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isDbAvailable) {
+      toast({ variant: "destructive", title: t.serviceUnavailableTitle, description: t.serviceUnavailableMessage });
+      return;
+    }
     handleSearch(searchTerm);
   };
 
   const handleHistorySearch = (term: string) => {
+    if (!isDbAvailable) {
+      toast({ variant: "destructive", title: t.serviceUnavailableTitle, description: t.serviceUnavailableMessage });
+      return;
+    }
     setSearchTerm(term);
     handleSearch(term);
   }
@@ -175,21 +205,22 @@ export default function ServiceSearchPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-grow text-lg p-3 rounded-lg shadow-inner focus:ring-2 focus:ring-primary border-input"
               aria-label={t.searchPlaceholder}
+              disabled={!isDbAvailable || (isLoading && initialLoadComplete)}
             />
             <Button 
               type="submit" 
               size="lg" 
               className="text-lg py-3 rounded-lg shadow-lg hover:scale-105 transform transition-all duration-300" 
-              disabled={isLoading && !initialLoad}
+              disabled={!isDbAvailable || (isLoading && initialLoadComplete)}
             >
-              {(isLoading && !initialLoad) ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <SearchIcon className="ltr:mr-2 rtl:ml-2 h-5 w-5" />}
+              {(isLoading && initialLoadComplete) ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <SearchIcon className="ltr:mr-2 rtl:ml-2 h-5 w-5" />}
               {t.search}
             </Button>
           </form>
         </CardContent>
       </Card>
 
-      {searchHistory.length > 0 && !initialLoad && (
+      {isDbAvailable && searchHistory.length > 0 && initialLoadComplete && (
         <Card className="shadow-lg animate-fadeIn animation-delay-200 border">
           <CardHeader>
             <CardTitle className="text-xl font-headline text-foreground">{t.recentSearches}</CardTitle>
@@ -210,14 +241,14 @@ export default function ServiceSearchPage() {
         </Card>
       )}
 
-      {initialLoad && isLoading && (
+      {!initialLoadComplete && isLoading && ( // Show this loader only during initial full data fetch
         <div className="flex flex-col justify-center items-center py-10 min-h-[300px]">
           <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
           <p className="text-lg text-muted-foreground">{t.loading} {t.services}...</p>
         </div>
       )}
       
-      {error && !initialLoad && (
+      {initialLoadComplete && error && (
          <Card className="text-center py-12 bg-destructive/10 border-destructive shadow-xl animate-fadeIn">
           <CardHeader>
             <AlertTriangle className="mx-auto h-16 w-16 text-destructive mb-4" />
@@ -226,10 +257,18 @@ export default function ServiceSearchPage() {
               {error}
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <Button onClick={() => {
+                if(isDbAvailable) fetchInitialAdsAndProviders();
+                else toast({variant: "destructive", title: t.serviceUnavailableTitle, description: t.serviceUnavailableMessage});
+            }} variant="outline">
+                {t.tryAgain}
+            </Button>
+          </CardContent>
         </Card>
       )}
 
-      {!initialLoad && !isLoading && !error && currentSearchQuery && filteredAds.length === 0 && (
+      {initialLoadComplete && !error && currentSearchQuery && filteredAds.length === 0 && (
         <Card className="text-center py-12 shadow-xl animate-fadeIn border">
           <CardHeader>
              <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
@@ -241,7 +280,7 @@ export default function ServiceSearchPage() {
         </Card>
       )}
       
-      {!initialLoad && !isLoading && !error && filteredAds.length === 0 && !currentSearchQuery && allAds.length === 0 && (
+      {initialLoadComplete && !error && filteredAds.length === 0 && !currentSearchQuery && allAds.length === 0 && (
          <Card className="text-center py-12 shadow-xl animate-fadeIn border">
           <CardHeader>
              <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
@@ -253,7 +292,7 @@ export default function ServiceSearchPage() {
         </Card>
       )}
 
-      {!isLoading && !error && filteredAds.length > 0 && (
+      {initialLoadComplete && !isLoading && !error && filteredAds.length > 0 && (
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 animate-fadeIn animation-delay-400">
           {filteredAds.map((ad, index) => {
             const provider = ad.providerId ? providerDetails[ad.providerId] : null;
