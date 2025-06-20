@@ -79,9 +79,9 @@ export default function HomePage() {
                 {t.services}
             </h2>
         </div>
-        <div className="w-full inline-flex flex-nowrap overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]">
-            <ul className="flex items-center justify-center md:justify-start animate-scroll [animation-play-state:running] hover:[animation-play-state:paused] gap-8">
-                {[...serviceCards, ...serviceCards].map((service, index) => renderServiceCard(service, index))}
+        <div className="w-full overflow-x-auto pb-4">
+            <ul className="flex flex-nowrap items-center justify-start gap-8 px-8 md:px-16">
+                {serviceCards.map((service, index) => renderServiceCard(service, index))}
             </ul>
         </div>
       </section>
