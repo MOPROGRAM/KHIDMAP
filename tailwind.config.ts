@@ -11,8 +11,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Inter', 'sans-serif'],
+        body: ['Tajawal', 'Poppins', 'sans-serif'],
+        headline: ['Tajawal', 'Poppins', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
