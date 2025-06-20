@@ -13,7 +13,7 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, ServiceCategory } from '@/lib/data'; 
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore'; 
+import { doc, getDoc, setDoc, Timestamp, serverTimestamp } from 'firebase/firestore'; 
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
 import { Loader2, UserCircle, Save, AlertTriangle } from 'lucide-react';
 import NextImage from 'next/image'; 
@@ -135,14 +135,14 @@ export default function ProviderProfilePage() {
     const { data } = validationResult;
     const updatedProfileData: Partial<UserProfile> = {
       name: data.name,
-      email: authUser.email, // Email should come from authUser, not the form, as it's not editable here
+      email: authUser.email, 
       phoneNumber: data.phoneNumber,
       qualifications: data.qualifications,
       serviceAreas: data.serviceAreasString ? data.serviceAreasString.split(',').map(area => area.trim()).filter(Boolean) : [],
       serviceCategories: data.serviceCategories || [], 
       profilePictureUrl: profilePictureUrl, 
-      role: 'provider', // Ensure role is set, especially for new profiles
-      updatedAt: Timestamp.now(),
+      role: 'provider',
+      updatedAt: serverTimestamp(),
     };
 
     try {
@@ -151,10 +151,8 @@ export default function ProviderProfilePage() {
       }
 
       const userDocRef = doc(db, "users", authUser.uid);
-      // Use setDoc with merge:true to create or update
       await setDoc(userDocRef, updatedProfileData , { merge: true }); 
       
-      // Update localStorage for immediate UI reflection of name change
       localStorage.setItem('userName', data.name);
 
       toast({ title: t.profileUpdatedSuccessfully, description: t.profileChangesSaved });
@@ -166,7 +164,7 @@ export default function ProviderProfilePage() {
     }
   };
   
-  if (isFetching && isCoreServicesAvailable) { // Only show main loader if services are expected
+  if (isFetching && isCoreServicesAvailable) { 
     return <div className="flex items-center justify-center h-full min-h-[calc(100vh-10rem)]"><Loader2 className="h-8 w-8 animate-spin text-primary" /> <span className="ml-2">{t.loading}</span></div>;
   }
 

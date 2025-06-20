@@ -52,20 +52,23 @@ export const getUserProfileById = async (uid: string): Promise<UserProfile | nul
     if (docSnap.exists()) {
       const data = docSnap.data();
       
-      const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toISOString() : data.createdAt;
-      const updatedAt = data.updatedAt instanceof Timestamp ? data.updatedAt.toISOString() : data.updatedAt;
-      
-      const searchHistory = (data.searchHistory || []).map((item: any) => ({
-        ...item,
-        date: item.date instanceof Timestamp ? item.date.toISOString() : item.date,
-      }));
-
+      // Explicitly construct the object to avoid spreading raw Timestamp objects
       return {
         uid: docSnap.id,
-        ...data,
-        createdAt,
-        updatedAt,
-        searchHistory,
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        phoneNumber: data.phoneNumber,
+        qualifications: data.qualifications,
+        serviceCategories: data.serviceCategories,
+        serviceAreas: data.serviceAreas,
+        profilePictureUrl: data.profilePictureUrl,
+        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toISOString() : data.createdAt,
+        updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toISOString() : data.updatedAt,
+        searchHistory: (data.searchHistory || []).map((item: any) => ({
+          ...item,
+          date: item.date instanceof Timestamp ? item.date.toISOString() : item.date,
+        })),
         emailVerified: data.emailVerified || false,
       } as UserProfile;
     } else {
@@ -90,8 +93,7 @@ export const uploadAdImage = async (file: File, providerId: string, adId: string
     throw new Error("Provider ID and Ad ID are required for image path.");
   }
   const storage = getStorage();
-  // Ensure adId is clean and used consistently in path
-  const cleanAdId = adId.replace(/[^a-zA-Z0-9-_]/g, ''); // Basic sanitization for path
+  const cleanAdId = adId.replace(/[^a-zA-Z0-9-_]/g, ''); 
   const imagePath = `serviceAds/${providerId}/${cleanAdId}/${Date.now()}_${file.name}`;
   const storageRef = ref(storage, imagePath);
   
@@ -99,17 +101,15 @@ export const uploadAdImage = async (file: File, providerId: string, adId: string
     await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(storageRef);
     return downloadURL;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Firebase Storage uploadAdImage error (raw):", error);
     let message = "Failed to upload image.";
-     if (error instanceof Error && 'code' in error) {
-        const firebaseError = error as any;
-        message = `Failed to upload image. Firebase Storage Error: ${firebaseError.code} - ${firebaseError.message}`;
-        console.error("Detailed Firebase Storage uploadAdImage error:", message);
+     if (error.code) { // Firebase errors have a 'code' property
+        message = `Failed to upload image. Firebase Storage Error: ${error.code} - ${error.message}`;
     } else if (error instanceof Error) {
         message = `Failed to upload image: ${error.message}`;
-         console.error("Generic uploadAdImage error:", message);
     }
+    console.error("Detailed Firebase Storage uploadAdImage error:", message);
     throw new Error(message);
   }
 };
@@ -128,8 +128,6 @@ export const deleteAdImage = async (imageUrl: string): Promise<void> => {
       console.log("Image not found in Storage, skipping delete:", imageUrl);
     } else {
       console.error("Error deleting ad image from Storage: ", error);
-      // Do not re-throw here, allow ad deletion/update to proceed if image deletion fails,
-      // but log it as it might indicate an issue with URL management or rules.
     }
   }
 };
@@ -183,7 +181,7 @@ export const addServiceAd = async (
     }
   } catch (error) {
     console.error("Error adding service ad to Firestore: ", error);
-    throw error; // Re-throw to be caught by caller
+    throw error;
   }
 };
 
@@ -200,12 +198,6 @@ export const updateServiceAd = async (adId: string, adData: Partial<Omit<Service
     console.error("Ad ID is required for update.");
     throw new Error("Ad ID is required for update.");
   }
-  
-  // Optional: Fetch the ad first to ensure the current user owns it, though Firestore rules should also enforce this.
-  // const existingAd = await getAdById(adId);
-  // if (!existingAd || existingAd.providerId !== auth.currentUser.uid) {
-  //   throw new Error("Unauthorized to update this ad or ad not found.");
-  // }
 
   try {
     const adDocRef = doc(db, "serviceAds", adId);
@@ -227,8 +219,6 @@ export const getAdsByProviderId = async (providerId: string): Promise<ServiceAd[
   }
   if (!auth?.currentUser) {
      console.warn("Attempted to fetch ads by provider ID without authenticated user.");
-     // Depending on app logic, you might allow this if providerId is public, or throw error.
-     // For "My Ads", auth is required.
      throw new Error("User authentication required to fetch their ads.");
   }
   if (providerId !== auth.currentUser.uid) {
@@ -251,7 +241,7 @@ export const getAdsByProviderId = async (providerId: string): Promise<ServiceAd[
     });
   } catch (error) {
     console.error("Error fetching ads by provider ID from Firestore: ", error);
-    throw error; // Re-throw
+    throw error;
   }
 };
 
@@ -265,11 +255,6 @@ export const deleteServiceAd = async (adId: string, imageUrl?: string): Promise<
     console.error("User not authenticated to delete ad.");
     throw new Error("User not authenticated to delete ad.");
   }
-  // Optional: Fetch the ad first to ensure the current user owns it.
-  // const existingAd = await getAdById(adId);
-  // if (!existingAd || existingAd.providerId !== auth.currentUser.uid) {
-  //   throw new Error("Unauthorized to delete this ad or ad not found.");
-  // }
 
   if (imageUrl) {
     await deleteAdImage(imageUrl); 
@@ -279,7 +264,7 @@ export const deleteServiceAd = async (adId: string, imageUrl?: string): Promise<
     await deleteDoc(adDocRef);
   } catch (error) {
     console.error("Error deleting service ad from Firestore: ", error);
-    throw error; // Re-throw
+    throw error;
   }
 };
 
@@ -290,7 +275,7 @@ export const getAdById = async (adId: string): Promise<ServiceAd | null> => {
   }
   if (!adId) {
     console.error("No adId provided to getAdById.");
-    return null; // Or throw new Error("Ad ID is required.");
+    return null;
   }
   try {
     const adDocRef = doc(db, "serviceAds", adId);
@@ -311,7 +296,7 @@ export const getAdById = async (adId: string): Promise<ServiceAd | null> => {
     }
   } catch (error) {
     console.error("Error fetching ad by ID from Firestore: ", error);
-    throw error; // Re-throw
+    throw error;
   }
 };
 
@@ -352,7 +337,6 @@ export const getAllServiceAds = async (): Promise<ServiceAd[]> => {
     return ads;
   } catch (error) {
     console.error("Error fetching all service ads from Firestore: ", error);
-    throw error; // Re-throw
+    throw error;
   }
 };
-
