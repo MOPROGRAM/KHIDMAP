@@ -7,11 +7,11 @@ const Logo = () => {
 
   return (
     <Link href="/" className="group inline-block" aria-label="Homepage Logo">
-      <div className="relative inline-block transition-transform duration-200 ease-in-out group-hover:scale-105">
-        <h1 className="text-xl md:text-xl font-extrabold font-headline tracking-tighter text-foreground relative z-10 leading-[0.8] pb-0 pr-1">
-          {t.appName}
+      <div className="inline-flex flex-col items-start transition-transform duration-200 ease-in-out group-hover:scale-105">
+        <h1 className="text-lg font-extrabold font-headline tracking-tighter text-foreground leading-none">
+            {t.appName}
         </h1>
-        <span className="absolute bottom-[3px] left-0 w-full h-[2px] bg-primary z-0"></span>
+        <span className="w-full h-[1px] bg-primary"></span>
       </div>
     </Link>
   );
