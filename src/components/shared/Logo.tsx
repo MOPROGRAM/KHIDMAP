@@ -9,15 +9,15 @@ const Logo = () => {
       <div 
         className="
           flex items-center justify-center 
-          px-4 py-1.5 rounded-md
+          px-4 py-2 rounded-md
           bg-[linear-gradient(to_bottom,hsl(var(--accent))_50%,hsl(25_95%_45%)_50%)]
           dark:bg-[linear-gradient(to_bottom,hsl(var(--accent))_50%,hsl(25_95%_50%)_50%)]
           text-white 
-          font-headline font-bold text-xl
+          font-headline font-bold text-2xl
           transition-transform duration-200 ease-in-out hover:scale-105 shadow-sm
         "
       >
-        <span className="py-1">{t.appName}</span>
+        <span>{t.appName}</span>
       </div>
     </Link>
   );

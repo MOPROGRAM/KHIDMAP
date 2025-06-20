@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -25,13 +24,13 @@ export default function HomePage() {
   const renderServiceCard = (service: any, index: number) => (
     <li 
         key={index} 
-        className="flex-shrink-0 w-[280px] h-auto flex flex-col items-start text-left p-6 rounded-2xl border bg-card/80 backdrop-blur-sm transition-all"
+        className="flex-shrink-0 w-[280px] h-auto flex flex-col items-start text-left p-4 rounded-xl border bg-card/80 backdrop-blur-sm transition-all"
     >
-      <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 mb-4">
-        {React.cloneElement(service.icon, { className: `h-8 w-8 ${service.color}` })}
+      <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 mb-3">
+        {React.cloneElement(service.icon, { className: `h-6 w-6 ${service.color}` })}
       </div>
-      <h3 className="text-base font-bold text-foreground mb-1">{t[service.titleKey as keyof Translations]}</h3>
-      <p className="text-sm text-muted-foreground">{t[service.descriptionKey as keyof Translations]}</p>
+      <h3 className="text-sm font-bold text-foreground mb-1">{t[service.titleKey as keyof Translations]}</h3>
+      <p className="text-xs text-muted-foreground">{t[service.descriptionKey as keyof Translations]}</p>
     </li>
   );
 
@@ -40,32 +39,40 @@ export default function HomePage() {
       
       {/* Hero Section */}
       <section 
-        className="w-full flex flex-col items-center text-center pt-12 pb-10 md:pt-20 md:pb-16 space-y-4"
+        className="w-full flex flex-col items-center text-center pt-6 pb-5 md:pt-10 md:pb-8 space-y-2"
       >
         <div 
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
-            <h1 className="text-4xl md:text-5xl font-bold font-headline text-foreground tracking-tighter">
-                {t.appName}
+            <h1 className="text-3xl md:text-4xl font-bold font-headline tracking-tighter">
+                <span
+                  className="
+                    inline-block px-6 py-3 rounded-md text-white 
+                    bg-[linear-gradient(to_bottom,hsl(var(--accent))_50%,hsl(25_95%_45%)_50%)] 
+                    dark:bg-[linear-gradient(to_bottom,hsl(var(--accent))_50%,hsl(25_95%_50%)_50%)]
+                  "
+                >
+                  {t.appName}
+                </span>
             </h1>
         </div>
         <div 
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}
         >
-            <p className="text-base text-muted-foreground max-w-xl mx-auto">
+            <p className="text-sm text-muted-foreground max-w-xl mx-auto">
                 {t.findSkilledArtisans} {t.orPostYourServices}
             </p>
         </div>
-        <div className="flex flex-wrap justify-center items-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
-            <Button size="lg" asChild className="text-base px-8">
+        <div className="flex flex-wrap justify-center items-center gap-2 animate-fade-in-up" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
+            <Button size="lg" asChild className="text-sm px-6">
                 <Link href="/services/search">
                   {t.browseServices}
-                  <ArrowRight className="ltr:ml-2 rtl:mr-2 h-5 w-5" />
+                  <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4" />
                 </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild className="text-base px-8">
+            <Button size="lg" variant="outline" asChild className="text-sm px-6">
                 <Link href="/auth/register">
                   {t.register}
                 </Link>
@@ -74,29 +81,29 @@ export default function HomePage() {
       </section>
 
       {/* Services Section */}
-      <section className="w-full py-6 md:py-8">
-        <div className="animate-fade-in-up text-center mb-6" style={{ animationFillMode: 'backwards' }}>
-            <h2 className="text-3xl md:text-4xl font-bold font-headline text-foreground tracking-tighter">
+      <section className="w-full py-3 md:py-4">
+        <div className="animate-fade-in-up text-center mb-3" style={{ animationFillMode: 'backwards' }}>
+            <h2 className="text-2xl md:text-3xl font-bold font-headline text-foreground tracking-tighter">
                 {t.services}
             </h2>
         </div>
-        <div className="w-full overflow-x-auto pb-4">
-            <ul className="flex flex-nowrap items-stretch justify-start gap-6 px-8 md:px-16">
+        <div className="w-full overflow-x-auto pb-4 group" >
+            <ul className="flex flex-nowrap items-stretch justify-start gap-4 px-8 md:px-16">
                 {serviceCards.map((service, index) => renderServiceCard(service, index))}
             </ul>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="w-full bg-muted/50 py-10">
+      <section className="w-full bg-muted/50 py-5">
           <div className="container max-w-4xl px-4 text-center">
-            <div className="animate-fade-in-up text-center space-y-3" style={{ animationFillMode: 'backwards' }}>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
-              <p className="text-base text-muted-foreground max-w-2xl mx-auto">{t.orPostYourServices}</p>
-              <Button asChild size="lg" className="text-base px-8">
+            <div className="animate-fade-in-up text-center space-y-1.5" style={{ animationFillMode: 'backwards' }}>
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
+              <p className="text-sm text-muted-foreground max-w-2xl mx-auto">{t.orPostYourServices}</p>
+              <Button asChild size="lg" className="text-sm px-6">
                 <Link href="/auth/register?role=provider">
                     {t.register}
-                    <ArrowRight className="ltr:ml-2 rtl:mr-2 h-5 w-5" />
+                    <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4" />
                 </Link>
               </Button>
             </div>
