@@ -1,4 +1,3 @@
-
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -123,10 +122,6 @@ export default {
             '50%': { 'background-position': '100% 50%' },
             '100%': { 'background-position': '0% 50%' },
         },
-        'text-shine': {
-            '0%': { 'background-position': '0% 50%' },
-            '100%': { 'background-position': '100% 50%' },
-        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -136,7 +131,6 @@ export default {
         'pulse-glow': 'pulseGlow 1.5s infinite ease-in-out',
         'subtle-bounce': 'subtleBounce 0.5s ease-in-out',
         'background-pan': 'background-pan 15s ease-in-out infinite',
-        'text-shine': 'text-shine 2.5s ease-in-out infinite alternate',
       },
       transitionProperty: {
         'height': 'height',
