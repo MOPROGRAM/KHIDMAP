@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import Link from 'next/link';
-import { Briefcase, User, Search, PlusCircle, History, UserCog } from 'lucide-react';
+import { Briefcase, User, Search, PlusCircle, History, UserCog, ArrowRight, Building } from 'lucide-react';
 import Image from 'next/image';
 
 export default function DashboardPage() {
@@ -40,63 +40,68 @@ export default function DashboardPage() {
   }
 
   const providerActions = [
-    { titleKey: 'profile', descriptionKey: 'profileDescriptionProvider', href: '/dashboard/provider/profile', icon: <UserCog className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
-    { titleKey: 'search', descriptionKey: 'searchDescriptionSeeker', href: '/services/search', icon: <Search className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
+    { titleKey: 'profile', descriptionKey: 'profileDescriptionProvider', href: '/dashboard/provider/profile', icon: <UserCog className="h-6 w-6 text-primary" /> },
+    { titleKey: 'search', descriptionKey: 'searchDescriptionSeeker', href: '/services/search', icon: <Search className="h-6 w-6 text-primary" /> },
   ];
 
   const seekerActions = [
-    { titleKey: 'search', descriptionKey: 'searchDescriptionSeeker', href: '/services/search', icon: <Search className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
-    { titleKey: 'searchHistory', descriptionKey: 'searchHistoryDescriptionSeeker', href: '/dashboard/seeker/history', icon: <History className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
+    { titleKey: 'search', descriptionKey: 'searchDescriptionSeeker', href: '/services/search', icon: <Search className="h-6 w-6 text-primary" /> },
+    { titleKey: 'searchHistory', descriptionKey: 'searchHistoryDescriptionSeeker', href: '/dashboard/seeker/history', icon: <History className="h-6 w-6 text-primary" /> },
   ];
   
   const actions = userRole === 'provider' ? providerActions : seekerActions;
   const welcomeMessage = userName ? t.welcomeToDashboardUser.replace('{userName}', userName) : (userRole === 'provider' ? t.welcomeToDashboardProvider : t.welcomeToDashboardSeeker);
 
   return (
-    <div className="space-y-10 animate-fadeIn">
-      <Card className="shadow-xl border">
-        <CardHeader>
-          <CardTitle className="text-3xl md:text-4xl font-headline text-foreground">
-            {welcomeMessage}
-          </CardTitle>
-          <CardDescription className="text-lg text-muted-foreground">
-            {userRole === 'provider' ? t.dashboardTaglineProvider : t.dashboardTaglineSeeker}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="relative aspect-[16/6] rounded-lg overflow-hidden shadow-lg group">
+    <div className="space-y-8 animate-fadeIn">
+      <Card className="shadow-lg border bg-card overflow-hidden">
+        <div className="grid md:grid-cols-2">
+            <div className="p-8">
+              <CardHeader className="p-0 mb-2">
+                <CardTitle className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
+                  {welcomeMessage}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                  <p className="text-lg text-muted-foreground">
+                    {userRole === 'provider' ? t.dashboardTaglineProvider : t.dashboardTaglineSeeker}
+                  </p>
+              </CardContent>
+            </div>
+            <div className="relative h-48 md:h-full hidden md:block">
                 <Image 
-                    src="https://placehold.co/1200x400.png" 
+                    src="https://placehold.co/600x400.png"
                     alt={t.dashboardBannerAlt} 
                     layout="fill" 
                     objectFit="cover" 
-                    className="group-hover:scale-105 transition-transform duration-500 ease-in-out" 
-                    data-ai-hint="workspace tools" 
-                    priority
+                    className=""
+                    data-ai-hint="workspace tools"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
             </div>
-        </CardContent>
+        </div>
       </Card>
 
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
         {actions.map((action, index) => (
+          <Link href={action.href} key={action.href} className="group">
           <Card 
-            key={action.href} 
-            className="shadow-lg hover:shadow-2xl border transition-all duration-300 ease-in-out transform hover:-translate-y-1.5 group"
+            className="shadow-sm hover:shadow-xl border transition-all duration-300 ease-in-out transform hover:-translate-y-1.5"
             style={{ animationDelay: `${index * 150}ms`, animationName: 'fadeIn', animationFillMode: 'backwards' }}
           >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-xl font-semibold font-headline text-foreground">{t[action.titleKey as keyof Translations]}</CardTitle>
-              {action.icon}
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-6">{t[action.descriptionKey as keyof Translations]}</p>
-              <Button asChild className="w-full shadow-md hover:shadow-lg hover:scale-105 transform transition-all duration-300">
-                <Link href={action.href}>{t[action.titleKey as keyof Translations]}</Link>
-              </Button>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="bg-primary/10 p-3 rounded-full">
+                  {action.icon}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground">{t[action.titleKey as keyof Translations]}</h3>
+                  <p className="text-sm text-muted-foreground">{t[action.descriptionKey as keyof Translations]}</p>
+                </div>
+              </div>
+              <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
             </CardContent>
           </Card>
+          </Link>
         ))}
       </div>
        <style jsx global>{`

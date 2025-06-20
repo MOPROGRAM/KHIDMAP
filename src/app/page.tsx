@@ -3,104 +3,133 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
-import { ArrowRight, Search, Wrench, Zap, Hammer, Brush, SprayCan, HardHat, Layers, GripVertical } from 'lucide-react';
+import { ArrowRight, Search, Wrench, Zap, Hammer, Brush, SprayCan, HardHat, Layers, GripVertical, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 
 export default function HomePage() {
   const t = useTranslation();
 
   const serviceCards = [
-    { icon: <Wrench className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'plumbing', descriptionKey: 'plumbingDescription' },
-    { icon: <Zap className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'electrical', descriptionKey: 'electricalDescription' },
-    { icon: <Hammer className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'carpentry', descriptionKey: 'carpentryDescription' },
-    { icon: <Brush className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'painting', descriptionKey: 'paintingDescription' },
-    { icon: <SprayCan className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'homeCleaning', descriptionKey: 'homeCleaningDescription' },
-    { icon: <HardHat className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'construction', descriptionKey: 'constructionDescription' },
-    { icon: <Layers className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'plastering', descriptionKey: 'plasteringDescription' },
-    { icon: <GripVertical className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'other', descriptionKey: 'otherServicesDescription' },
+    { icon: <Wrench className="h-8 w-8 text-primary" />, titleKey: 'plumbing', descriptionKey: 'plumbingDescription' },
+    { icon: <Zap className="h-8 w-8 text-primary" />, titleKey: 'electrical', descriptionKey: 'electricalDescription' },
+    { icon: <Hammer className="h-8 w-8 text-primary" />, titleKey: 'carpentry', descriptionKey: 'carpentryDescription' },
+    { icon: <Brush className="h-8 w-8 text-primary" />, titleKey: 'painting', descriptionKey: 'paintingDescription' },
+    { icon: <SprayCan className="h-8 w-8 text-primary" />, titleKey: 'homeCleaning', descriptionKey: 'homeCleaningDescription' },
+    { icon: <HardHat className="h-8 w-8 text-primary" />, titleKey: 'construction', descriptionKey: 'constructionDescription' },
+    { icon: <Layers className="h-8 w-8 text-primary" />, titleKey: 'plastering', descriptionKey: 'plasteringDescription' },
+    { icon: <GripVertical className="h-8 w-8 text-primary" />, titleKey: 'other', descriptionKey: 'otherServicesDescription' },
   ];
+  
+  const howItWorks = [
+      { title: "ابحث عن الخدمة", description: "استخدم البحث الذكي للعثور على الحرفيين في منطقتك.", icon: <Search className="h-8 w-8 text-primary"/> },
+      { title: "تواصل وقيم", description: "تواصل مع مقدمي الخدمة مباشرة وقيم تجربتك لمساعدة الآخرين.", icon: <CheckCircle className="h-8 w-8 text-primary"/> },
+      { title: "انضم كمزود", description: "اعرض مهاراتك وخدماتك لآلاف العملاء المحتملين.", icon: <ArrowRight className="h-8 w-8 text-primary"/> },
+  ]
 
 
   return (
-    <div className="flex flex-col items-center text-center space-y-16 md:space-y-24 py-8 md:py-16">
-      <section className="w-full max-w-4xl px-4 animate-fadeIn">
-        <h1 className="text-4xl md:text-6xl font-bold font-headline mb-6 text-foreground">
-          {t.welcomeTo} <span className="text-primary drop-shadow-md">{t.appName}</span>
-        </h1>
-        <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-          {t.findSkilledArtisans} {t.orPostYourServices}
-        </p>
-        <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <Button
-            size="lg"
-            asChild
-            className="animate-slideUp animation-delay-200 shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-300 group"
-          >
-            <Link href="/services/search">
-              {t.browseServices}
-              <Search className="ltr:ml-2 rtl:mr-2 h-5 w-5 group-hover:animate-pulse-glow" />
-            </Link>
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            asChild
-            className="animate-slideUp animation-delay-400 shadow-md hover:shadow-lg hover:scale-105 transform transition-all duration-300 group"
-          >
-            <Link href="/auth/register">
-              {t.getStarted}
-              <ArrowRight className="ltr:ml-2 rtl:mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
-            </Link>
-          </Button>
+    <div className="flex flex-col items-center space-y-20 md:space-y-28 py-8 md:py-16">
+      
+      {/* Hero Section */}
+      <section className="w-full max-w-6xl px-4 animate-fadeIn">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="text-center md:text-left">
+                <h1 className="text-4xl md:text-6xl font-extrabold font-headline mb-6 text-foreground tracking-tight">
+                    {t.welcomeTo} <span className="text-primary drop-shadow-sm">{t.appName}</span>
+                </h1>
+                <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-xl mx-auto md:mx-0">
+                    {t.findSkilledArtisans} {t.orPostYourServices}
+                </p>
+                <div className="flex flex-col sm:flex-row justify-center md:justify-start gap-4">
+                    <Button
+                        size="lg"
+                        asChild
+                        className="animate-slideUp animation-delay-200 shadow-lg hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 group"
+                    >
+                        <Link href="/services/search">
+                        {t.browseServices}
+                        <Search className="ltr:ml-2 rtl:mr-2 h-5 w-5 group-hover:animate-pulse-glow" />
+                        </Link>
+                    </Button>
+                    <Button
+                        size="lg"
+                        variant="outline"
+                        asChild
+                        className="animate-slideUp animation-delay-400"
+                    >
+                        <Link href="/auth/register">
+                        {t.getStarted}
+                        <ArrowRight className="ltr:ml-2 rtl:mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+                        </Link>
+                    </Button>
+                </div>
+            </div>
+            <div className="hidden md:block animate-fadeIn animation-delay-600">
+                <Image 
+                    src="https://placehold.co/600x400.png"
+                    alt="Artisans working"
+                    width={600}
+                    height={400}
+                    className="rounded-xl shadow-2xl"
+                    data-ai-hint="craftsman tools"
+                    priority
+                />
+            </div>
         </div>
       </section>
 
-      <section className="w-full max-w-5xl px-4 animate-fadeIn animation-delay-600">
-         <div className="grid md:grid-cols-1 gap-8 items-center text-center md:text-center">
-            <div className="space-y-4">
-              <h2 className="text-3xl font-headline font-semibold text-foreground">{t.joinAsProvider}</h2>
-              <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-                {t.orPostYourServices}
-              </p>
-              <Button asChild size="lg" className="shadow-md hover:shadow-lg hover:scale-105 transform transition-all duration-300 group">
-                <Link href="/auth/register?role=provider">{t.joinAsProvider} <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-300"/></Link>
-              </Button>
-            </div>
-          </div>
-      </section>
-
-      <section className="w-full max-w-5xl px-4 animate-fadeIn animation-delay-800">
-         <div className="grid md:grid-cols-1 gap-8 items-center text-center md:text-center">
-           <div className="space-y-4">
-              <h2 className="text-3xl font-headline font-semibold text-foreground">{t.joinAsSeeker}</h2>
-              <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-                {t.findSkilledArtisans}
-              </p>
-              <Button asChild size="lg" className="shadow-md hover:shadow-lg hover:scale-105 transform transition-all duration-300 group">
-                <Link href="/auth/register?role=seeker">{t.joinAsSeeker} <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-300"/></Link>
-              </Button>
-            </div>
-          </div>
-      </section>
-
-      <section className="w-full max-w-5xl px-4 animate-fadeIn animation-delay-1000">
-        <h2 className="text-3xl md:text-4xl font-headline font-semibold mb-12 text-foreground">{t.services}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {serviceCards.map((service, index) => (
-            <div
-              key={index}
-              className="p-6 bg-card rounded-xl shadow-lg border border-border transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 group"
-            >
-              {service.icon}
-              <h3 className="text-2xl font-semibold mb-3 font-headline text-foreground">{t[service.titleKey as keyof Translations]}</h3>
-              <p className="text-muted-foreground text-sm">
-                {t[service.descriptionKey as keyof Translations]}
-              </p>
+      {/* How It Works Section */}
+       <section className="w-full max-w-5xl px-4 text-center animate-fadeIn animation-delay-800">
+        <h2 className="text-3xl md:text-4xl font-bold font-headline mb-4 text-foreground">كيف يعمل؟</h2>
+        <p className="text-lg text-muted-foreground mb-12 max-w-2xl mx-auto">طريقة سهلة ومباشرة لربط الحرفيين بالعملاء</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {howItWorks.map((step, index) => (
+            <div key={index} className="p-6 bg-card rounded-lg border transition-all duration-300 hover:shadow-lg hover:-translate-y-1.5">
+              <div className="mb-4">{step.icon}</div>
+              <h3 className="text-xl font-bold mb-2 text-foreground">{step.title}</h3>
+              <p className="text-muted-foreground">{step.description}</p>
             </div>
           ))}
         </div>
       </section>
+
+      {/* Services Section */}
+      <section className="w-full max-w-6xl px-4 animate-fadeIn animation-delay-1000">
+        <h2 className="text-3xl md:text-4xl font-bold font-headline mb-12 text-foreground text-center">{t.services}</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {serviceCards.map((service, index) => (
+            <Card
+              key={index}
+              className="p-6 text-center bg-card rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-2 group flex flex-col items-center"
+            >
+                <CardHeader className="p-0 mb-4">
+                    {service.icon}
+                </CardHeader>
+                <CardContent className="p-0">
+                    <h3 className="text-xl font-bold mb-2 font-headline text-foreground">{t[service.titleKey as keyof Translations]}</h3>
+                    <p className="text-muted-foreground text-sm">
+                        {t[service.descriptionKey as keyof Translations]}
+                    </p>
+                </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="w-full max-w-4xl px-4 text-center animate-fadeIn animation-delay-1000">
+        <Card className="p-8 md:p-12 bg-primary text-primary-foreground shadow-xl">
+          <h2 className="text-3xl font-extrabold mb-4">{t.joinAsProvider}</h2>
+          <p className="text-lg text-primary-foreground/80 mb-8 max-w-2xl mx-auto">{t.orPostYourServices}</p>
+          <Button asChild size="lg" variant="secondary" className="shadow-lg text-lg py-3 px-8 h-auto">
+            <Link href="/auth/register?role=provider">{t.register}</Link>
+          </Button>
+        </Card>
+      </section>
+
+
       <style jsx global>{`
         .animation-delay-200 { animation-delay: 0.2s; }
         .animation-delay-400 { animation-delay: 0.4s; }

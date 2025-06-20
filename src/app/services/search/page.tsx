@@ -10,9 +10,10 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { UserProfile, getAllProviders, ServiceCategory } from '@/lib/data';
 import Link from 'next/link';
 import NextImage from 'next/image'; 
-import { Search as SearchIcon, MapPin, User, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, HardHat, Layers, UserCircle, Star } from 'lucide-react';
+import { Search as SearchIcon, MapPin, User, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, HardHat, Layers, UserCircle, Star, Briefcase } from 'lucide-react';
 import { db } from '@/lib/firebase'; 
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 interface SearchHistoryItem {
   query: string;
@@ -167,9 +168,9 @@ export default function ServiceSearchPage() {
 
   return (
     <div className="space-y-8 py-8 animate-fadeIn">
-      <Card className="shadow-xl sticky top-[calc(var(--header-height,4rem)+1rem)] z-40 backdrop-blur-md bg-background/90 border">
+      <Card className="shadow-md sticky top-[calc(var(--header-height,4rem)+1rem)] z-40 backdrop-blur-md bg-background/90 border">
         <CardHeader>
-          <CardTitle className="text-3xl font-headline flex items-center gap-3 text-foreground">
+          <CardTitle className="text-3xl font-bold flex items-center gap-3 text-foreground">
             <SearchIcon className="h-8 w-8 text-primary" />
             {t.search} {t.serviceProviders}
           </CardTitle>
@@ -200,9 +201,9 @@ export default function ServiceSearchPage() {
       </Card>
 
       {isDbAvailable && searchHistory.length > 0 && initialLoadComplete && (
-        <Card className="shadow-lg animate-fadeIn animation-delay-200 border">
+        <Card className="shadow-sm animate-fadeIn animation-delay-200 border">
           <CardHeader>
-            <CardTitle className="text-xl font-headline text-foreground">{t.recentSearches}</CardTitle>
+            <CardTitle className="text-xl font-semibold text-foreground">{t.recentSearches}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             {searchHistory.map((item, index) => (
@@ -228,7 +229,7 @@ export default function ServiceSearchPage() {
       )}
       
       {initialLoadComplete && error && (
-         <Card className="text-center py-12 bg-destructive/10 border-destructive shadow-xl animate-fadeIn">
+         <Card className="text-center py-12 bg-destructive/10 border-destructive shadow-lg animate-fadeIn">
           <CardHeader>
             <AlertTriangle className="mx-auto h-16 w-16 text-destructive mb-4" />
             <CardTitle className="text-destructive text-2xl">{t.errorOccurred}</CardTitle>
@@ -248,7 +249,7 @@ export default function ServiceSearchPage() {
       )}
 
       {initialLoadComplete && !error && currentSearchQuery && filteredProviders.length === 0 && (
-        <Card className="text-center py-12 shadow-xl animate-fadeIn border">
+        <Card className="text-center py-12 shadow-md animate-fadeIn border">
           <CardHeader>
              <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <CardTitle className="text-2xl text-foreground">{t.noResultsFound}</CardTitle>
@@ -260,7 +261,7 @@ export default function ServiceSearchPage() {
       )}
       
       {initialLoadComplete && !error && filteredProviders.length === 0 && !currentSearchQuery && allProviders.length === 0 && (
-         <Card className="text-center py-12 shadow-xl animate-fadeIn border">
+         <Card className="text-center py-12 shadow-md animate-fadeIn border">
           <CardHeader>
              <UserCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <CardTitle className="text-2xl text-foreground">{t.noServicesAvailableYet}</CardTitle>
@@ -272,41 +273,42 @@ export default function ServiceSearchPage() {
       )}
 
       {initialLoadComplete && !isLoading && !error && filteredProviders.length > 0 && (
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 animate-fadeIn animation-delay-400">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fadeIn animation-delay-400">
           {filteredProviders.map((provider, index) => {
             const mainCategory = provider.serviceCategories?.[0];
-            const Icon = mainCategory ? (categoryIcons[mainCategory] || GripVertical) : User;
+            const Icon = mainCategory ? (categoryIcons[mainCategory] || Briefcase) : Briefcase;
             return (
               <Card 
                 key={provider.uid} 
-                className="overflow-hidden shadow-xl hover:shadow-2xl border transition-all duration-300 ease-in-out flex flex-col group transform hover:-translate-y-1.5"
+                className="overflow-hidden shadow-md hover:shadow-lg border transition-all duration-300 ease-in-out flex flex-col group transform hover:-translate-y-1"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <CardHeader className="pb-3 flex-row items-center gap-4">
-                  <NextImage 
-                    src={provider.profilePictureUrl || "https://placehold.co/80x80.png"} 
-                    alt={provider.name} 
-                    width={80} 
-                    height={80} 
-                    className="rounded-full border-2 border-primary shadow-lg object-cover"
-                    data-ai-hint="person portrait"
-                  />
-                  <div>
-                    <CardTitle className="text-xl font-semibold font-headline truncate hover:text-primary transition-colors" title={provider.name}>
-                       <Link href={`/services/ad/${provider.uid}`}>{provider.name}</Link>
-                    </CardTitle>
-                    <CardDescription className="text-sm text-muted-foreground pt-1 flex flex-wrap gap-x-2">
-                        {(provider.serviceCategories || []).slice(0, 2).map(cat => (
-                            <span key={cat}>{t[cat.toLowerCase() as keyof Translations] || cat}</span>
-                        ))}
-                    </CardDescription>
+                <CardHeader className="p-0">
+                  <div className="relative h-40 w-full">
+                    <NextImage 
+                      src={provider.profilePictureUrl || `https://placehold.co/400x250.png`}
+                      alt={provider.name}
+                      layout="fill"
+                      objectFit="cover"
+                      className="group-hover:scale-105 transition-transform duration-500"
+                      data-ai-hint="person portrait"
+                    />
+                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                   </div>
                 </CardHeader>
-                <CardContent className="flex-grow pt-1">
-                  <p className="text-sm text-foreground/90 line-clamp-3 mb-3 whitespace-pre-wrap">{provider.qualifications || t.provider + " " + (t[provider.serviceCategories?.[0]?.toLowerCase() as keyof Translations] || '')}</p>
+                <CardContent className="flex-grow p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    {(provider.serviceCategories || []).slice(0, 2).map(cat => (
+                        <Badge key={cat} variant="secondary">{t[cat.toLowerCase() as keyof Translations] || cat}</Badge>
+                    ))}
+                  </div>
+                  <CardTitle className="text-lg font-bold truncate hover:text-primary transition-colors" title={provider.name}>
+                     <Link href={`/services/ad/${provider.uid}`}>{provider.name}</Link>
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground line-clamp-2 h-10 mt-1">{provider.qualifications || t.provider + " " + (t[provider.serviceCategories?.[0]?.toLowerCase() as keyof Translations] || '')}</p>
                 </CardContent>
-                <CardFooter className="bg-muted/30 p-4 mt-auto">
-                  <Button asChild className="w-full group/button">
+                <CardFooter className="p-4 mt-auto">
+                  <Button asChild className="w-full group/button" size="sm">
                     <Link href={`/services/ad/${provider.uid}`}>
                       {t.viewProfile} <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4 group-hover/button:translate-x-0.5 transition-transform" />
                     </Link>

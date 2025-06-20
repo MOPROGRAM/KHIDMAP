@@ -5,43 +5,41 @@
 
 @layer base {
   :root {
-    --background: 0 0% 96%; /* #F5F5F5 Light Gray */
-    --foreground: 240 10% 3.9%; /* Dark Gray for text */
+    --background: 220 20% 97%; /* Light Slate Blue-Gray */
+    --foreground: 220 10% 15%; /* Dark Slate Blue-Gray */
 
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 220 10% 15%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover-foreground: 220 10% 15%;
 
-    --primary: 235 70% 55%; /* Adjusted to a more Blue-Violet */
-    --primary-foreground: 0 0% 98%; /* White for text on primary */
+    --primary: 215 80% 55%; /* Vibrant Blue */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 90%; /* Lighter gray for secondary elements */
-    --secondary-foreground: 240 10% 3.9%;
+    --secondary: 220 20% 92%; /* Lighter Slate Blue-Gray */
+    --secondary-foreground: 220 10% 25%;
 
-    --muted: 0 0% 85%; /* Muted gray */
-    --muted-foreground: 240 5% 35%;
+    --muted: 220 20% 88%;
+    --muted-foreground: 220 5% 45%;
 
-    --accent: 141 58% 46%; /* #34A853 Soft Green */
-    --accent-foreground: 0 0% 98%; /* White for text on accent */
-
-    --orange: 30 90% 55%; /* Vibrant Orange */
-    --orange-foreground: 0 0% 98%; /* White for text on orange */
+    --accent: 160 70% 45%; /* Teal */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 235 70% 55%; /* Adjusted to a more Blue-Violet for rings */
+    --border: 220 20% 85%;
+    --input: 220 20% 94%;
+    --ring: 215 80% 55%; /* Vibrant Blue for rings */
 
     --radius: 0.5rem;
 
-    --chart-1: 235 70% 55%; /* Adjusted to a more Blue-Violet for charts */
-    --chart-2: 141 58% 46%; /* Green */
-    --chart-3: 30 90% 55%; /* Orange (using the new --orange) */
-    --chart-4: 280 65% 60%; /* Different Purple/Pink */
-    --chart-5: 340 75% 55%; /* Pink/Red */
+    --chart-1: 215 80% 55%; /* Vibrant Blue */
+    --chart-2: 160 70% 45%; /* Teal */
+    --chart-3: 30 90% 55%; /* Orange */
+    --chart-4: 280 65% 60%; 
+    --chart-5: 340 75% 55%; 
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -54,39 +52,37 @@
   }
 
   .dark {
-    --background: 240 6% 10%; /* Dark Gray e.g. #1A1A1A */
-    --foreground: 0 0% 98%; /* Light Gray/White for text */
+    --background: 220 15% 10%; /* Very Dark Slate Blue-Gray */
+    --foreground: 220 10% 85%; /* Light Gray */
 
-    --card: 240 6% 12%; /* Slightly lighter dark gray for cards */
-    --card-foreground: 0 0% 98%;
-    --popover: 240 6% 12%;
-    --popover-foreground: 0 0% 98%;
+    --card: 220 15% 15%;
+    --card-foreground: 220 10% 85%;
+    
+    --popover: 220 15% 15%;
+    --popover-foreground: 220 10% 85%;
 
-    --primary: 235 70% 65%; /* Lighter, more Blue-Violet for dark mode */
-    --primary-foreground: 235 10% 10%; /* Darker text for contrast on light purplish-blue */
+    --primary: 215 75% 65%; /* Lighter Vibrant Blue */
+    --primary-foreground: 220 10% 10%;
 
-    --secondary: 240 6% 15%; /* Darker secondary */
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 220 15% 20%;
+    --secondary-foreground: 220 10% 85%;
 
-    --muted: 240 6% 20%; /* Muted dark */
-    --muted-foreground: 0 0% 60%;
+    --muted: 220 15% 25%;
+    --muted-foreground: 220 5% 55%;
 
-    --accent: 141 58% 53%; /* Lighter green for dark mode */
-    --accent-foreground: 240 6% 10%; /* Dark text on accent */
+    --accent: 160 60% 55%; /* Lighter Teal */
+    --accent-foreground: 220 10% 10%;
 
-    --orange: 30 90% 65%; /* Vibrant Orange for dark mode */
-    --orange-foreground: 30 80% 10%; /* Darker text for contrast on light orange */
-
-    --destructive: 0 72.2% 50.6%;
+    --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 4% 20%;
-    --input: 240 4% 20%;
-    --ring: 235 70% 65%; /* Lighter, more Blue-Violet for rings in dark mode */
+    --border: 220 15% 25%;
+    --input: 220 15% 22%;
+    --ring: 215 75% 65%; /* Lighter Vibrant Blue for rings */
 
-    --chart-1: 235 70% 65%; /* Lighter, more Blue-Violet for charts in dark mode */
-    --chart-2: 141 58% 53%; /* Green */
-    --chart-3: 30 90% 65%; /* Orange (using the new --orange) */
+    --chart-1: 215 75% 65%;
+    --chart-2: 160 60% 55%;
+    --chart-3: 30 90% 65%;
     --chart-4: 280 65% 70%;
     --chart-5: 340 75% 65%;
 
@@ -106,6 +102,6 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
 }
