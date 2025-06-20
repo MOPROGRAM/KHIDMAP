@@ -13,7 +13,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    --primary: 270 70% 55%; /* Vibrant Purple */
+    --primary: 260 70% 55%; /* Purplish-blue (Indigo/Blue-Violet like) */
     --primary-foreground: 0 0% 98%; /* White for text on primary */
 
     --secondary: 0 0% 90%; /* Lighter gray for secondary elements */
@@ -22,7 +22,7 @@
     --muted: 0 0% 85%; /* Muted gray */
     --muted-foreground: 240 5% 35%;
 
-    --accent: 141 58% 46%; /* #34A853 Soft Green - kept as is, can be changed later */
+    --accent: 141 58% 46%; /* #34A853 Soft Green - kept as is */
     --accent-foreground: 0 0% 98%; /* White for text on accent */
 
     --destructive: 0 84.2% 60.2%;
@@ -30,11 +30,11 @@
 
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 270 70% 55%; /* Purple for rings */
+    --ring: 260 70% 55%; /* Purplish-blue for rings */
 
     --radius: 0.5rem;
 
-    --chart-1: 270 70% 55%; /* Purple for charts */
+    --chart-1: 260 70% 55%; /* Purplish-blue for charts */
     --chart-2: 141 58% 46%; /* Green */
     --chart-3: 30 80% 55%; /* Orange */
     --chart-4: 280 65% 60%; /* Different Purple/Pink */
@@ -47,7 +47,7 @@
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%; /* Keeping sidebar ring distinct for now */
+    --sidebar-ring: 217.2 91.2% 59.8%; 
   }
 
   .dark {
@@ -59,8 +59,8 @@
     --popover: 240 6% 12%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 270 70% 65%; /* Lighter Purple for dark mode */
-    --primary-foreground: 270 10% 10%; /* Darker text for contrast on light purple */
+    --primary: 260 70% 65%; /* Lighter Purplish-blue for dark mode */
+    --primary-foreground: 260 10% 10%; /* Darker text for contrast on light purplish-blue */
 
     --secondary: 240 6% 15%; /* Darker secondary */
     --secondary-foreground: 0 0% 98%;
@@ -76,9 +76,9 @@
 
     --border: 240 4% 20%;
     --input: 240 4% 20%;
-    --ring: 270 70% 65%; /* Lighter Purple for rings in dark mode */
+    --ring: 260 70% 65%; /* Lighter Purplish-blue for rings in dark mode */
 
-    --chart-1: 270 70% 65%; /* Lighter Purple for charts in dark mode */
+    --chart-1: 260 70% 65%; /* Lighter Purplish-blue for charts in dark mode */
     --chart-2: 141 58% 53%;
     --chart-3: 30 80% 65%;
     --chart-4: 280 65% 70%;
@@ -101,6 +101,5 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Default font-family removed, will be handled by tailwind.config.ts and layout.tsx */
   }
 }
