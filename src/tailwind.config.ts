@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -100,9 +101,8 @@ export default {
           },
         },
         'scroll': {
-          'to': {
-            transform: 'translate(calc(-50% - 1rem))',
-          },
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
         },
       },
       animation: {

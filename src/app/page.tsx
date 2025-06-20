@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -20,7 +21,7 @@ export default function HomePage() {
     { icon: <GripVertical className="h-8 w-8 text-primary" />, titleKey: 'other', descriptionKey: 'otherServicesDescription' },
   ];
   
-  const renderServiceCards = () => serviceCards.map((service, index) => (
+  const renderServiceCard = (service: any, index: number) => (
     <li 
         key={index} 
         className="flex-shrink-0 w-[300px] h-[220px] flex flex-col items-start text-left p-6 rounded-2xl border bg-card/80 backdrop-blur-sm transition-all"
@@ -31,7 +32,7 @@ export default function HomePage() {
       <h3 className="text-lg font-bold text-foreground mb-2">{t[service.titleKey as keyof Translations]}</h3>
       <p className="text-sm text-muted-foreground">{t[service.descriptionKey as keyof Translations]}</p>
     </li>
-  ));
+  );
 
   return (
     <div className="flex flex-col items-center overflow-x-hidden">
@@ -80,10 +81,7 @@ export default function HomePage() {
         </div>
         <div className="w-full inline-flex flex-nowrap overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]">
             <ul className="flex items-center justify-center md:justify-start animate-scroll [animation-play-state:running] hover:[animation-play-state:paused] gap-8">
-                {renderServiceCards()}
-            </ul>
-            <ul className="flex items-center justify-center md:justify-start animate-scroll [animation-play-state:running] hover:[animation-play-state:paused] gap-8 ml-8" aria-hidden="true">
-                {renderServiceCards()}
+                {[...serviceCards, ...serviceCards].map((service, index) => renderServiceCard(service, index))}
             </ul>
         </div>
       </section>
