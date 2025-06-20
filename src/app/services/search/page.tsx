@@ -10,7 +10,7 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { ServiceAd, getAllServiceAds, UserProfile, getUserProfileById, ServiceCategory } from '@/lib/data';
 import Link from 'next/link';
 import NextImage from 'next/image'; 
-import { Search as SearchIcon, MapPin, Briefcase, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, Sparkles, GripVertical } from 'lucide-react';
+import { Search as SearchIcon, MapPin, Briefcase, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical } from 'lucide-react'; // Changed Sparkles to SprayCan
 
 interface SearchHistoryItem {
   query: string;
@@ -22,7 +22,7 @@ const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Electrical: Zap,
   Carpentry: Hammer,
   Painting: Brush,
-  HomeCleaning: Sparkles,
+  HomeCleaning: SprayCan, // Changed Sparkles to SprayCan
   Other: GripVertical,
 };
 

@@ -3,8 +3,8 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useTranslation } from '@/hooks/useTranslation';
-import { ArrowRight, Search, Wrench, Zap, Hammer, Brush, Sparkles } from 'lucide-react';
+import { useTranslation, Translations } from '@/hooks/useTranslation';
+import { ArrowRight, Search, Wrench, Zap, Hammer, Brush, SprayCan } from 'lucide-react'; // Changed Sparkles to SprayCan
 import Image from 'next/image';
 
 export default function HomePage() {
@@ -15,7 +15,7 @@ export default function HomePage() {
     { icon: <Zap className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'electrical', description: "Safe and reliable electrical solutions for your home and business." },
     { icon: <Hammer className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'carpentry', description: "Skilled carpentry for furniture, repairs, and custom projects." },
     { icon: <Brush className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'painting', description: "Professional painting services for a fresh new look." },
-    { icon: <Sparkles className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'homeCleaning', description: "Reliable home cleaning services for a spotless living space." },
+    { icon: <SprayCan className="h-12 w-12 text-primary mb-4 mx-auto group-hover:animate-subtle-bounce" />, titleKey: 'homeCleaning', description: "Reliable home cleaning services for a spotless living space." }, // Changed Sparkles to SprayCan
   ];
 
 

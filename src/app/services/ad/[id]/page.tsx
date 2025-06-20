@@ -8,7 +8,7 @@ import { ServiceAd, UserProfile, getAdById, getUserProfileById, ServiceCategory 
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import NextImage from 'next/image'; 
-import { ArrowLeft, MapPin, Wrench, Zap, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, Sparkles, GripVertical, ArrowRight, ImageOff } from 'lucide-react';
+import { ArrowLeft, MapPin, Wrench, Zap, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, ArrowRight, ImageOff } from 'lucide-react'; // Changed Sparkles to SprayCan
 import Link from 'next/link';
 import { Timestamp } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
@@ -18,7 +18,7 @@ const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Electrical: Zap,
   Carpentry: Hammer,
   Painting: Brush,
-  HomeCleaning: Sparkles,
+  HomeCleaning: SprayCan, // Changed Sparkles to SprayCan
   Other: GripVertical,
 };
 
