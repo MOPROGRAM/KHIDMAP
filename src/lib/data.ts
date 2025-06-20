@@ -1,6 +1,6 @@
 
 import { db, auth } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, doc, deleteDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, doc, deleteDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { ServiceCategoriesEnumType } from '@/ai/flows/categorize-ad'; // Import the enum type
 
@@ -76,11 +76,12 @@ export const getUserProfileById = async (uid: string): Promise<UserProfile | nul
 
 // --- ServiceAd Firestore Functions ---
 
-export const uploadAdImage = async (file: File, providerId: string, adIdOrTemp: string): Promise<string> => {
+export const uploadAdImage = async (file: File, providerId: string, adId: string): Promise<string> => {
   if (!auth?.currentUser) throw new Error("User not authenticated for image upload.");
-  if (!providerId || !adIdOrTemp) throw new Error("Provider ID and Ad ID/Temp ID are required for image path.");
+  if (!providerId || !adId) throw new Error("Provider ID and Ad ID are required for image path.");
   const storage = getStorage();
-  const imagePath = `serviceAds/${providerId}/${adIdOrTemp}/${Date.now()}_${file.name}`;
+  // Use the specific adId for the path
+  const imagePath = `serviceAds/${providerId}/${adId}/${Date.now()}_${file.name}`;
   const storageRef = ref(storage, imagePath);
   
   await uploadBytes(storageRef, file);
@@ -102,29 +103,45 @@ export const deleteAdImage = async (imageUrl: string): Promise<void> => {
       console.log("Image not found, skipping delete:", imageUrl);
     } else {
       console.error("Error deleting ad image from Storage: ", error);
+      // Do not re-throw here, allow ad deletion/update to proceed if image deletion fails
     }
   }
 };
 
 
-export const addServiceAd = async (adData: {
-  providerId: string;
-  providerName?: string;
-  title: string;
-  description: string;
-  category: ServiceCategory;
-  address: string; 
-  imageUrl?: string;
-}): Promise<string> => {
+export const addServiceAd = async (
+  adData: {
+    providerId: string;
+    providerName: string; // Made non-optional
+    title: string;
+    description: string;
+    category: ServiceCategory;
+    address: string;
+    imageUrl?: string;
+  },
+  forcedAdId?: string // Optional ID to force for the new document
+): Promise<string> => {
   if (!db) throw new Error("Firestore is not initialized.");
+  if (!adData.providerName) throw new Error("Provider name is required to post an ad.");
+
+  const dataToSave = {
+    ...adData,
+    postedDate: serverTimestamp(),
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
   try {
-    const adDocRef = await addDoc(collection(db, "serviceAds"), {
-      ...adData,
-      postedDate: serverTimestamp(),
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-    return adDocRef.id;
+    if (forcedAdId) {
+      // Use setDoc if a specific ID is provided
+      const adDocRef = doc(db, "serviceAds", forcedAdId);
+      await setDoc(adDocRef, dataToSave);
+      return forcedAdId;
+    } else {
+      // Use addDoc to auto-generate an ID
+      const adDocRef = await addDoc(collection(db, "serviceAds"), dataToSave);
+      return adDocRef.id;
+    }
   } catch (error) {
     console.error("Error adding service ad to Firestore: ", error);
     throw new Error("Failed to post ad.");
@@ -172,7 +189,7 @@ export const getAdsByProviderId = async (providerId: string): Promise<ServiceAd[
 export const deleteServiceAd = async (adId: string, imageUrl?: string): Promise<void> => {
   if (!db) throw new Error("Firestore is not initialized.");
   if (imageUrl) {
-    await deleteAdImage(imageUrl);
+    await deleteAdImage(imageUrl); // Attempt to delete image, but don't block ad deletion if this fails
   }
   try {
     const adDocRef = doc(db, "serviceAds", adId);
@@ -224,12 +241,15 @@ export const getAllServiceAds = async (): Promise<ServiceAd[]> => {
     for (const docSnap of querySnapshot.docs) {
       const data = docSnap.data();
       
+      // Ensure providerName is fetched if not directly available
       let providerName = data.providerName;
       if (!providerName && data.providerId) { 
         const providerProfile = await getUserProfileById(data.providerId);
-        providerName = providerProfile?.name || 'N/A';
+        providerName = providerProfile?.name || t.anonymousProvider || 'N/A'; // Use translation for anonymous
       } else if (!providerName) {
-        providerName = 'N/A';
+        // Use a global t object or pass it if this function is client-side.
+        // For server-side or generic lib, a default string is safer.
+        providerName = 'Anonymous Provider'; // Fallback if t is not available
       }
 
       ads.push({
@@ -247,4 +267,3 @@ export const getAllServiceAds = async (): Promise<ServiceAd[]> => {
     throw new Error("Failed to fetch service ads.");
   }
 };
-

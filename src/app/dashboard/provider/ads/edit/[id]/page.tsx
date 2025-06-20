@@ -12,11 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { categorizeAd, CategorizeAdOutput, ServiceCategoriesEnumType } from '@/ai/flows/categorize-ad';
-import { ServiceAd, ServiceCategory, getAdById, updateServiceAd, uploadAdImage, deleteAdImage } from '@/lib/data';
+import { ServiceAd, ServiceCategory, getAdById, updateServiceAd, uploadAdImage, deleteAdImage, UserProfile } from '@/lib/data';
 import { Loader2, Wand2, Edit3, Save, UploadCloud, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { z } from 'zod';
 import { auth, db } from '@/lib/firebase';
-import { User } from 'firebase/auth';
+import { User, onAuthStateChanged } from 'firebase/auth';
 import NextImage from 'next/image';
 import {
   AlertDialog,
@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { getDoc, doc } from 'firebase/firestore';
 
 const EditAdFormSchema = z.object({
   title: z.string().min(1, { message: "requiredField" }),
@@ -69,9 +70,20 @@ export default function EditAdPage() {
   useEffect(() => {
     if (auth && db) {
       setIsFirebaseReady(true);
-      const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           setCurrentUser(user);
+          // Fetch provider name here if not already fetched with ad
+          const userDocRef = doc(db, "users", user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data() as UserProfile;
+            // Set providerName which will be used if ad.providerName is missing
+            if (!providerName) setProviderName(userData.name || user.displayName || t.anonymousProvider);
+          } else {
+            if (!providerName) setProviderName(user.displayName || t.anonymousProvider);
+          }
+
         } else {
           toast({ variant: "destructive", title: t.errorOccurred, description: t.userNotAuthenticated });
           router.push('/auth/login');
@@ -83,7 +95,7 @@ export default function EditAdPage() {
       console.warn("Firebase Auth or DB not initialized in EditAdPage.");
       toast({ variant: "destructive", title: t.serviceUnavailableTitle, description: t.coreServicesUnavailable });
     }
-  }, [router, toast, t]);
+  }, [router, toast, t, providerName]); // Added providerName to dependency array
 
   const fetchAdData = useCallback(async () => {
     if (!adId || !isFirebaseReady) return;
@@ -103,7 +115,7 @@ export default function EditAdPage() {
         setCategory(fetchedAd.category);
         setCurrentImageUrl(fetchedAd.imageUrl);
         setAdImagePreview(fetchedAd.imageUrl || null);
-        setProviderName(fetchedAd.providerName || null); // Set provider name
+        setProviderName(fetchedAd.providerName || providerName); // Use fetched ad's providerName or fallback
       } else {
         toast({ variant: "destructive", title: t.errorOccurred, description: t.adNotFound });
         router.push('/dashboard/provider/ads');
@@ -115,7 +127,7 @@ export default function EditAdPage() {
     } finally {
       setIsFetchingAd(false);
     }
-  }, [adId, router, toast, t, currentUser, isFirebaseReady]);
+  }, [adId, router, toast, t, currentUser, isFirebaseReady, providerName]);
 
   useEffect(() => {
     if (adId && currentUser && isFirebaseReady) {
@@ -132,31 +144,15 @@ export default function EditAdPage() {
         setAdImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+      setErrors(prev => ({ ...prev, imageUrl: '' })); // Clear image error if new one is selected
     }
   };
 
   const handleRemoveImage = async () => {
-    if (currentImageUrl && ad?.id) {
-       // Optimistically update UI
-       setAdImageFile(null);
-       setAdImagePreview(null);
-       setCurrentImageUrl(undefined);
-
-      try {
-        await deleteAdImage(currentImageUrl);
-        await updateServiceAd(ad.id, { imageUrl: undefined }); // Remove from Firestore
-        toast({ title: "Image Removed", description: "Ad image has been removed."});
-      } catch(error) {
-        console.error("Error removing image:", error);
-        toast({variant: "destructive", title: t.errorOccurred, description: "Failed to remove image."});
-        // Revert UI if error
-        setAdImagePreview(currentImageUrl || null); 
-        setCurrentImageUrl(currentImageUrl);
-      }
-    } else {
-       setAdImageFile(null);
-       setAdImagePreview(null);
-    }
+     setAdImageFile(null); // Mark that no new file is selected
+     setAdImagePreview(null); // Clear preview
+     // currentImageUrl will be handled during submit to mark for deletion from storage
+     // and removal from Firestore
   }
 
 
@@ -195,13 +191,15 @@ export default function EditAdPage() {
     setIsUploadingImage(false);
     setErrors({});
 
-    let newImageUrl: string | undefined | null = currentImageUrl; 
-    const oldImageUrlToDelete = adImageFile && currentImageUrl ? currentImageUrl : undefined;
-
-    if (adImageFile) {
+    let finalImageUrl: string | undefined | null = currentImageUrl; 
+    
+    if (adImageFile) { // New image selected for upload
       setIsUploadingImage(true);
       try {
-        newImageUrl = await uploadAdImage(adImageFile, currentUser.uid, ad.id);
+        finalImageUrl = await uploadAdImage(adImageFile, currentUser.uid, ad.id);
+        if (currentImageUrl && currentImageUrl !== finalImageUrl) { // Delete old image if new one uploaded successfully
+            await deleteAdImage(currentImageUrl);
+        }
       } catch (error) {
         console.error("Error uploading new image:", error);
         toast({ variant: "destructive", title: t.errorOccurred, description: t.failedUploadImage });
@@ -210,10 +208,8 @@ export default function EditAdPage() {
         return;
       }
       setIsUploadingImage(false);
-    } else if (adImageFile === null && currentImageUrl !== undefined && adImagePreview === null) {
-      // This means user explicitly removed the image by clearing preview, but didn't trigger handleRemoveImage directly.
-      // The image should be marked for deletion and newImageUrl set to undefined.
-      newImageUrl = undefined;
+    } else if (adImagePreview === null && currentImageUrl) { // Image was present and then removed (preview cleared)
+        finalImageUrl = undefined; // Mark for removal from Firestore
     }
 
 
@@ -222,7 +218,7 @@ export default function EditAdPage() {
         description, 
         address, 
         category, 
-        imageUrl: newImageUrl 
+        imageUrl: finalImageUrl // Use the potentially updated finalImageUrl
     });
 
     if (!validationResult.success) {
@@ -238,21 +234,27 @@ export default function EditAdPage() {
     }
     
     try {
+      const currentProviderName = providerName || currentUser.displayName || t.anonymousProvider;
+      if (!currentProviderName) {
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.providerInfoMissing });
+        setIsLoading(false);
+        return;
+      }
+
       const updateData: Partial<Omit<ServiceAd, 'id' | 'providerId' | 'postedDate' | 'createdAt'>> = {
         title: validationResult.data.title,
         description: validationResult.data.description,
         category: validationResult.data.category as ServiceCategory,
         address: validationResult.data.address,
         imageUrl: validationResult.data.imageUrl === null ? undefined : validationResult.data.imageUrl,
-        providerName: providerName || currentUser.displayName || t.anonymousProvider, // Ensure providerName is updated
+        providerName: currentProviderName,
       };
       
       await updateServiceAd(ad.id, updateData);
 
-      if (oldImageUrlToDelete && oldImageUrlToDelete !== newImageUrl) { 
-        await deleteAdImage(oldImageUrlToDelete); 
-      } else if (newImageUrl === undefined && currentImageUrl && !adImageFile) { // Case: image was removed
-        await deleteAdImage(currentImageUrl);
+      // If image was marked for removal (finalImageUrl is undefined) and there was a currentImageUrl, delete from storage
+      if (finalImageUrl === undefined && currentImageUrl) {
+          await deleteAdImage(currentImageUrl);
       }
 
 
@@ -370,21 +372,21 @@ export default function EditAdPage() {
                         <NextImage src={adImagePreview} alt={t.imagePreview || "Image Preview"} width={200} height={200} className="mx-auto h-24 w-auto object-contain rounded-md shadow-md" />
                          <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 h-7 w-7 rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity">
+                                <Button variant="destructive" type="button" size="icon" className="absolute -top-2 -right-2 h-7 w-7 rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity">
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                <AlertDialogTitle>Remove Image?</AlertDialogTitle>
+                                <AlertDialogTitle>{t.removeImageTitle ? t.removeImageTitle : "Remove Image?"}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Are you sure you want to remove the current ad image? This action will permanently delete the image if you save the changes.
+                                    {t.removeImageConfirm ? t.removeImageConfirm : "Are you sure you want to remove the current ad image? This action will permanently delete the image if you save the changes."}
                                 </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleRemoveImage} className="bg-destructive hover:bg-destructive/90">
-                                    Remove Image
+                                <AlertDialogCancel type="button">{t.cancel}</AlertDialogCancel>
+                                <AlertDialogAction type="button" onClick={handleRemoveImage} className="bg-destructive hover:bg-destructive/90">
+                                    {t.removeImageButton ? t.removeImageButton : "Remove Image"}
                                 </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
@@ -425,5 +427,3 @@ export default function EditAdPage() {
     </div>
   );
 }
-
-    

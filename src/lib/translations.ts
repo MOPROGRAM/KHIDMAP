@@ -223,6 +223,11 @@ export type Translations = {
   messageSentErrorDescription?: string;
   contactFormIntro?: string;
   formSubmitActivationNote?: string;
+
+  // Image Deletion in Edit Ad
+  removeImageTitle?: string;
+  removeImageConfirm?: string;
+  removeImageButton?: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -447,7 +452,10 @@ export const translations: Record<'en' | 'ar', Translations> = {
     messageSentErrorTitle: "Error Sending Message",
     messageSentErrorDescription: "Sorry, there was an issue sending your message. Please try again later.",
     contactFormIntro: "We'd love to hear from you! Please fill out the form below and we'll get in touch as soon as possible.",
-    formSubmitActivationNote: "Note: For this form to work, the owner of mobusinessarena@gmail.com needs to activate it once via an email from FormSubmit.co after the first submission attempt."
+    formSubmitActivationNote: "Note: For this form to work, the owner of mobusinessarena@gmail.com needs to activate it once via an email from FormSubmit.co after the first submission attempt.",
+    removeImageTitle: "Remove Image?",
+    removeImageConfirm: "Are you sure you want to remove the current ad image? This action will permanently delete the image if you save the changes.",
+    removeImageButton: "Remove Image",
   },
   ar: {
     appName: "خدماب",
@@ -572,11 +580,11 @@ export const translations: Record<'en' | 'ar', Translations> = {
     orDragAndDrop: "أو اسحب وأفلت",
     imageUploadHint: "PNG, JPG, GIF حتى 10 ميجابايت",
     uploadingImage: "جاري تحميل الصورة",
-    anonymousProvider: "مزود مجهول",
+    anonymousProvider: "مقدم خدمة مجهول",
     userNotIdentified: "لم يتم التعرف على المستخدم. يرجى تسجيل الدخول مرة أخرى.",
     coreServicesUnavailable: "الخدمات الأساسية غير جاهزة.",
     cannotPostAdCoreServices: "لا يمكن نشر الإعلان. الخدمات الأساسية غير جاهزة.",
-    providerInfoMissing: "معلومات المزود مفقودة. حاول مرة اخرى.",
+    providerInfoMissing: "معلومات مقدم الخدمة مفقودة. يرجى المحاولة مرة أخرى.",
     adLiveShortly: "سيكون إعلانك متاحًا قريبًا.",
     failedPostAd: "فشل نشر الإعلان.",
     newAdDescriptionPage: "املأ النموذج لنشر إعلان خدمتك على {appName}.",
@@ -670,7 +678,10 @@ export const translations: Record<'en' | 'ar', Translations> = {
     messageSentErrorTitle: "خطأ في إرسال الرسالة",
     messageSentErrorDescription: "عذراً، حدث خطأ أثناء إرسال رسالتك. يرجى المحاولة مرة أخرى لاحقاً.",
     contactFormIntro: "يسعدنا أن نسمع منك! يرجى ملء النموذج أدناه وسنتواصل معك في أقرب وقت ممكن.",
-    formSubmitActivationNote: "ملاحظة: لكي يعمل هذا النموذج، يحتاج مالك mobusinessarena@gmail.com إلى تفعيله مرة واحدة عبر بريد إلكتروني من FormSubmit.co بعد أول محاولة إرسال."
+    formSubmitActivationNote: "ملاحظة: لكي يعمل هذا النموذج، يحتاج مالك mobusinessarena@gmail.com إلى تفعيله مرة واحدة عبر بريد إلكتروني من FormSubmit.co بعد أول محاولة إرسال.",
+    removeImageTitle: "إزالة الصورة؟",
+    removeImageConfirm: "هل أنت متأكد أنك تريد إزالة صورة الإعلان الحالية؟ سيؤدي هذا الإجراء إلى حذف الصورة نهائيًا إذا قمت بحفظ التغييرات.",
+    removeImageButton: "إزالة الصورة",
   },
 };
 

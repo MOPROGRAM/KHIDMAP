@@ -16,7 +16,7 @@ import { ServiceCategory, addServiceAd, UserProfile, uploadAdImage } from '@/lib
 import { Loader2, Wand2, PlusCircle, UploadCloud, Image as ImageIcon } from 'lucide-react';
 import { z } from 'zod';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, collection as firestoreCollection } from 'firebase/firestore'; // Renamed collection to firestoreCollection
 import NextImage from 'next/image';
 
 const AdFormSchema = z.object({
@@ -45,7 +45,7 @@ export default function NewAdPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [providerId, setProviderId] = useState<string | null>(null);
-  const [providerName, setProviderName] = useState<string | null>(null); // State for provider name
+  const [providerName, setProviderName] = useState<string | null>(null); 
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,7 +60,7 @@ export default function NewAdPage() {
           const userDocSnap = await getDoc(userDocRef);
           if (userDocSnap.exists()) {
             const userData = userDocSnap.data() as UserProfile;
-            setProviderName(userData.name); // Set provider name from Firestore
+            setProviderName(userData.name || user.displayName || t.anonymousProvider);
           } else {
              setProviderName(user.displayName || t.anonymousProvider); 
           }
@@ -123,21 +123,34 @@ export default function NewAdPage() {
     setIsUploadingImage(false);
     setErrors({});
 
-    if (!providerId || !providerName) { // Check for providerName as well
+    if (!providerId || !providerName) { 
       toast({ variant: "destructive", title: t.errorOccurred, description: t.providerInfoMissing });
       setIsLoading(false);
       return;
     }
 
-    let uploadedImageUrl: string | undefined | null = null; // Initialize as null for schema
+    let uploadedImageUrl: string | undefined | null = null;
+    let adFirestoreId: string | undefined = undefined;
+
+
+    // Generate a Firestore ID first, regardless of image, to use it for the image path if an image exists.
+    if (db) {
+        adFirestoreId = doc(firestoreCollection(db, "serviceAds")).id;
+    } else {
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.coreServicesUnavailable });
+        setIsLoading(false);
+        return;
+    }
+
+
     if (adImageFile) {
+      if (!adFirestoreId) { // Should not happen if db is checked above
+        toast({ variant: "destructive", title: t.errorOccurred, description: "Failed to generate ad ID for image." });
+        setIsLoading(false);
+        return;
+      }
       setIsUploadingImage(true);
       try {
-        // Create a preliminary document in Firestore to get an ID for the image path
-        // This ensures the image path is associated with the final ad ID.
-        const tempAdRef = doc(collection(db, "serviceAds")); // Generate a new doc ref
-        const adFirestoreId = tempAdRef.id;
-
         uploadedImageUrl = await uploadAdImage(adImageFile, providerId, adFirestoreId);
       } catch (error) {
         console.error("Error uploading image:", error);
@@ -166,26 +179,28 @@ export default function NewAdPage() {
       });
       setErrors(fieldErrors);
       setIsLoading(false);
-      // If image was uploaded but form validation failed for other reasons, consider deleting the uploaded image.
-      // For simplicity now, we are not deleting it.
+      // If image was uploaded but form validation failed, consider deleting the uploaded image.
+      // For simplicity now, we are not deleting it if validation for other fields fails.
       return;
     }
     
     try {
       await addServiceAd({
         providerId,
-        providerName, // Pass the fetched provider name
+        providerName,
         title: validationResult.data.title,
         description: validationResult.data.description,
         category: validationResult.data.category as ServiceCategory,
         address: validationResult.data.address,
-        imageUrl: validationResult.data.imageUrl === null ? undefined : validationResult.data.imageUrl, // Handle null from schema
-      });
+        imageUrl: validationResult.data.imageUrl === null ? undefined : validationResult.data.imageUrl,
+      }, adFirestoreId); // Pass the generated adFirestoreId here
       toast({ title: t.adPostedSuccessfully, description: t.adLiveShortly });
       router.push('/dashboard/provider/ads'); 
     } catch (error) {
       console.error("Error posting ad:", error);
       toast({ variant: "destructive", title: t.errorOccurred, description: (error as Error).message || t.failedPostAd });
+      // If ad creation fails after image upload, the image might be orphaned.
+      // Consider adding logic to delete the image here if critical.
     } finally {
       setIsLoading(false);
     }
@@ -273,10 +288,7 @@ export default function NewAdPage() {
                 onDrop={(e) => {
                   e.preventDefault();
                   if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                    setAdImageFile(e.dataTransfer.files[0]);
-                    const reader = new FileReader();
-                    reader.onloadend = () => setAdImagePreview(reader.result as string);
-                    reader.readAsDataURL(e.dataTransfer.files[0]);
+                    handleImageChange({ target: { files: e.dataTransfer.files } } as any);
                   }
                 }}
               >
