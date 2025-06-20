@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useCallback, FormEvent } from 'react';
+import React, { useEffect, useState, useCallback, FormEvent, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, Rating } from '@/lib/data';
@@ -49,6 +49,14 @@ const StarRating = ({
 }) => {
   const [hoverRating, setHoverRating] = useState(0);
 
+  const starSizeClass = useMemo(() => {
+    switch (size) {
+      case 4: return 'h-4 w-4';
+      case 6: return 'h-6 w-6';
+      default: return 'h-5 w-5';
+    }
+  }, [size]);
+
   const handleMouseEnter = (index: number) => {
     if (interactive) {
       setHoverRating(index);
@@ -80,7 +88,7 @@ const StarRating = ({
               starValue <= (hoverRating || rating)
                 ? 'text-yellow-400 fill-yellow-400'
                 : 'text-muted-foreground/50',
-              size === 5 ? 'h-5 w-5' : `h-${size} w-${size}`
+              starSizeClass
             )}
             onMouseEnter={() => handleMouseEnter(starValue)}
             onMouseLeave={handleMouseLeave}
@@ -160,10 +168,10 @@ export default function ProviderDetailsPage() {
       }
     } catch (err: any) {
       console.error("Error fetching provider details:", err);
-      if (err.message.includes("requires an index")) {
+      if (String(err.message).includes("requires an index")) {
         setError(t.firestoreIndexError);
       } else {
-        setError(err.message || t.failedLoadProviderDetails);
+        setError(String(err.message) || t.failedLoadProviderDetails);
       }
     } finally {
       setIsLoading(false);
@@ -198,7 +206,7 @@ export default function ProviderDetailsPage() {
           setCommentInput('');
           fetchProviderDetails(); // Re-fetch to show new rating
       } catch (error: any) {
-          toast({ variant: "destructive", title: t.errorOccurred, description: error.message || t.failedSubmitRating });
+          toast({ variant: "destructive", title: t.errorOccurred, description: String(error.message || t.failedSubmitRating) });
       } finally {
           setIsSubmitting(false);
       }
@@ -206,7 +214,12 @@ export default function ProviderDetailsPage() {
   
   const formatDate = (dateValue: Timestamp | undefined): string => {
     if (!dateValue) return 'N/A';
-    return dateValue.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    // Timestamps from Firestore need to be converted to JS Date objects
+    if (typeof dateValue.toDate === 'function') {
+      return dateValue.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+    // Fallback for unexpected formats
+    return new Date(dateValue as any).toLocaleDateString();
   };
 
   if (isLoading) {
