@@ -105,12 +105,23 @@ export default {
           '0%': { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-50%)' },
         },
+        'typing': {
+          '0%': { width: '0' },
+          '50%': { width: '100%' },
+          '100%': { width: '0' }
+        },
+        'blink': {
+          'from, to': { borderColor: 'transparent' },
+          '50%': { borderColor: 'hsl(var(--primary))' },
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'fade-in-up': 'fade-in-up 0.6s ease-out forwards',
         'scroll': 'scroll 60s linear infinite',
+        'typingEn': 'typing 7s steps(7, end) infinite, blink .75s step-end infinite',
+        'typingAr': 'typing 5s steps(5, end) infinite, blink .75s step-end infinite',
       },
       transitionProperty: {
         'height': 'height',

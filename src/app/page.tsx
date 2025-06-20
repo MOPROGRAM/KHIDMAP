@@ -5,9 +5,12 @@ import { Button } from '@/components/ui/button';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { ArrowRight, Wrench, Zap, Hammer, Brush, SprayCan, HardHat, Layers, GripVertical } from 'lucide-react';
 import React from 'react';
+import { useSettings } from '@/contexts/SettingsContext';
 
 export default function HomePage() {
   const t = useTranslation();
+  const { language } = useSettings();
+  const animationClass = language === 'ar' ? 'animate-typingAr' : 'animate-typingEn';
 
   const serviceCards = [
     { icon: <Wrench />, titleKey: 'plumbing', descriptionKey: 'plumbingDescription', color: 'text-blue-500' },
@@ -47,13 +50,13 @@ export default function HomePage() {
             <h1 className="text-5xl md:text-6xl font-bold font-headline tracking-tighter">
                 <div
                   className="
-                    inline-block p-[2px] rounded-lg
+                    inline-block p-px rounded-lg
                     bg-gradient-to-b from-green-500 to-orange-600
                   "
                 >
                   <div className="bg-background rounded-md px-4 py-2 flex items-center justify-center">
-                    <span className="font-extrabold text-5xl md:text-6xl">
-                      {t.appName}
+                    <span className={`font-extrabold text-5xl md:text-6xl inline-block overflow-hidden whitespace-nowrap border-r-4 border-r-transparent pr-2 ${animationClass}`}>
+                        {t.appName}
                     </span>
                   </div>
                 </div>
