@@ -12,16 +12,13 @@ export default function Footer() {
   return (
     <footer className="border-t bg-background">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-4">
             <Logo />
-            <p>&copy; {currentYear} {t.appName}.</p>
           </div>
-          <nav className="flex items-center gap-6 text-sm font-medium text-muted-foreground">
-            <Link href="/services/search" className="hover:text-primary transition-colors">{t.services}</Link>
-            <Link href="/contact" className="hover:text-primary transition-colors">{t.contactUs}</Link>
-            <Link href="/dashboard" className="hover:text-primary transition-colors">{t.dashboard}</Link>
-          </nav>
+          <p className="text-sm text-muted-foreground">
+            &copy; {currentYear} {t.appName}. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
