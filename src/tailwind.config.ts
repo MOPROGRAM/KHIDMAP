@@ -12,7 +12,7 @@ export default {
     extend: {
       fontFamily: {
         body: ['PT Sans', 'sans-serif'],
-        headline: ['PT Sans', 'sans-serif'], 
+        headline: ['PT Sans', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
@@ -42,6 +42,10 @@ export default {
           DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))',
         },
+        orange: { // New orange color
+          DEFAULT: 'hsl(var(--orange))',
+          foreground: 'hsl(var(--orange-foreground))',
+        },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
@@ -68,11 +72,11 @@ export default {
         },
       },
       borderRadius: {
-        lg: 'var(--radius)', 
-        md: 'calc(var(--radius) - 2px)', 
-        sm: 'calc(var(--radius) - 4px)', 
-        xl: 'calc(var(--radius) + 4px)', 
-        '2xl': 'calc(var(--radius) + 8px)', 
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
+        xl: 'calc(var(--radius) + 4px)',
+        '2xl': 'calc(var(--radius) + 8px)',
       },
       boxShadow: {
         'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
@@ -106,11 +110,11 @@ export default {
           '0%': { transform: 'translateY(20px)', opacity: '0'},
           '100%': { transform: 'translateY(0)', opacity: '1'},
         },
-        pulseGlow: { // For subtle button/icon glows
+        pulseGlow: { 
           '0%, 100%': { opacity: '1', transform: 'scale(1)' },
           '50%': { opacity: '0.7', transform: 'scale(1.1)' },
         },
-        subtleBounce: { // For icons on hover
+        subtleBounce: { 
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-4px)' },
         }

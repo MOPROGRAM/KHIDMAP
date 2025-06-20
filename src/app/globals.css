@@ -13,7 +13,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    --primary: 245 70% 55%; /* More blueish-violet (Indigo/Blue-Violet like) */
+    --primary: 245 70% 55%; /* Adjusted to Blue-Violet */
     --primary-foreground: 0 0% 98%; /* White for text on primary */
 
     --secondary: 0 0% 90%; /* Lighter gray for secondary elements */
@@ -22,21 +22,24 @@
     --muted: 0 0% 85%; /* Muted gray */
     --muted-foreground: 240 5% 35%;
 
-    --accent: 141 58% 46%; /* #34A853 Soft Green - kept as is */
+    --accent: 141 58% 46%; /* #34A853 Soft Green */
     --accent-foreground: 0 0% 98%; /* White for text on accent */
+
+    --orange: 30 90% 55%; /* Vibrant Orange */
+    --orange-foreground: 0 0% 98%; /* White for text on orange */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 245 70% 55%; /* More blueish-violet for rings */
+    --ring: 245 70% 55%; /* Adjusted to Blue-Violet for rings */
 
     --radius: 0.5rem;
 
-    --chart-1: 245 70% 55%; /* More blueish-violet for charts */
+    --chart-1: 245 70% 55%; /* Adjusted to Blue-Violet for charts */
     --chart-2: 141 58% 46%; /* Green */
-    --chart-3: 30 80% 55%; /* Orange */
+    --chart-3: 30 90% 55%; /* Orange (using the new --orange) */
     --chart-4: 280 65% 60%; /* Different Purple/Pink */
     --chart-5: 340 75% 55%; /* Pink/Red */
 
@@ -47,7 +50,7 @@
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%; 
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
@@ -59,7 +62,7 @@
     --popover: 240 6% 12%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 245 70% 65%; /* Lighter More blueish-violet for dark mode */
+    --primary: 245 70% 65%; /* Lighter Blue-Violet for dark mode */
     --primary-foreground: 245 10% 10%; /* Darker text for contrast on light purplish-blue */
 
     --secondary: 240 6% 15%; /* Darker secondary */
@@ -68,19 +71,22 @@
     --muted: 240 6% 20%; /* Muted dark */
     --muted-foreground: 0 0% 60%;
 
-    --accent: 141 58% 53%; /* Lighter green for dark mode - kept as is */
+    --accent: 141 58% 53%; /* Lighter green for dark mode */
     --accent-foreground: 240 6% 10%; /* Dark text on accent */
+
+    --orange: 30 90% 65%; /* Vibrant Orange for dark mode */
+    --orange-foreground: 30 80% 10%; /* Darker text for contrast on light orange */
 
     --destructive: 0 72.2% 50.6%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 240 4% 20%;
     --input: 240 4% 20%;
-    --ring: 245 70% 65%; /* Lighter More blueish-violet for rings in dark mode */
+    --ring: 245 70% 65%; /* Lighter Blue-Violet for rings in dark mode */
 
-    --chart-1: 245 70% 65%; /* Lighter More blueish-violet for charts in dark mode */
-    --chart-2: 141 58% 53%;
-    --chart-3: 30 80% 65%;
+    --chart-1: 245 70% 65%; /* Lighter Blue-Violet for charts in dark mode */
+    --chart-2: 141 58% 53%; /* Green */
+    --chart-3: 30 90% 65%; /* Orange (using the new --orange) */
     --chart-4: 280 65% 70%;
     --chart-5: 340 75% 65%;
 
