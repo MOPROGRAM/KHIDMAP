@@ -48,8 +48,8 @@ export default function LoginPage() {
     if (!auth || !db) {
       toast({
         variant: "destructive",
-        title: "Service Unavailable",
-        description: "Authentication or database service is not configured. Please contact support.",
+        title: t.serviceUnavailableTitle,
+        description: t.serviceUnavailableMessage,
       });
       setIsLoading(false);
       return;
@@ -74,8 +74,6 @@ export default function LoginPage() {
         userEmailFromDb = userData.email || userEmailFromDb;
       } else {
         console.warn("User document not found in Firestore. Role might be missing.");
-        // This is a critical issue if Firestore setup is expected
-        // For now, let user log in, dashboard will handle redirect if role is missing from Firestore
       }
 
       localStorage.setItem('isLoggedIn', 'true');
@@ -89,23 +87,23 @@ export default function LoginPage() {
       }
       
       toast({
-        title: "Login Successful",
-        description: `Welcome back, ${userNameFromDb || email.split('@')[0]}!`,
+        title: t.loginSuccessful,
+        description: t.welcomeBackUser.replace('{userName}', userNameFromDb || email.split('@')[0]),
       });
       router.push('/dashboard');
     } catch (error: any) {
       console.error("Firebase login error:", error);
-      let errorMessage = "Login Failed. Please check your credentials.";
+      let errorMessage = t.loginFailedGeneric;
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        errorMessage = "Invalid email or password. Please try again.";
+        errorMessage = t.invalidCredentials;
       } else if (error.code === 'auth/invalid-email') {
-        errorMessage = "Invalid email format.";
+        errorMessage = t.invalidEmail;
       } else if (error.code === 'auth/network-request-failed'){
-        errorMessage = "Network error. Please check your internet connection.";
+        errorMessage = t.networkError;
       }
       toast({
         variant: "destructive",
-        title: "Login Failed",
+        title: t.loginFailedTitle,
         description: errorMessage,
       });
     } finally {
@@ -124,7 +122,7 @@ export default function LoginPage() {
         <CardContent>
           {!isAuthInitialized && !auth && (
              <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md text-center">
-                Authentication service is currently unavailable. Please try again later or contact support.
+                {t.authServiceUnavailable}
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -157,7 +155,7 @@ export default function LoginPage() {
                   size="icon"
                   className="absolute inset-y-0 right-0 h-full px-3"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t.hidePassword : t.showPassword}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </Button>

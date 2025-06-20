@@ -21,10 +21,10 @@ import NextImage from 'next/image';
 
 const EditAdFormSchema = z.object({
   title: z.string().min(1, { message: "requiredField" }),
-  description: z.string().min(10, { message: "Description must be at least 10 characters." }),
+  description: z.string().min(10, { message: "descriptionTooShortAd" }),
   address: z.string().min(1, { message: "requiredField" }),
   category: z.enum(['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HomeCleaning', 'Construction', 'Plastering', 'Other'], { errorMap: (issue, ctx) => ({ message: issue.code === 'invalid_enum_value' ? ctx.data || "requiredField" : "requiredField" }) }),
-  imageUrl: z.string().url({ message: "Invalid image URL" }).optional().nullable(),
+  imageUrl: z.string().url({ message: "invalidImageUrl" }).optional().nullable(),
 });
 
 export default function EditAdPage() {
@@ -61,7 +61,7 @@ export default function EditAdPage() {
         if (user) {
           setCurrentUser(user);
         } else {
-          toast({ variant: "destructive", title: "Error", description: "User not authenticated. Please log in again." });
+          toast({ variant: "destructive", title: t.errorOccurred, description: t.userNotAuthenticated });
           router.push('/auth/login');
         }
       });
@@ -69,9 +69,9 @@ export default function EditAdPage() {
     } else {
       setIsFirebaseReady(false);
       console.warn("Firebase Auth or DB not initialized in EditAdPage.");
-      toast({ variant: "destructive", title: "Service Unavailable", description: "Core services are not ready." });
+      toast({ variant: "destructive", title: t.serviceUnavailableTitle, description: t.coreServicesUnavailable });
     }
-  }, [router, toast]);
+  }, [router, toast, t]);
 
   const fetchAdData = useCallback(async () => {
     if (!adId || !isFirebaseReady) return;
@@ -80,7 +80,7 @@ export default function EditAdPage() {
       const fetchedAd = await getAdById(adId);
       if (fetchedAd) {
         if (currentUser && fetchedAd.providerId !== currentUser.uid) {
-          toast({ variant: "destructive", title: "Unauthorized", description: "You are not authorized to edit this ad." });
+          toast({ variant: "destructive", title: t.unauthorized, description: t.notAuthorizedEditAd });
           router.push('/dashboard/provider/ads');
           return;
         }
@@ -92,12 +92,12 @@ export default function EditAdPage() {
         setCurrentImageUrl(fetchedAd.imageUrl);
         setAdImagePreview(fetchedAd.imageUrl || null);
       } else {
-        toast({ variant: "destructive", title: "Error", description: "Ad not found." });
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.adNotFound });
         router.push('/dashboard/provider/ads');
       }
     } catch (error) {
       console.error("Error fetching ad for edit:", error);
-      toast({ variant: "destructive", title: t.errorOccurred, description: "Failed to load ad data for editing." });
+      toast({ variant: "destructive", title: t.errorOccurred, description: t.failedLoadAdData });
       router.push('/dashboard/provider/ads');
     } finally {
       setIsFetchingAd(false);
@@ -133,10 +133,10 @@ export default function EditAdPage() {
     try {
       const result: CategorizeAdOutput = await categorizeAd({ description });
       setDetectedCategory(result.category);
-      toast({ title: t.detectedCategory, description: `${t.serviceCategory}: ${t[result.category.toLowerCase() as keyof typeof t] || result.category}` });
+      toast({ title: t.detectedCategoryTitle, description: `${t.serviceCategory}: ${t[result.category.toLowerCase() as keyof typeof t] || result.category}` });
     } catch (error) {
       console.error("Error detecting category:", error);
-      toast({ variant: "destructive", title: t.errorOccurred, description: "Could not detect category automatically." });
+      toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotDetectCategory });
     } finally {
       setIsCategorizing(false);
     }
@@ -145,11 +145,11 @@ export default function EditAdPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFirebaseReady || !db || !ad || !currentUser) {
-      toast({ variant: "destructive", title: "Service Unavailable", description: "Cannot update ad. Core services are not ready or user not authenticated." });
+      toast({ variant: "destructive", title: t.serviceUnavailableTitle, description: t.cannotUpdateAdCoreServices });
       return;
     }
     if (ad.providerId !== currentUser.uid) {
-        toast({ variant: "destructive", title: "Unauthorized", description: "You are not authorized to edit this ad." });
+        toast({ variant: "destructive", title: t.unauthorized, description: t.notAuthorizedEditAd });
         return;
     }
     setIsLoading(true);
@@ -165,14 +165,13 @@ export default function EditAdPage() {
         newImageUrl = await uploadAdImage(adImageFile, currentUser.uid, ad.id);
       } catch (error) {
         console.error("Error uploading new image:", error);
-        toast({ variant: "destructive", title: t.errorOccurred, description: "Failed to upload new image." });
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.failedUploadImage });
         setIsLoading(false);
         setIsUploadingImage(false);
         return;
       }
       setIsUploadingImage(false);
     }
-
 
     const validationResult = EditAdFormSchema.safeParse({ title, description, address, category, imageUrl: newImageUrl });
 
@@ -203,11 +202,11 @@ export default function EditAdPage() {
         await deleteAdImage(oldImageUrlToDelete); 
       }
 
-      toast({ title: "Ad Updated", description: "Your ad has been successfully updated." });
+      toast({ title: t.adUpdatedTitle, description: t.adUpdatedSuccess });
       router.push('/dashboard/provider/ads'); 
     } catch (error) {
       console.error("Error updating ad:", error);
-      toast({ variant: "destructive", title: t.errorOccurred, description: (error as Error).message || "Failed to update ad." });
+      toast({ variant: "destructive", title: t.errorOccurred, description: (error as Error).message || t.failedUpdateAd });
     } finally {
       setIsLoading(false);
     }
@@ -228,7 +227,7 @@ export default function EditAdPage() {
     return (
       <div className="flex items-center justify-center h-full min-h-[calc(100vh-10rem)]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-2">{t.loading} ad details...</p>
+        <p className="ml-2">{t.loadingAdDetails}</p>
       </div>
     );
   }
@@ -236,11 +235,10 @@ export default function EditAdPage() {
   if (!ad && !isFetchingAd) {
      return (
       <div className="flex items-center justify-center h-full min-h-[calc(100vh-10rem)]">
-        <p className="text-destructive">{t.errorOccurred} or ad not found.</p>
+        <p className="text-destructive">{t.errorOrAdNotFound}</p>
       </div>
     );
   }
-
 
   return (
     <div className="max-w-2xl mx-auto py-8">
@@ -250,7 +248,7 @@ export default function EditAdPage() {
             <Edit3 className="h-8 w-8 text-primary" />
             <CardTitle className="text-3xl font-headline">{t.editAd}</CardTitle>
           </div>
-          <CardDescription>Update the details of your service advertisement.</CardDescription>
+          <CardDescription>{t.editAdDescriptionPage}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -268,12 +266,12 @@ export default function EditAdPage() {
             
             <Button type="button" variant="outline" onClick={handleDetectCategory} disabled={isCategorizing || !description || isLoading} className="w-full sm:w-auto">
               {isCategorizing ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Wand2 className="ltr:mr-2 rtl:ml-2 h-4 w-4" />}
-              {t.detectedCategory} AI
+              {t.detectCategoryAI}
             </Button>
 
             {detectedCategory && (
               <div className="p-3 bg-accent/10 border border-accent rounded-md text-sm">
-                <p className="font-medium">{t.detectedCategory}: <span className="text-accent font-semibold">{t[detectedCategory.toLowerCase() as keyof typeof t] || detectedCategory}</span></p>
+                <p className="font-medium">{t.detectedCategoryTitle}: <span className="text-accent font-semibold">{t[detectedCategory.toLowerCase() as keyof typeof t] || detectedCategory}</span></p>
                 <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => setCategory(detectedCategory as ServiceCategory)}>{t.confirmCategory}</Button>
               </div>
             )}
@@ -319,20 +317,19 @@ export default function EditAdPage() {
                       <span>{currentImageUrl || adImagePreview ? t.changeImage : t.uploadAdImage}</span>
                       <Input id="adImageEdit" name="adImageEdit" type="file" className="sr-only" ref={fileInputRef} onChange={handleImageChange} accept="image/*" disabled={isLoading} />
                     </span>
-                     {!currentImageUrl && !adImagePreview && <p className="pl-1 rtl:pr-1">or drag and drop</p>}
+                     {!currentImageUrl && !adImagePreview && <p className="pl-1 rtl:pr-1">{t.orDragAndDrop}</p>}
                   </div>
-                   {!currentImageUrl && !adImagePreview && <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</p>}
+                   {!currentImageUrl && !adImagePreview && <p className="text-xs text-muted-foreground">{t.imageUploadHint}</p>}
                 </div>
               </div>
               {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl}</p>}
                {isUploadingImage && (
                 <div className="flex items-center text-sm text-muted-foreground mt-2">
                   <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />
-                  Uploading image...
+                  {t.uploadingImage}...
                 </div>
               )}
             </div>
-
 
             <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || isFetchingAd || isUploadingImage}>
               {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Save className="ltr:mr-2 rtl:ml-2 h-4 w-4"/> }
@@ -344,4 +341,3 @@ export default function EditAdPage() {
     </div>
   );
 }
-

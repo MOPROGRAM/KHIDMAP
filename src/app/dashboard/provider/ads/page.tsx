@@ -51,23 +51,23 @@ export default function MyAdsPage() {
       setAds(providerAds);
     } catch (error) {
       console.error("Error fetching ads:", error);
-      toast({ variant: "destructive", title: "Error", description: "Failed to load your ads." });
+      toast({ variant: "destructive", title: t.errorOccurred, description: t.failedLoadAds });
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, t]);
 
   useEffect(() => {
     const unsubscribe = auth?.onAuthStateChanged(user => {
       if (user) {
         fetchAds(user.uid);
       } else {
-        toast({ variant: "destructive", title: "Error", description: "User not identified. Please log in again." });
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.userNotIdentified });
         router.push('/auth/login');
       }
     });
     return () => unsubscribe?.();
-  }, [router, toast, fetchAds]);
+  }, [router, toast, t, fetchAds]);
 
   const handleDeleteAd = async (adId: string) => {
     const adToDelete = ads.find(ad => ad.id === adId);
@@ -76,10 +76,10 @@ export default function MyAdsPage() {
     try {
       await deleteServiceAd(adId, adToDelete.imageUrl);
       setAds(prevAds => prevAds.filter(ad => ad.id !== adId));
-      toast({ title: "Ad Deleted", description: "The advertisement has been successfully deleted." });
+      toast({ title: t.adDeletedTitle, description: t.adDeletedSuccess });
     } catch (error) {
       console.error("Error deleting ad:", error);
-      toast({ variant: "destructive", title: "Error", description: "Failed to delete ad." });
+      toast({ variant: "destructive", title: t.errorOccurred, description: t.failedDeleteAd });
     }
   };
 
@@ -91,9 +91,9 @@ export default function MyAdsPage() {
     } else if (dateValue instanceof Timestamp) {
       date = dateValue.toDate();
     } else {
-       return 'Invalid Date';
+       return t.invalidDate;
     }
-    if (isNaN(date.getTime())) return 'Invalid Date';
+    if (isNaN(date.getTime())) return t.invalidDate;
     return date.toLocaleDateString();
   };
 
@@ -114,7 +114,7 @@ export default function MyAdsPage() {
           <Briefcase className="h-10 w-10 text-primary" />
           <div>
             <h1 className="text-3xl font-bold font-headline text-foreground">{t.myAds}</h1>
-            <p className="text-muted-foreground">View, edit, or delete your service advertisements.</p>
+            <p className="text-muted-foreground">{t.myAdsPageDescription}</p>
           </div>
         </div>
         <Button asChild className="shadow-md hover:shadow-lg hover:scale-105 transform transition-all duration-300">
@@ -131,7 +131,7 @@ export default function MyAdsPage() {
             <Briefcase className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <CardTitle className="text-2xl text-foreground">{t.noAdsYet}</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Click the button above to create your first service advertisement.
+              {t.noAdsYetDescription}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -176,7 +176,7 @@ export default function MyAdsPage() {
                 <CardTitle className="text-xl font-semibold font-headline text-foreground">{ad.title}</CardTitle>
                 <CardDescription className="text-sm text-muted-foreground pt-1">
                   <div className="flex items-center gap-1.5"> <MapPin className="h-4 w-4"/> {ad.address} </div>
-                  <div className="mt-1">Posted: {formatDate(ad.postedDate)}</div>
+                  <div className="mt-1">{t.postedOn}: {formatDate(ad.postedDate)}</div>
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow pt-0">
@@ -191,20 +191,20 @@ export default function MyAdsPage() {
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm" className="transition-colors duration-200 transform hover:scale-105">
-                      <Trash2 className="ltr:mr-1.5 rtl:ml-1.5 h-4 w-4" /> Delete
+                      <Trash2 className="ltr:mr-1.5 rtl:ml-1.5 h-4 w-4" /> {t.delete}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure you want to delete this ad?</AlertDialogTitle>
+                      <AlertDialogTitle>{t.confirmDeleteTitleAd.replace('{adTitle}', ad.title)}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the ad titled "{ad.title}".
+                        {t.confirmDeleteDescriptionAd}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
                       <AlertDialogAction onClick={() => handleDeleteAd(ad.id)} className="bg-destructive hover:bg-destructive/90">
-                        Delete
+                        {t.delete}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -217,10 +217,9 @@ export default function MyAdsPage() {
       )}
       <style jsx global>{`
         [style*="animation-delay"] {
-          animation-duration: 0.5s; /* Ensure animations have a duration */
+          animation-duration: 0.5s; 
         }
       `}</style>
     </div>
   );
 }
-

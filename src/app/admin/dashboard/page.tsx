@@ -19,14 +19,14 @@ export default function AdminDashboardPage() {
     const unsubscribe = auth?.onAuthStateChanged(user => {
       if (!user) {
         router.replace('/auth/login');
-        toast({ variant: "destructive", title: "Unauthorized", description: "Please log in as admin." });
+        toast({ variant: "destructive", title: t.unauthorized, description: t.loginAsAdmin });
       } else if (user.email !== ADMIN_EMAIL) {
         router.replace('/dashboard');
-        toast({ variant: "destructive", title: "Access Denied", description: "You are not authorized to view this page." });
+        toast({ variant: "destructive", title: t.accessDenied, description: t.notAuthorizedViewPage });
       }
     });
     return () => unsubscribe?.();
-  }, [router, toast]);
+  }, [router, toast, t]);
 
   return (
     <div className="space-y-8">
@@ -36,7 +36,7 @@ export default function AdminDashboardPage() {
              <ShieldCheck className="h-10 w-10 text-primary" />
             <div>
                 <CardTitle className="text-3xl font-headline">{t.welcomeAdmin}</CardTitle>
-                <CardDescription>{t.adminDashboard}</CardDescription>
+                <CardDescription>{t.adminDashboardDescription}</CardDescription>
             </div>
           </div>
         </CardHeader>

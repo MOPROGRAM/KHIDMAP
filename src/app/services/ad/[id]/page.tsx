@@ -37,7 +37,7 @@ export default function ServiceAdDetailsPage() {
 
   const fetchAdDetails = useCallback(async () => {
     if (!adId) {
-      setError("Ad ID is missing.");
+      setError(t.adIdMissing);
       setIsLoading(false);
       return;
     }
@@ -54,11 +54,11 @@ export default function ServiceAdDetailsPage() {
           console.warn("Ad has no providerId:", foundAd);
         }
       } else {
-        setError(t.noResultsFound);
+        setError(t.adNotFound);
       }
     } catch (err) {
       console.error("Error fetching ad details:", err);
-      setError((err as Error).message || "Failed to load ad details.");
+      setError((err as Error).message || t.failedLoadAdDetails);
     } finally {
       setIsLoading(false);
     }
@@ -76,9 +76,9 @@ export default function ServiceAdDetailsPage() {
     } else if (dateValue instanceof Timestamp) {
       date = dateValue.toDate();
     } else {
-       return 'Invalid Date';
+       return t.invalidDate;
     }
-    if (isNaN(date.getTime())) return 'Invalid Date';
+    if (isNaN(date.getTime())) return t.invalidDate;
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
@@ -106,7 +106,7 @@ export default function ServiceAdDetailsPage() {
             <p className="text-muted-foreground mb-6">{error}</p>
             <Button asChild variant="outline" onClick={() => router.back()} className="hover:bg-destructive/10 hover:border-destructive transition-colors duration-200">
               <Link href="#"> 
-                <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4" /> Back
+                <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4" /> {t.backButton}
               </Link>
             </Button>
           </CardContent>
@@ -122,14 +122,14 @@ export default function ServiceAdDetailsPage() {
           <CardHeader>
             <CardTitle className="flex items-center justify-center gap-2 text-xl text-foreground">
               <Info className="h-8 w-8 text-primary" />
-               {t.noResultsFound}
+               {t.adNotFound}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-6">The service ad you are looking for does not exist or may have been removed.</p>
+            <p className="text-muted-foreground mb-6">{t.adNotFoundDescription}</p>
              <Button asChild variant="outline" onClick={() => router.back()} className="hover:bg-accent/10 hover:border-primary transition-colors duration-200">
               <Link href="#">
-                <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4" /> Back
+                <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4" /> {t.backButton}
               </Link>
             </Button>
           </CardContent>
@@ -145,7 +145,7 @@ export default function ServiceAdDetailsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-8 animate-fadeIn">
       <Button variant="outline" onClick={() => router.back()} className="mb-6 group transition-all hover:shadow-md hover:scale-105 transform duration-300">
-        <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:text-primary transition-colors" /> Back to Search
+        <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:text-primary transition-colors" /> {t.backToSearch}
       </Button>
 
       <Card className="overflow-hidden shadow-2xl border">
@@ -188,7 +188,7 @@ export default function ServiceAdDetailsPage() {
             </h2>
             <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap text-md">{ad.description}</p>
             <p className="text-sm text-muted-foreground mt-4">
-                Posted on: {formatDate(ad.postedDate)}
+                {t.postedOnFull}: {formatDate(ad.postedDate)}
             </p>
           </div>
 
@@ -235,7 +235,7 @@ export default function ServiceAdDetailsPage() {
 
                 {provider.serviceCategories && provider.serviceCategories.length > 0 && (
                   <div>
-                    <h4 className="text-md font-semibold text-muted-foreground mb-1.5">{t.serviceCategory}s:</h4>
+                    <h4 className="text-md font-semibold text-muted-foreground mb-1.5">{t.serviceCategoriesTitle}:</h4>
                     <div className="flex flex-wrap gap-2">
                       {provider.serviceCategories.map(cat => {
                         const ProviderCatIcon = categoryIcons[cat] || GripVertical;
@@ -253,15 +253,15 @@ export default function ServiceAdDetailsPage() {
                  )}
                  {provider.serviceAreas && provider.serviceAreas.length > 0 && (
                    <div>
-                    <h4 className="text-md font-semibold text-muted-foreground mb-1.5">Serves Areas:</h4>
+                    <h4 className="text-md font-semibold text-muted-foreground mb-1.5">{t.servesAreasTitle}:</h4>
                     <p className="text-md text-foreground/90">{provider.serviceAreas.join(', ')}</p>
                   </div>
                  )}
               </CardContent>
               <CardFooter className="px-0 pt-8">
                  <Button size="lg" className="w-full sm:w-auto text-base py-3.5 group shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-300" asChild>
-                    <a href={`mailto:${provider.email}?subject=Inquiry about your ad: ${ad.title}`}>
-                        Contact {provider.name.split(' ')[0]}
+                    <a href={`mailto:${provider.email}?subject=${t.inquiryAboutAd.replace('{adTitle}', ad.title)}`}>
+                        {t.contactProvider.replace('{providerName}', provider.name.split(' ')[0])}
                         <ArrowRight className="ltr:ml-2 rtl:mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform"/>
                     </a>
                  </Button>
@@ -271,7 +271,7 @@ export default function ServiceAdDetailsPage() {
            {!provider && !isLoading && (
              <div className="text-center py-6">
                 <UserCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2"/>
-                <p className="text-muted-foreground">Provider details are not available.</p>
+                <p className="text-muted-foreground">{t.providerDetailsNotAvailable}</p>
              </div>
            )}
         </CardContent>
@@ -279,4 +279,3 @@ export default function ServiceAdDetailsPage() {
     </div>
   );
 }
-

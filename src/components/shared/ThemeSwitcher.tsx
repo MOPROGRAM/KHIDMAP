@@ -15,7 +15,7 @@ export function ThemeSwitcher() {
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      aria-label={theme === 'light' ? t.darkMode : t.lightMode}
+      aria-label={theme === 'light' ? t.switchToDarkMode : t.switchToLightMode}
     >
       {theme === 'light' ? (
         <Moon className="h-5 w-5" />

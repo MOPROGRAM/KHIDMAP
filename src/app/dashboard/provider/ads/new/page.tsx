@@ -17,14 +17,14 @@ import { Loader2, Wand2, PlusCircle, UploadCloud, Image as ImageIcon } from 'luc
 import { z } from 'zod';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import Image from 'next/image';
+import NextImage from 'next/image'; // Changed from 'next/image' to 'NextImage' to avoid conflict with ImageIcon
 
 const AdFormSchema = z.object({
   title: z.string().min(1, { message: "requiredField" }),
-  description: z.string().min(10, { message: "Description must be at least 10 characters." }),
+  description: z.string().min(10, { message: "descriptionTooShortAd" }),
   address: z.string().min(1, { message: "requiredField" }),
   category: z.enum(['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HomeCleaning', 'Construction', 'Plastering', 'Other'], { errorMap: (issue, ctx) => ({ message: issue.code === 'invalid_enum_value' ? ctx.data || "requiredField" : "requiredField" }) }),
-  imageUrl: z.string().url({ message: "Invalid image URL" }).optional(),
+  imageUrl: z.string().url({ message: "invalidImageUrl" }).optional(),
 });
 
 export default function NewAdPage() {
@@ -62,10 +62,10 @@ export default function NewAdPage() {
             const userData = userDocSnap.data() as UserProfile;
             setProviderName(userData.name);
           } else {
-             setProviderName(user.displayName || "Anonymous Provider"); 
+             setProviderName(user.displayName || t.anonymousProvider); 
           }
         } else {
-          toast({ variant: "destructive", title: "Error", description: "User not identified. Please log in again." });
+          toast({ variant: "destructive", title: t.errorOccurred, description: t.userNotIdentified });
           router.push('/auth/login');
         }
       });
@@ -73,9 +73,9 @@ export default function NewAdPage() {
     } else {
       setIsFirebaseReady(false);
       console.warn("Firebase Auth or DB not initialized in NewAdPage.");
-      toast({ variant: "destructive", title: "Service Unavailable", description: "Core services are not ready." });
+      toast({ variant: "destructive", title: t.serviceUnavailableTitle, description: t.coreServicesUnavailable });
     }
-  }, [router, toast]);
+  }, [router, toast, t]);
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -103,10 +103,10 @@ export default function NewAdPage() {
     try {
       const result: CategorizeAdOutput = await categorizeAd({ description });
       setDetectedCategory(result.category);
-      toast({ title: t.detectedCategory, description: `${t.serviceCategory}: ${t[result.category.toLowerCase() as keyof typeof t] || result.category}` });
+      toast({ title: t.detectedCategoryTitle, description: `${t.serviceCategory}: ${t[result.category.toLowerCase() as keyof typeof t] || result.category}` });
     } catch (error) {
       console.error("Error detecting category:", error);
-      toast({ variant: "destructive", title: t.errorOccurred, description: "Could not detect category automatically." });
+      toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotDetectCategory });
     } finally {
       setIsCategorizing(false);
     }
@@ -115,7 +115,7 @@ export default function NewAdPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFirebaseReady || !db) {
-      toast({ variant: "destructive", title: "Service Unavailable", description: "Cannot post ad. Core services are not ready." });
+      toast({ variant: "destructive", title: t.serviceUnavailableTitle, description: t.cannotPostAdCoreServices });
       return;
     }
     setIsLoading(true);
@@ -123,7 +123,7 @@ export default function NewAdPage() {
     setErrors({});
 
     if (!providerId || !providerName) {
-      toast({ variant: "destructive", title: "Error", description: "Provider information is missing. Please try again." });
+      toast({ variant: "destructive", title: t.errorOccurred, description: t.providerInfoMissing });
       setIsLoading(false);
       return;
     }
@@ -136,7 +136,7 @@ export default function NewAdPage() {
         uploadedImageUrl = await uploadAdImage(adImageFile, providerId, tempAdId);
       } catch (error) {
         console.error("Error uploading image:", error);
-        toast({ variant: "destructive", title: t.errorOccurred, description: "Failed to upload image." });
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.failedUploadImage });
         setIsLoading(false);
         setIsUploadingImage(false);
         return;
@@ -168,11 +168,11 @@ export default function NewAdPage() {
         address: validationResult.data.address,
         imageUrl: validationResult.data.imageUrl,
       });
-      toast({ title: t.adPostedSuccessfully });
+      toast({ title: t.adPostedSuccessfully, description: t.adLiveShortly });
       router.push('/dashboard/provider/ads'); 
     } catch (error) {
       console.error("Error posting ad:", error);
-      toast({ variant: "destructive", title: t.errorOccurred, description: (error as Error).message || "Failed to post ad." });
+      toast({ variant: "destructive", title: t.errorOccurred, description: (error as Error).message || t.failedPostAd });
     } finally {
       setIsLoading(false);
     }
@@ -189,7 +189,6 @@ export default function NewAdPage() {
     { value: 'Other', labelKey: 'other' },
   ];
 
-
   return (
     <div className="max-w-2xl mx-auto py-8">
       <Card className="shadow-xl">
@@ -198,12 +197,12 @@ export default function NewAdPage() {
             <PlusCircle className="h-8 w-8 text-primary" />
             <CardTitle className="text-3xl font-headline">{t.newAd}</CardTitle>
           </div>
-          <CardDescription>{t.fillYourProfile} {t.appName}</CardDescription>
+          <CardDescription>{t.newAdDescriptionPage.replace("{appName}", t.appName)}</CardDescription>
         </CardHeader>
         <CardContent>
           {!isFirebaseReady && (
             <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md text-center">
-              Posting ads is currently unavailable. Core services are not configured.
+              {t.postingAdsUnavailable}
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -221,12 +220,12 @@ export default function NewAdPage() {
             
             <Button type="button" variant="outline" onClick={handleDetectCategory} disabled={isCategorizing || !description || !isFirebaseReady || isLoading} className="w-full sm:w-auto">
               {isCategorizing ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Wand2 className="ltr:mr-2 rtl:ml-2 h-4 w-4" />}
-              {t.detectedCategory} AI
+              {t.detectCategoryAI}
             </Button>
 
             {detectedCategory && (
               <div className="p-3 bg-accent/10 border border-accent rounded-md text-sm">
-                <p className="font-medium">{t.detectedCategory}: <span className="text-accent font-semibold">{t[detectedCategory.toLowerCase() as keyof typeof t] || detectedCategory}</span></p>
+                <p className="font-medium">{t.detectedCategoryTitle}: <span className="text-accent font-semibold">{t[detectedCategory.toLowerCase() as keyof typeof t] || detectedCategory}</span></p>
                 <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => setCategory(detectedCategory as ServiceCategory)}>{t.confirmCategory}</Button>
               </div>
             )}
@@ -260,7 +259,7 @@ export default function NewAdPage() {
               >
                 <div className="space-y-1 text-center">
                   {adImagePreview ? (
-                    <Image src={adImagePreview} alt={t.imagePreview} width={200} height={200} className="mx-auto h-24 w-auto object-contain rounded-md" />
+                    <NextImage src={adImagePreview} alt={t.imagePreview} width={200} height={200} className="mx-auto h-24 w-auto object-contain rounded-md" />
                   ) : (
                     <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
                   )}
@@ -269,20 +268,19 @@ export default function NewAdPage() {
                       <span>{t.uploadAdImage}</span>
                       <Input id="adImage" name="adImage" type="file" className="sr-only" ref={fileInputRef} onChange={handleImageChange} accept="image/*" disabled={!isFirebaseReady || isLoading} />
                     </span>
-                    <p className="pl-1 rtl:pr-1">or drag and drop</p>
+                    <p className="pl-1 rtl:pr-1">{t.orDragAndDrop}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</p>
+                  <p className="text-xs text-muted-foreground">{t.imageUploadHint}</p>
                 </div>
               </div>
               {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl}</p>}
               {isUploadingImage && (
                 <div className="flex items-center text-sm text-muted-foreground mt-2">
                   <Loader2 className="h-4 w-4 animate-spin ltr:mr-2 rtl:ml-2" />
-                  Uploading image...
+                  {t.uploadingImage}...
                 </div>
               )}
             </div>
-
 
             <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !providerId || !isFirebaseReady || isUploadingImage}>
               {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : t.postAd}
@@ -293,4 +291,3 @@ export default function NewAdPage() {
     </div>
   );
 }
-

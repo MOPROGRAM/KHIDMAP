@@ -40,34 +40,35 @@ export default function DashboardPage() {
   }
 
   const providerActions = [
-    { titleKey: 'myAds', description: 'View and manage your service advertisements.', href: '/dashboard/provider/ads', icon: <Briefcase className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
-    { titleKey: 'newAd', description: 'Create a new advertisement to offer your services.', href: '/dashboard/provider/ads/new', icon: <PlusCircle className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
-    { titleKey: 'profile', description: 'Update your personal and service information.', href: '/dashboard/provider/profile', icon: <UserCog className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
+    { titleKey: 'myAds', descriptionKey: 'myAdsDescriptionProvider', href: '/dashboard/provider/ads', icon: <Briefcase className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
+    { titleKey: 'newAd', descriptionKey: 'newAdDescriptionProvider', href: '/dashboard/provider/ads/new', icon: <PlusCircle className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
+    { titleKey: 'profile', descriptionKey: 'profileDescriptionProvider', href: '/dashboard/provider/profile', icon: <UserCog className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
   ];
 
   const seekerActions = [
-    { titleKey: 'search', description: 'Find skilled artisans for your needs.', href: '/services/search', icon: <Search className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
-    { titleKey: 'searchHistory', description: 'Review your past service searches.', href: '/dashboard/seeker/history', icon: <History className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
+    { titleKey: 'search', descriptionKey: 'searchDescriptionSeeker', href: '/services/search', icon: <Search className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
+    { titleKey: 'searchHistory', descriptionKey: 'searchHistoryDescriptionSeeker', href: '/dashboard/seeker/history', icon: <History className="h-8 w-8 text-primary group-hover:animate-subtle-bounce" /> },
   ];
   
   const actions = userRole === 'provider' ? providerActions : seekerActions;
+  const welcomeMessage = userName ? t.welcomeToDashboardUser.replace('{userName}', userName) : (userRole === 'provider' ? t.welcomeToDashboardProvider : t.welcomeToDashboardSeeker);
 
   return (
     <div className="space-y-10 animate-fadeIn">
       <Card className="shadow-xl border">
         <CardHeader>
           <CardTitle className="text-3xl md:text-4xl font-headline text-foreground">
-            {t.welcomeTo} {t.dashboard}, {userName || (userRole === 'provider' ? t.provider : t.seeker)}!
+            {welcomeMessage}
           </CardTitle>
           <CardDescription className="text-lg text-muted-foreground">
-            {userRole === 'provider' ? "Manage your services and reach more customers." : "Find the best services for your needs easily."}
+            {userRole === 'provider' ? t.dashboardTaglineProvider : t.dashboardTaglineSeeker}
           </CardDescription>
         </CardHeader>
         <CardContent>
             <div className="relative aspect-[16/6] rounded-lg overflow-hidden shadow-lg group">
                 <Image 
                     src="https://placehold.co/1200x400.png" 
-                    alt="Dashboard banner" 
+                    alt={t.dashboardBannerAlt} 
                     layout="fill" 
                     objectFit="cover" 
                     className="group-hover:scale-105 transition-transform duration-500 ease-in-out" 
@@ -91,7 +92,7 @@ export default function DashboardPage() {
               {action.icon}
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-6">{action.description}</p>
+              <p className="text-sm text-muted-foreground mb-6">{t[action.descriptionKey as keyof Translations]}</p>
               <Button asChild className="w-full shadow-md hover:shadow-lg hover:scale-105 transform transition-all duration-300">
                 <Link href={action.href}>{t[action.titleKey as keyof Translations]}</Link>
               </Button>

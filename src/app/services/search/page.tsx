@@ -92,7 +92,7 @@ export default function ServiceSearchPage() {
 
     } catch (err) {
       console.error("Error fetching ads or providers:", err);
-      setError((err as Error).message || "Failed to load services.");
+      setError((err as Error).message || t.failedLoadServices);
       setAllAds([]);
       setFilteredAds([]);
     } finally {
@@ -164,7 +164,7 @@ export default function ServiceSearchPage() {
             <SearchIcon className="h-8 w-8 text-primary" />
             {t.search} {t.services}
           </CardTitle>
-          <CardDescription>{t.searchByAddressOrKeyword}</CardDescription>
+          <CardDescription>{t.searchServicesPageDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSearchSubmit} className="flex flex-col sm:flex-row gap-4">
@@ -235,7 +235,7 @@ export default function ServiceSearchPage() {
              <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <CardTitle className="text-2xl text-foreground">{t.noResultsFound}</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Try searching with different keywords or check your spelling.
+              {t.tryDifferentKeywords}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -245,14 +245,13 @@ export default function ServiceSearchPage() {
          <Card className="text-center py-12 shadow-xl animate-fadeIn border">
           <CardHeader>
              <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-            <CardTitle className="text-2xl text-foreground">No Services Available Yet</CardTitle>
+            <CardTitle className="text-2xl text-foreground">{t.noServicesAvailableYet}</CardTitle>
             <CardDescription className="text-muted-foreground">
-              There are currently no service ads posted. Check back later!
+              {t.checkBackLater}
             </CardDescription>
           </CardHeader>
         </Card>
       )}
-
 
       {!isLoading && !error && filteredAds.length > 0 && (
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 animate-fadeIn animation-delay-400">
@@ -318,4 +317,3 @@ export default function ServiceSearchPage() {
     </div>
   );
 }
-

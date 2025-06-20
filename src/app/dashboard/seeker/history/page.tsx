@@ -32,24 +32,19 @@ export default function SearchHistoryPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Load search history from localStorage (mock)
-    const storedHistory = localStorage.getItem('searchHistory'); // Assuming it's stored as an array of strings
-    const fullHistory = localStorage.getItem('fullSearchHistory'); // For items with dates
+    const fullHistory = localStorage.getItem('fullSearchHistory');
     
     if (fullHistory) {
       setHistory(JSON.parse(fullHistory));
-    } else if (storedHistory) { // Fallback for simpler history
-        const simpleHistory: string[] = JSON.parse(storedHistory);
-        setHistory(simpleHistory.map(query => ({query, date: new Date().toISOString()})));
     }
     setIsLoading(false);
   }, []);
 
   const clearHistory = () => {
-    localStorage.removeItem('searchHistory');
+    localStorage.removeItem('searchHistory'); // Keep for safety, though fullSearchHistory is primary
     localStorage.removeItem('fullSearchHistory');
     setHistory([]);
-    toast({title: "Search History Cleared", description: "Your search history has been successfully cleared."});
+    toast({title: t.searchHistoryClearedTitle, description: t.searchHistoryClearedSuccess});
   };
 
   if (isLoading) {
@@ -63,7 +58,7 @@ export default function SearchHistoryPage() {
           <History className="h-10 w-10 text-primary" />
           <div>
             <h1 className="text-3xl font-bold font-headline">{t.searchHistory}</h1>
-            <p className="text-muted-foreground">Review your past service searches.</p>
+            <p className="text-muted-foreground">{t.searchHistoryPageDescription}</p>
           </div>
         </div>
         {history.length > 0 && (
@@ -75,15 +70,15 @@ export default function SearchHistoryPage() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure you want to clear your search history?</AlertDialogTitle>
+                <AlertDialogTitle>{t.confirmClearHistoryTitle}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete all your search history entries.
+                  {t.confirmClearHistoryDescription}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
                 <AlertDialogAction onClick={clearHistory} className="bg-destructive hover:bg-destructive/90">
-                  Clear History
+                  {t.clearHistory}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -97,7 +92,7 @@ export default function SearchHistoryPage() {
             <History className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <CardTitle>{t.noHistoryYet}</CardTitle>
             <CardDescription>
-              Your search history is empty. Start searching for services to see them here.
+              {t.noHistoryYetDescription}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -120,12 +115,12 @@ export default function SearchHistoryPage() {
                         {item.query}
                       </Link>
                       <p className="text-sm text-muted-foreground">
-                        Searched on: {new Date(item.date).toLocaleDateString()} {new Date(item.date).toLocaleTimeString()}
+                        {t.searchedOn} {new Date(item.date).toLocaleDateString()} {new Date(item.date).toLocaleTimeString()}
                       </p>
                     </div>
                     <Button variant="ghost" size="sm" asChild>
                        <Link href={`/services/search?q=${encodeURIComponent(item.query)}`}>
-                         <Search className="ltr:mr-1 rtl:ml-1 h-4 w-4" /> Repeat Search
+                         <Search className="ltr:mr-1 rtl:ml-1 h-4 w-4" /> {t.repeatSearch}
                        </Link>
                     </Button>
                   </div>

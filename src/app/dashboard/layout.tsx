@@ -11,7 +11,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import Logo from '@/components/shared/Logo';
 import { Separator } from '@/components/ui/separator';
 import { auth, db } from '@/lib/firebase'; 
-import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
+import { onAuthStateChanged, signOut, User as FirebaseUser, sendEmailVerification } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { useToast } from "@/hooks/use-toast";
 import { ADMIN_EMAIL } from '@/lib/config';
@@ -47,7 +47,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setAuthUser(user);
-        setIsEmailVerified(user.emailVerified); // Check email verification status
+        setIsEmailVerified(user.emailVerified); 
 
         const roleFromStorage = localStorage.getItem('userRole') as UserRole | null;
         if (roleFromStorage) {
@@ -59,7 +59,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const userDocSnap = await getDoc(userDocRef);
           if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
-            // Check if current user is admin
             const roleFromFirestore = user.email === ADMIN_EMAIL ? 'admin' : (userData.role as UserRole);
             
             setUserRole(roleFromFirestore);
@@ -105,7 +104,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   
   const handleLogout = async () => {
     if (!auth) {
-      toast({ variant: "destructive", title: "Error", description: "Authentication service is unavailable." });
+      toast({ variant: "destructive", title: t.errorOccurred, description: t.authServiceUnavailable });
       return;
     }
     try {
@@ -113,7 +112,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push('/auth/login');
     } catch (error) {
       console.error("Error signing out from dashboard: ", error);
-      toast({ variant: "destructive", title: "Logout Failed", description: (error as Error).message });
+      toast({ variant: "destructive", title: t.logoutFailed, description: (error as Error).message });
     }
   };
 
@@ -130,9 +129,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
       <div className="flex h-screen flex-col items-center justify-center text-center p-4">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Service Unavailable</h1>
-        <p className="text-muted-foreground mb-6">Core authentication services are not configured. Please contact support.</p>
-        <Button onClick={() => router.push('/')}>Go to Homepage</Button>
+        <h1 className="text-2xl font-bold mb-2">{t.serviceUnavailableTitle}</h1>
+        <p className="text-muted-foreground mb-6">{t.coreServicesUnavailable}</p>
+        <Button onClick={() => router.push('/')}>{t.goToHomepage}</Button>
       </div>
     );
   }
@@ -140,7 +139,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!authUser && !isLoading) { 
     return (
       <div className="flex h-screen items-center justify-center">
-        <p>Redirecting to login...</p>
+        <p>{t.redirectingToLogin}</p>
       </div>
     );
   }
@@ -169,7 +168,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Button>
           ))}
            {!userRole && authUser && ( 
-            <p className="text-xs text-muted-foreground p-2">Verifying user role... Some links may be hidden temporarily.</p>
+            <p className="text-xs text-muted-foreground p-2">{t.verifyingUserRole}</p>
           )}
         </nav>
         <Separator />
@@ -179,22 +178,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </Button>
       </aside>
       <div className="flex-1 p-4 md:p-8 overflow-y-auto">
-        {/* Email verification check - can be made more prominent */}
         {authUser && !isEmailVerified && (
           <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-600 rounded-md">
-            <p className="font-medium">Please verify your email address.</p>
-            <p className="text-sm">A verification link was sent to {authUser.email}. Check your inbox (and spam folder).</p>
+            <p className="font-medium">{t.verifyEmailPromptTitle}</p>
+            <p className="text-sm">{t.verifyEmailPromptMessage.replace('{email}', authUser.email || '')}</p>
             <Button variant="link" size="sm" className="p-0 h-auto text-yellow-700 dark:text-yellow-300 hover:underline" onClick={async () => {
               if (auth?.currentUser) {
                 try {
                   await sendEmailVerification(auth.currentUser);
-                  toast({ title: "Verification Email Resent", description: "Please check your email."});
+                  toast({ title: t.verificationEmailResent, description: t.checkYourEmail});
                 } catch (error) {
-                  toast({ variant: "destructive", title: "Error", description: "Could not resend verification email."});
+                  toast({ variant: "destructive", title: t.errorOccurred, description: t.errorResendingVerificationEmail});
                 }
               }
             }}>
-              Resend verification email
+              {t.resendVerificationEmail}
             </Button>
           </div>
         )}

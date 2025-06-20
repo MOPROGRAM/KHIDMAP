@@ -70,14 +70,14 @@ export default function ProviderProfilePage() {
               setServiceCategories(firestoreProfile.serviceCategories || []);
               setProfilePictureUrl(firestoreProfile.profilePictureUrl);
             } else {
-              toast({ variant: "default", title: "Welcome!", description: "Please complete your provider profile." });
+              toast({ variant: "default", title: t.welcome, description: t.completeYourProfile });
             }
           } catch (error) {
             console.error("Error fetching profile:", error);
-            toast({ variant: "destructive", title: t.errorOccurred, description: "Could not fetch profile data." });
+            toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotFetchProfile });
           }
         } else {
-          toast({ variant: "destructive", title: "Authentication Error", description: "User not identified. Please log in again." });
+          toast({ variant: "destructive", title: t.authError, description: t.userNotIdentified });
           router.push('/auth/login');
         }
         setIsFetching(false);
@@ -87,7 +87,7 @@ export default function ProviderProfilePage() {
       setIsFirebaseReady(false);
       setIsFetching(false);
       console.warn("Firebase Auth or DB not initialized in ProviderProfilePage.");
-      toast({ variant: "destructive", title: "Service Unavailable", description: "Profile service is not ready." });
+      toast({ variant: "destructive", title: t.serviceUnavailableTitle, description: t.profileServiceNotReady });
     }
   }, [router, t, toast]);
 
@@ -104,7 +104,7 @@ export default function ProviderProfilePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFirebaseReady || !auth || !db || !authUser) {
-      toast({ variant: "destructive", title: "Error", description: "User not authenticated or service unavailable." });
+      toast({ variant: "destructive", title: t.errorOccurred, description: t.userNotAuthOrServiceUnavailable });
       setIsLoading(false);
       return;
     }
@@ -155,10 +155,10 @@ export default function ProviderProfilePage() {
       
       localStorage.setItem('userName', data.name);
 
-      toast({ title: t.profileUpdatedSuccessfully });
+      toast({ title: t.profileUpdatedSuccessfully, description: t.profileChangesSaved });
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast({ variant: "destructive", title: t.errorOccurred, description: "Failed to update profile." });
+      toast({ variant: "destructive", title: t.errorOccurred, description: t.failedUpdateProfile });
     } finally {
       setIsLoading(false);
     }
@@ -187,13 +187,13 @@ export default function ProviderProfilePage() {
             <UserCircle className="h-10 w-10 text-primary" />
             <div>
               <CardTitle className="text-3xl font-headline">{t.profile}</CardTitle>
-              <CardDescription>{t.fillYourProfile} {t.appName}</CardDescription>
+              <CardDescription>{t.profilePageDescription.replace("{appName}", t.appName)}</CardDescription>
             </div>
           </div>
           <div className="flex justify-center">
             <NextImage 
               src={profilePictureUrl || "https://placehold.co/150x150.png"} 
-              alt="Profile Picture" 
+              alt={t.profilePictureAlt} 
               width={120} 
               height={120} 
               className="rounded-full border-4 border-primary shadow-md object-cover"
@@ -204,7 +204,7 @@ export default function ProviderProfilePage() {
         <CardContent>
            {!isFirebaseReady && (
             <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md text-center">
-              Profile editing is currently unavailable. Core services are not configured.
+              {t.profileEditingUnavailable}
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -249,13 +249,13 @@ export default function ProviderProfilePage() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">Select your primary service category. For multiple, manage via separate ads.</p>
+              <p className="text-xs text-muted-foreground">{t.profileHelpTextCategory}</p>
               {errors.serviceCategories && <p className="text-sm text-destructive">{errors.serviceCategories}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="serviceAreas">{t.serviceAreas}</Label>
-              <Input id="serviceAreas" value={serviceAreasString} onChange={(e) => setServiceAreasString(e.target.value)} placeholder="e.g., Downtown, North Suburbs" disabled={!isFirebaseReady || isLoading}/>
+              <Input id="serviceAreas" value={serviceAreasString} onChange={(e) => setServiceAreasString(e.target.value)} placeholder={t.serviceAreasPlaceholder} disabled={!isFirebaseReady || isLoading}/>
               {errors.serviceAreasString && <p className="text-sm text-destructive">{errors.serviceAreasString}</p>}
             </div>
 
@@ -269,4 +269,3 @@ export default function ProviderProfilePage() {
     </div>
   );
 }
-
