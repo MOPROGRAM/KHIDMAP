@@ -155,7 +155,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)]"> {/* Adjusted for header height */}
-      <aside className="w-64 border-r bg-background p-4 space-y-4 hidden md:flex flex-col sticky top-16 h-[calc(100vh-4rem)]">
+      <aside className="w-64 border-r bg-background p-4 space-y-2 hidden md:flex flex-col sticky top-16 h-[calc(100vh-4rem)]">
         <div className="px-2 py-1">
           <Logo />
         </div>
@@ -187,7 +187,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {t.logout}
         </Button>
       </aside>
-      <div className="flex-1 p-4 md:p-8 overflow-y-auto">
+      <main className="flex-1 p-2 md:p-4 overflow-y-auto">
         {authUser && !isEmailVerified && (
           <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-600 rounded-md shadow">
             <p className="font-medium">{t.verifyEmailPromptTitle}</p>
@@ -207,7 +207,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         )}
         {children}
-      </div>
+      </main>
     </div>
   );
 }

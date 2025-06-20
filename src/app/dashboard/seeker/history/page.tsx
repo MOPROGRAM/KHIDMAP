@@ -52,7 +52,7 @@ export default function SearchHistoryPage() {
   }
 
   return (
-    <div className="space-y-8 py-8 animate-fadeIn">
+    <div className="space-y-4 py-4 animate-fadeIn">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
           <History className="h-10 w-10 text-primary" />
@@ -139,4 +139,5 @@ export default function SearchHistoryPage() {
     </div>
   );
 }
+
 

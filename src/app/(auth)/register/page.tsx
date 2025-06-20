@@ -147,7 +147,7 @@ export default function RegisterPage() {
   
 
   return (
-    <div className="flex items-center justify-center py-12 min-h-[calc(100vh-15rem)]">
+    <div className="flex items-center justify-center py-6 min-h-[calc(100vh-15rem)]">
       <Card className="w-full max-w-lg shadow-xl">
         <CardHeader className="text-center">
           <UserPlus className="mx-auto h-12 w-12 text-primary mb-4" />
@@ -171,7 +171,7 @@ export default function RegisterPage() {
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">{t.name}</Label>
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required disabled={!isAuthServiceAvailable || isLoading} />

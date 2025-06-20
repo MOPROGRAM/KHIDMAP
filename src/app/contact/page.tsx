@@ -103,7 +103,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-12 animate-fadeIn">
+    <div className="max-w-2xl mx-auto py-6 animate-fadeIn">
       <Card className="shadow-xl">
         <CardHeader className="text-center">
           <Mail className="mx-auto h-12 w-12 text-primary mb-4" />
@@ -123,8 +123,8 @@ export default function ContactPage() {
           ) : (
             <>
               <p className="text-sm text-muted-foreground mb-6 text-center">{t.contactFormIntro}</p>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">{t.yourName}</Label>
                     <Input id="name" name="name" value={formData.name} onChange={handleChange} disabled={isLoading} />

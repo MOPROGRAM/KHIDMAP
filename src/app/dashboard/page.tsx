@@ -53,7 +53,7 @@ export default function DashboardPage() {
   const welcomeMessage = userName ? t.welcomeToDashboardUser.replace('{userName}', userName) : (userRole === 'provider' ? t.welcomeToDashboardProvider : t.welcomeToDashboardSeeker);
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-4 animate-fadeIn">
       <Card className="shadow-lg border bg-card overflow-hidden">
         <div className="grid md:grid-cols-2">
             <div className="p-8">
@@ -81,7 +81,7 @@ export default function DashboardPage() {
         </div>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
         {actions.map((action, index) => (
           <Link href={action.href} key={action.href} className="group">
           <Card 

@@ -109,7 +109,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center py-12 min-h-[calc(100vh-15rem)]">
+    <div className="flex items-center justify-center py-6 min-h-[calc(100vh-15rem)]">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <LogInIcon className="mx-auto h-12 w-12 text-primary mb-4" />
@@ -123,7 +123,7 @@ export default function LoginPage() {
                 <span>{t.authServiceUnavailable}</span>
             </div>
           )}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">{t.email}</Label>
               <Input

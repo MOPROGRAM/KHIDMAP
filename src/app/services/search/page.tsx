@@ -167,7 +167,7 @@ export default function ServiceSearchPage() {
   }
 
   return (
-    <div className="space-y-8 py-8 animate-fadeIn">
+    <div className="space-y-4 py-4 animate-fadeIn">
       <Card className="shadow-md sticky top-[calc(var(--header-height,4rem)+1rem)] z-40 backdrop-blur-md bg-background/90 border">
         <CardHeader>
           <CardTitle className="text-3xl font-bold flex items-center gap-3 text-foreground">
@@ -273,7 +273,7 @@ export default function ServiceSearchPage() {
       )}
 
       {initialLoadComplete && !isLoading && !error && filteredProviders.length > 0 && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fadeIn animation-delay-400">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fadeIn animation-delay-400">
           {filteredProviders.map((provider, index) => {
             const mainCategory = provider.serviceCategories?.[0];
             const Icon = mainCategory ? (categoryIcons[mainCategory] || Briefcase) : Briefcase;

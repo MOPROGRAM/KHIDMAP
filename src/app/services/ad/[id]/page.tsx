@@ -294,8 +294,8 @@ export default function ProviderDetailsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 py-8 animate-fadeIn">
-      <Button variant="outline" onClick={() => router.back()} className="mb-6 group">
+    <div className="max-w-4xl mx-auto space-y-4 py-4 animate-fadeIn">
+      <Button variant="outline" onClick={() => router.back()} className="mb-4 group">
         <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:text-primary transition-colors group-hover:translate-x-[-2px]" /> {t.backToSearch}
       </Button>
 
@@ -322,7 +322,7 @@ export default function ProviderDetailsPage() {
             </div>
         </CardHeader>
         
-        <CardContent className="p-6 space-y-6">
+        <CardContent className="p-6 space-y-4">
           <div className="space-y-4 animate-fadeIn animation-delay-200">
             {provider.qualifications && (
               <div>
@@ -355,7 +355,7 @@ export default function ProviderDetailsPage() {
             )}
           </div>
           
-          <Separator className="my-6" />
+          <Separator className="my-4" />
 
           {authUser && authUser.uid !== provider.uid && (
             <CardFooter className="p-0 pt-0 flex flex-col sm:flex-row gap-2">
@@ -371,10 +371,10 @@ export default function ProviderDetailsPage() {
             </CardFooter>
           )}
 
-          <Separator className="my-6" />
+          <Separator className="my-4" />
 
           {/* Reviews Section */}
-          <div className="space-y-6 animate-fadeIn animation-delay-400">
+          <div className="space-y-4 animate-fadeIn animation-delay-400">
             <h2 className="text-2xl font-semibold text-primary font-headline">{t.reviews}</h2>
             {ratings.length > 0 ? (
                 <div className="space-y-4">
@@ -396,7 +396,7 @@ export default function ProviderDetailsPage() {
             )}
           </div>
           
-          <Separator className="my-6" />
+          <Separator className="my-4" />
 
           {/* Rating Form */}
           {authUser && userRole === 'seeker' && authUser.uid !== providerId && (
