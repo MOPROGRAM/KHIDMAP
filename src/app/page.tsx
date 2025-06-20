@@ -44,14 +44,14 @@ export default function HomePage() {
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
-            <h1 className="text-2xl md:text-3xl font-bold font-headline tracking-tighter leading-none">
+            <h1 className="text-5xl md:text-6xl font-bold font-headline tracking-tighter leading-none">
                 <div
                   className="
                     inline-block p-[2px] rounded-lg
                     bg-gradient-to-b from-green-500 to-orange-600
                   "
                 >
-                  <div className="bg-background rounded-md px-1 py-0">
+                  <div className="bg-background rounded-md px-1 flex items-center justify-center">
                     <span className="font-extrabold">
                       {t.appName}
                     </span>
