@@ -11,14 +11,14 @@ export default function HomePage() {
   const t = useTranslation();
 
   const serviceCards = [
-    { icon: <Wrench />, titleKey: 'plumbing', descriptionKey: 'plumbingDescription', color: 'text-chart-1' },
-    { icon: <Zap />, titleKey: 'electrical', descriptionKey: 'electricalDescription', color: 'text-chart-2' },
-    { icon: <Hammer />, titleKey: 'carpentry', descriptionKey: 'carpentryDescription', color: 'text-chart-3' },
-    { icon: <Brush />, titleKey: 'painting', descriptionKey: 'paintingDescription', color: 'text-chart-4' },
-    { icon: <SprayCan />, titleKey: 'homeCleaning', descriptionKey: 'homeCleaningDescription', color: 'text-chart-5' },
-    { icon: <HardHat />, titleKey: 'construction', descriptionKey: 'constructionDescription', color: 'text-chart-1' },
-    { icon: <Layers />, titleKey: 'plastering', descriptionKey: 'plasteringDescription', color: 'text-chart-2' },
-    { icon: <GripVertical />, titleKey: 'other', descriptionKey: 'otherServicesDescription', color: 'text-chart-3' },
+    { icon: <Wrench />, titleKey: 'plumbing', descriptionKey: 'plumbingDescription', color: 'text-blue-500' },
+    { icon: <Zap />, titleKey: 'electrical', descriptionKey: 'electricalDescription', color: 'text-yellow-500' },
+    { icon: <Hammer />, titleKey: 'carpentry', descriptionKey: 'carpentryDescription', color: 'text-orange-500' },
+    { icon: <Brush />, titleKey: 'painting', descriptionKey: 'paintingDescription', color: 'text-purple-500' },
+    { icon: <SprayCan />, titleKey: 'homeCleaning', descriptionKey: 'homeCleaningDescription', color: 'text-green-500' },
+    { icon: <HardHat />, titleKey: 'construction', descriptionKey: 'constructionDescription', color: 'text-red-500' },
+    { icon: <Layers />, titleKey: 'plastering', descriptionKey: 'plasteringDescription', color: 'text-indigo-500' },
+    { icon: <GripVertical />, titleKey: 'other', descriptionKey: 'otherServicesDescription', color: 'text-pink-500' },
   ];
   
   const renderServiceCard = (service: any, index: number) => (
@@ -39,20 +39,20 @@ export default function HomePage() {
       
       {/* Hero Section */}
       <section 
-        className="w-full flex flex-col items-center text-center pt-3 pb-2 md:pt-5 md:pb-4 space-y-3"
+        className="w-full flex flex-col items-center text-center pt-2 pb-1 md:pt-3 md:pb-2 space-y-2"
       >
         <div 
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
-            <h1 className="text-3xl md:text-4xl font-bold font-headline tracking-tighter">
+            <h1 className="text-2xl md:text-3xl font-bold font-headline tracking-tighter">
                 <div
                   className="
                     inline-block p-[2px] rounded-lg
                     bg-gradient-to-b from-green-500 to-orange-600
                   "
                 >
-                  <div className="bg-background rounded-md px-3 py-1.5 text-foreground">
+                  <div className="bg-background rounded-md px-1 py-0.5 text-foreground">
                     {t.appName}
                   </div>
                 </div>
@@ -62,18 +62,18 @@ export default function HomePage() {
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}
         >
-            <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+            <p className="text-xs text-muted-foreground max-w-xl mx-auto">
                 {t.findSkilledArtisans} {t.orPostYourServices}
             </p>
         </div>
-        <div className="flex flex-wrap justify-center items-center gap-2 animate-fade-in-up" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
-            <Button size="lg" asChild className="text-sm px-6">
+        <div className="flex flex-wrap justify-center items-center gap-1 animate-fade-in-up" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
+            <Button size="lg" asChild className="text-xs px-5">
                 <Link href="/services/search">
                   {t.browseServices}
-                  <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4" />
+                  <ArrowRight className="ltr:ml-2 rtl:mr-2 h-3 w-3" />
                 </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild className="text-sm px-6">
+            <Button size="lg" variant="outline" asChild className="text-xs px-5">
                 <Link href="/auth/register">
                   {t.register}
                 </Link>
@@ -82,29 +82,29 @@ export default function HomePage() {
       </section>
 
       {/* Services Section */}
-      <section className="w-full py-1 md:py-2">
-        <div className="animate-fade-in-up text-center mb-3" style={{ animationFillMode: 'backwards' }}>
-            <h2 className="text-xl md:text-2xl font-bold font-headline text-foreground tracking-tighter">
+      <section className="w-full py-1">
+        <div className="animate-fade-in-up text-center mb-2" style={{ animationFillMode: 'backwards' }}>
+            <h2 className="text-lg md:text-xl font-bold font-headline text-foreground tracking-tighter">
                 {t.services}
             </h2>
         </div>
-        <div className="w-full overflow-x-auto pb-4 group" >
-          <ul className="flex flex-nowrap items-stretch justify-start gap-4 px-8 md:px-16">
-              {[...serviceCards].map((service, index) => renderServiceCard(service, index))}
+        <div className="w-full overflow-x-auto pb-2 group" >
+          <ul className="flex flex-nowrap items-stretch justify-start gap-2 px-4 md:px-8">
+              {[...serviceCards, ...serviceCards].map((service, index) => renderServiceCard(service, index))}
           </ul>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="w-full bg-muted/50 py-2.5">
-          <div className="container max-w-4xl px-4 text-center">
-            <div className="animate-fade-in-up text-center space-y-1.5" style={{ animationFillMode: 'backwards' }}>
-              <h2 className="text-xl md:text-2xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
-              <p className="text-sm text-muted-foreground max-w-2xl mx-auto">{t.orPostYourServices}</p>
-              <Button asChild size="lg" className="text-sm px-6">
+      <section className="w-full bg-muted/50 py-2">
+          <div className="container max-w-4xl px-2 text-center">
+            <div className="animate-fade-in-up text-center space-y-1" style={{ animationFillMode: 'backwards' }}>
+              <h2 className="text-lg md:text-xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
+              <p className="text-xs text-muted-foreground max-w-2xl mx-auto">{t.orPostYourServices}</p>
+              <Button asChild size="lg" className="text-xs px-5">
                 <Link href="/auth/register?role=provider">
                     {t.register}
-                    <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4" />
+                    <ArrowRight className="ltr:ml-2 rtl:mr-2 h-3 w-3" />
                 </Link>
               </Button>
             </div>
