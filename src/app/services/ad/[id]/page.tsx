@@ -4,13 +4,13 @@
 import React, { useEffect, useState, useCallback, FormEvent, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
-import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, Rating } from '@/lib/data';
+import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, Rating, findOrCreateConversation } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import NextImage from 'next/image';
 import {
   ArrowLeft, MapPin, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, SprayCan,
-  GripVertical, HardHat, Layers, Star, Wrench, Zap
+  GripVertical, HardHat, Layers, Star, Wrench, Zap, MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import { Timestamp } from 'firebase/firestore';
@@ -117,6 +117,7 @@ export default function ProviderDetailsPage() {
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const [ratingInput, setRatingInput] = useState(0);
   const [commentInput, setCommentInput] = useState('');
 
@@ -211,14 +212,33 @@ export default function ProviderDetailsPage() {
           setIsSubmitting(false);
       }
   }
+
+  const handleStartConversation = async () => {
+    if (!authUser || !provider) {
+      toast({ variant: 'destructive', title: t.authError, description: t.userNotAuthenticated });
+      return;
+    }
+    setIsCreatingConversation(true);
+    try {
+      const conversationId = await findOrCreateConversation(authUser.uid, provider.uid);
+      if (conversationId) {
+        router.push(`/dashboard/messages?conversationId=${conversationId}`);
+      } else {
+        throw new Error("Could not create or find conversation.");
+      }
+    } catch (error) {
+      console.error("Failed to start conversation:", error);
+      toast({ variant: 'destructive', title: t.errorOccurred, description: "Could not start a conversation." });
+    } finally {
+      setIsCreatingConversation(false);
+    }
+  };
   
   const formatDate = (dateValue: Timestamp | undefined): string => {
     if (!dateValue) return 'N/A';
-    // Timestamps from Firestore need to be converted to JS Date objects
     if (typeof dateValue.toDate === 'function') {
       return dateValue.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
     }
-    // Fallback for unexpected formats
     return new Date(dateValue as any).toLocaleDateString();
   };
 
@@ -334,19 +354,23 @@ export default function ProviderDetailsPage() {
                 </div>
             )}
           </div>
-          <CardFooter className="px-0 pt-4 flex flex-col sm:flex-row gap-2">
-             {provider.email && <Button size="lg" className="w-full sm:w-auto text-base py-3.5 group" asChild>
-                <a href={`mailto:${provider.email}`}>
-                    <Mail className="ltr:mr-2 rtl:ml-2 h-5 w-5" /> {t.email}
-                </a>
-             </Button>}
-             {provider.phoneNumber && <Button size="lg" variant="outline" className="w-full sm:w-auto text-base py-3.5 group" asChild>
-                <a href={`tel:${provider.phoneNumber}`}>
-                    <Phone className="ltr:mr-2 rtl:ml-2 h-5 w-5" /> {t.phoneNumber}
-                </a>
-             </Button>}
-          </CardFooter>
           
+          <Separator className="my-6" />
+
+          {authUser && authUser.uid !== provider.uid && (
+            <CardFooter className="px-0 pt-0 flex flex-col sm:flex-row gap-2">
+              <Button
+                size="lg"
+                className="w-full text-base py-3.5 group"
+                onClick={handleStartConversation}
+                disabled={isCreatingConversation}
+              >
+                {isCreatingConversation ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageSquare className="ltr:mr-2 rtl:ml-2 h-5 w-5" />}
+                {t.messages}
+              </Button>
+            </CardFooter>
+          )}
+
           <Separator className="my-6" />
 
           {/* Reviews Section */}

@@ -181,7 +181,7 @@ export type Translations = {
   plasteringDescription?: string;
   otherServicesDescription?: string;
 
-  // New Rating translations
+  // Rating translations
   reviews?: string;
   averageRating?: string;
   noReviewsYet?: string;
@@ -200,6 +200,16 @@ export type Translations = {
   firestoreIndexError?: string;
   of?: string; // e.g. 4.5 of 5 stars
   viewProfile?: string;
+
+  // Messaging translations
+  messages?: string;
+  typeYourMessage?: string;
+  send?: string;
+  noConversations?: string;
+  selectAConversation?: string;
+  conversationWith?: string; // "Conversation with {name}"
+  noMessagesYet?: string;
+  startTheConversation?: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -402,6 +412,15 @@ export const translations: Record<'en' | 'ar', Translations> = {
     firestoreIndexError: "The database is being updated to support this query. Please try again in a few minutes.",
     of: "of",
     viewProfile: "View Profile",
+    // Messaging translations
+    messages: "Messages",
+    typeYourMessage: "Type your message...",
+    send: "Send",
+    noConversations: "No conversations yet.",
+    selectAConversation: "Select a conversation",
+    conversationWith: "Conversation with {name}",
+    noMessagesYet: "No messages yet. Say hello!",
+    startTheConversation: "Select a conversation from the list to start chatting.",
   },
   ar: {
     appName: "خدماب",
@@ -602,5 +621,14 @@ export const translations: Record<'en' | 'ar', Translations> = {
     firestoreIndexError: "قاعدة البيانات قيد التحديث لدعم هذا الاستعلام. يرجى المحاولة مرة أخرى في غضون دقائق قليلة.",
     of: "من",
     viewProfile: "عرض الملف الشخصي",
+    // Messaging translations
+    messages: "الرسائل",
+    typeYourMessage: "اكتب رسالتك...",
+    send: "إرسال",
+    noConversations: "لا توجد محادثات بعد.",
+    selectAConversation: "اختر محادثة",
+    conversationWith: "محادثة مع {name}",
+    noMessagesYet: "لا توجد رسائل بعد. قل مرحباً!",
+    startTheConversation: "اختر محادثة من القائمة لبدء الدردشة.",
   },
 };

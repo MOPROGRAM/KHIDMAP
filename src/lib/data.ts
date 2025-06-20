@@ -1,6 +1,6 @@
 
 import { db, auth } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch } from 'firebase/firestore';
 
 // ServiceCategory is still relevant for provider profiles
 export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
@@ -29,6 +29,23 @@ export interface Rating {
     rating: number; // 1-5
     comment: string;
     createdAt: Timestamp;
+}
+
+export interface Conversation {
+  id: string;
+  participants: string[];
+  participantNames: { [key: string]: string };
+  participantProfilePictures: { [key: string]: string };
+  lastMessage: string;
+  lastMessageSenderId: string;
+  updatedAt: Timestamp;
+}
+
+export interface Message {
+  id: string;
+  senderId: string;
+  text: string;
+  createdAt: Timestamp;
 }
 
 
@@ -129,4 +146,67 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[]> => {
         console.error("Error fetching ratings from Firestore: ", error);
         throw error;
     }
+};
+
+// --- Messaging Functions ---
+
+export const getConversationsForUser = async (userId: string): Promise<Conversation[]> => {
+    if (!db) throw new Error("Database service is not available.");
+    const q = query(
+        collection(db, "conversations"),
+        where("participants", "array-contains", userId),
+        orderBy("updatedAt", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
+};
+
+export const findOrCreateConversation = async (user1Id: string, user2Id: string): Promise<string> => {
+    if (!db) throw new Error("Database service is not available.");
+    
+    // Query for an existing conversation
+    const conversationsRef = collection(db, "conversations");
+    const q = query(conversationsRef, 
+        where("participants", "array-contains", user1Id)
+    );
+
+    const querySnapshot = await getDocs(q);
+    const existingConversation = querySnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .find(convo => convo.participants.includes(user2Id));
+
+    if (existingConversation) {
+        return existingConversation.id;
+    }
+
+    // If no conversation exists, create a new one
+    const [user1Profile, user2Profile] = await Promise.all([
+        getUserProfileById(user1Id),
+        getUserProfileById(user2Id)
+    ]);
+
+    if (!user1Profile || !user2Profile) {
+        throw new Error("Could not find user profiles to start conversation.");
+    }
+
+    const newConversationRef = doc(collection(db, 'conversations'));
+    const newConversationData = {
+        participants: [user1Id, user2Id],
+        participantNames: {
+            [user1Id]: user1Profile.name,
+            [user2Id]: user2Profile.name,
+        },
+        participantProfilePictures: {
+            [user1Id]: user1Profile.profilePictureUrl || '',
+            [user2Id]: user2Profile.profilePictureUrl || '',
+        },
+        lastMessage: "Conversation started.",
+        lastMessageSenderId: '', // System message
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+    };
+
+    await setDoc(newConversationRef, newConversationData);
+    
+    return newConversationRef.id;
 };
