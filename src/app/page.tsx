@@ -44,7 +44,7 @@ export default function HomePage() {
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
-            <h1 className="text-5xl md:text-6xl font-bold font-headline tracking-tighter leading-none">
+            <h1 className="text-5xl md:text-6xl font-bold font-headline tracking-tighter">
                 <div
                   className="
                     inline-block p-[2px] rounded-lg
@@ -52,7 +52,7 @@ export default function HomePage() {
                   "
                 >
                   <div className="bg-background rounded-md px-1 flex items-center justify-center">
-                    <span className="font-extrabold">
+                    <span className="font-extrabold text-5xl md:text-6xl leading-[0.95]">
                       {t.appName}
                     </span>
                   </div>
