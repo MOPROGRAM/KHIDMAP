@@ -122,7 +122,7 @@ export default function MyAdsPage() {
 
   if (!isCoreServicesAvailable || error) {
      return (
-        <div className="space-y-8 py-8">
+        <div className="space-y-8 py-8 animate-fadeIn">
             <Card className="shadow-xl">
                  <CardHeader className="text-center">
                     <CardTitle className="text-2xl font-headline text-destructive flex items-center gap-2 justify-center">
@@ -148,16 +148,16 @@ export default function MyAdsPage() {
             <p className="text-muted-foreground">{t.myAdsPageDescription}</p>
           </div>
         </div>
-        <Button asChild className="shadow-md hover:shadow-lg hover:scale-105 transform transition-all duration-300">
+        <Button asChild className="shadow-md hover:shadow-lg hover:scale-105 transform transition-all duration-300 group">
           <Link href="/dashboard/provider/ads/new">
-            <PlusCircle className="ltr:mr-2 rtl:ml-2 h-5 w-5" />
+            <PlusCircle className="ltr:mr-2 rtl:ml-2 h-5 w-5 group-hover:animate-pulse-glow" />
             {t.newAd}
           </Link>
         </Button>
       </div>
 
       {ads.length === 0 && !isLoading ? ( 
-        <Card className="text-center py-12 shadow-xl hover:shadow-2xl transition-shadow duration-300 border">
+        <Card className="text-center py-12 shadow-xl hover:shadow-2xl transition-shadow duration-300 border animate-fadeIn">
           <CardHeader>
             <Briefcase className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <CardTitle className="text-2xl text-foreground">{t.noAdsYet}</CardTitle>
@@ -166,7 +166,7 @@ export default function MyAdsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild size="lg" className="shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-300">
+            <Button asChild size="lg" className="shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-300 group">
               <Link href="/dashboard/provider/ads/new">{t.newAd}</Link>
             </Button>
           </CardContent>
@@ -214,15 +214,15 @@ export default function MyAdsPage() {
                 <p className="text-sm text-foreground/90 line-clamp-3">{ad.description}</p>
               </CardContent>
               <div className="p-4 border-t flex gap-3 justify-end bg-muted/20 mt-auto">
-                <Button variant="outline" size="sm" asChild className="hover:bg-accent/20 hover:border-primary transition-colors duration-200 transform hover:scale-105">
+                <Button variant="outline" size="sm" asChild className="hover:bg-accent/20 hover:border-primary transition-colors duration-200 transform hover:scale-105 group/button">
                   <Link href={`/dashboard/provider/ads/edit/${ad.id}`}>
-                    <Edit3 className="ltr:mr-1.5 rtl:ml-1.5 h-4 w-4" /> {t.editAd}
+                    <Edit3 className="ltr:mr-1.5 rtl:ml-1.5 h-4 w-4 group-hover/button:animate-subtle-bounce" /> {t.editAd}
                   </Link>
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" className="transition-colors duration-200 transform hover:scale-105">
-                      <Trash2 className="ltr:mr-1.5 rtl:ml-1.5 h-4 w-4" /> {t.delete}
+                    <Button variant="destructive" size="sm" className="transition-colors duration-200 transform hover:scale-105 group/button">
+                      <Trash2 className="ltr:mr-1.5 rtl:ml-1.5 h-4 w-4 group-hover/button:animate-subtle-bounce" /> {t.delete}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -254,3 +254,4 @@ export default function MyAdsPage() {
     </div>
   );
 }
+

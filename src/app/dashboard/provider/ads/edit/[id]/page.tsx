@@ -73,7 +73,6 @@ export default function EditAdPage() {
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           setCurrentUser(user);
-          // Fetch provider name if not already set (e.g., from ad data)
           if (!providerName) {
             const userDocRef = doc(db, "users", user.uid);
             try {
@@ -99,11 +98,11 @@ export default function EditAdPage() {
       setIsCoreServicesAvailable(false);
       console.warn("Firebase Auth or DB not initialized in EditAdPage.");
     }
-  }, [router, toast, t, providerName]); // Added providerName to dependency array
+  }, [router, toast, t, providerName]); 
 
   const fetchAdData = useCallback(async () => {
     if (!adId || !isCoreServicesAvailable) {
-        if(!isCoreServicesAvailable && adId) setIsFetchingAd(false); // Stop fetching if services are down
+        if(!isCoreServicesAvailable && adId) setIsFetchingAd(false); 
         return;
     }
     setIsFetchingAd(true);
@@ -158,7 +157,6 @@ export default function EditAdPage() {
   const handleRemoveImage = async () => {
      setAdImageFile(null); 
      setAdImagePreview(null); 
-     // currentImageUrl will be handled during submit if it was present
   }
 
   const handleDetectCategory = async () => {
@@ -201,25 +199,35 @@ export default function EditAdPage() {
     let finalImageUrl: string | undefined | null = currentImageUrl; 
     let imageToDeleteAfterSuccess: string | undefined = undefined;
 
-    if (adImageFile) { // New image selected
+    if (adImageFile) { 
       setIsUploadingImage(true);
       try {
-        // Upload new image. Use ad.id as it's an existing ad.
         finalImageUrl = await uploadAdImage(adImageFile, currentUser.uid, ad.id);
         if (currentImageUrl && currentImageUrl !== finalImageUrl) { 
-            imageToDeleteAfterSuccess = currentImageUrl; // Mark old image for deletion after successful update
+            imageToDeleteAfterSuccess = currentImageUrl; 
         }
       } catch (error: any) {
         console.error("Error uploading new image:", error);
-        toast({ variant: "destructive", title: t.errorOccurred, description: error.message || t.failedUploadImage });
+         let message = t.failedUploadImage || "Failed to upload new image.";
+         if (error instanceof Error && 'code' in error) {
+            const firebaseError = error as any; // Type assertion
+            if (firebaseError.code === 'storage/unauthorized') {
+                message = "Permission denied. Please check storage rules or ensure you are logged in.";
+            } else {
+                message = `Firebase Storage Error: ${firebaseError.message} (Code: ${firebaseError.code})`;
+            }
+        } else if (error instanceof Error) {
+            message = error.message;
+        }
+        toast({ variant: "destructive", title: t.errorOccurred, description: message });
         setIsLoading(false);
         setIsUploadingImage(false);
         return;
       }
       setIsUploadingImage(false);
-    } else if (adImagePreview === null && currentImageUrl) { // Image was explicitly removed
+    } else if (adImagePreview === null && currentImageUrl) { 
         finalImageUrl = undefined; 
-        imageToDeleteAfterSuccess = currentImageUrl; // Mark old image for deletion
+        imageToDeleteAfterSuccess = currentImageUrl; 
     }
 
 
@@ -228,7 +236,7 @@ export default function EditAdPage() {
         description, 
         address, 
         category, 
-        imageUrl: finalImageUrl // Use the potentially updated finalImageUrl
+        imageUrl: finalImageUrl 
     });
 
     if (!validationResult.success) {
@@ -262,7 +270,6 @@ export default function EditAdPage() {
       
       await updateServiceAd(ad.id, updateData);
 
-      // If update was successful and an old image was marked for deletion, delete it now.
       if (imageToDeleteAfterSuccess) {
           await deleteAdImage(imageToDeleteAfterSuccess);
       }
@@ -299,7 +306,7 @@ export default function EditAdPage() {
 
   if (!isCoreServicesAvailable && !isFetchingAd) {
     return (
-        <div className="max-w-2xl mx-auto py-8">
+        <div className="max-w-2xl mx-auto py-8 animate-fadeIn">
             <Card className="shadow-xl">
                  <CardHeader>
                     <CardTitle className="text-2xl font-headline text-destructive flex items-center gap-2">
@@ -314,7 +321,7 @@ export default function EditAdPage() {
     );
   }
 
-  if (!ad && !isFetchingAd) { // Ad not found or error occurred during fetch
+  if (!ad && !isFetchingAd) { 
      return (
       <div className="flex items-center justify-center h-full min-h-[calc(100vh-10rem)]">
         <p className="text-destructive">{t.errorOrAdNotFound}</p>
@@ -352,7 +359,7 @@ export default function EditAdPage() {
             </Button>
 
             {detectedCategory && (
-              <div className="p-3 bg-accent/10 border border-accent rounded-md text-sm">
+              <div className="p-3 bg-accent/10 border border-accent rounded-md text-sm animate-fadeIn">
                 <p className="font-medium">{t.detectedCategoryTitle}: <span className="text-accent font-semibold">{t[detectedCategory.toLowerCase() as keyof typeof t] || detectedCategory}</span></p>
                 <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => setCategory(detectedCategory as ServiceCategory)}>{t.confirmCategory}</Button>
               </div>
@@ -436,8 +443,8 @@ export default function EditAdPage() {
               )}
             </div>
 
-            <Button type="submit" className="w-full text-lg py-3 transform active:scale-95" disabled={!isCoreServicesAvailable || isLoading || isFetchingAd || isUploadingImage}>
-              {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <Save className="ltr:mr-2 rtl:ml-2 h-5 w-5"/> }
+            <Button type="submit" className="w-full text-lg py-3 group" disabled={!isCoreServicesAvailable || isLoading || isFetchingAd || isUploadingImage}>
+              {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <Save className="ltr:mr-2 rtl:ml-2 h-5 w-5 group-hover:animate-pulse-glow"/> }
               {t.saveChanges}
             </Button>
           </form>
@@ -446,3 +453,4 @@ export default function EditAdPage() {
     </div>
   );
 }
+

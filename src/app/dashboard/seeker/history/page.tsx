@@ -41,18 +41,18 @@ export default function SearchHistoryPage() {
   }, []);
 
   const clearHistory = () => {
-    localStorage.removeItem('searchHistory'); // Keep for safety, though fullSearchHistory is primary
+    localStorage.removeItem('searchHistory'); 
     localStorage.removeItem('fullSearchHistory');
     setHistory([]);
     toast({title: t.searchHistoryClearedTitle, description: t.searchHistoryClearedSuccess});
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-full"><p>{t.loading}</p></div>;
+    return <div className="flex items-center justify-center h-full min-h-[calc(100vh-10rem)]"><p>{t.loading}</p></div>;
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 py-8 animate-fadeIn">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
           <History className="h-10 w-10 text-primary" />
@@ -64,8 +64,8 @@ export default function SearchHistoryPage() {
         {history.length > 0 && (
            <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm">
-                <Trash2 className="ltr:mr-1 rtl:ml-1 h-4 w-4" /> {t.clearHistory}
+              <Button variant="destructive" size="sm" className="group">
+                <Trash2 className="ltr:mr-1 rtl:ml-1 h-4 w-4 group-hover:animate-subtle-bounce" /> {t.clearHistory}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -87,7 +87,7 @@ export default function SearchHistoryPage() {
       </div>
 
       {history.length === 0 ? (
-        <Card className="text-center py-12">
+        <Card className="text-center py-12 animate-fadeIn">
            <CardHeader>
             <History className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <CardTitle>{t.noHistoryYet}</CardTitle>
@@ -96,19 +96,19 @@ export default function SearchHistoryPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-             <Button asChild size="lg">
+             <Button asChild size="lg" className="group">
               <Link href="/services/search">
-                <Search className="ltr:mr-2 rtl:ml-2 h-5 w-5" /> {t.search} {t.services}
+                <Search className="ltr:mr-2 rtl:ml-2 h-5 w-5 group-hover:animate-pulse-glow" /> {t.search} {t.services}
               </Link>
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="animate-fadeIn animation-delay-200">
           <CardContent className="p-0">
             <ul className="divide-y divide-border">
               {history.map((item, index) => (
-                <li key={index} className="p-4 hover:bg-muted/50 transition-colors">
+                <li key={index} className="p-4 hover:bg-muted/50 transition-colors duration-200 ease-in-out" style={{ animationDelay: `${index * 50}ms`, animationName: 'fadeIn', animationFillMode: 'backwards' }}>
                   <div className="flex justify-between items-center">
                     <div>
                       <Link href={`/services/search?q=${encodeURIComponent(item.query)}`} className="font-medium text-primary hover:underline">
@@ -118,9 +118,9 @@ export default function SearchHistoryPage() {
                         {t.searchedOn} {new Date(item.date).toLocaleDateString()} {new Date(item.date).toLocaleTimeString()}
                       </p>
                     </div>
-                    <Button variant="ghost" size="sm" asChild>
+                    <Button variant="ghost" size="sm" asChild className="group">
                        <Link href={`/services/search?q=${encodeURIComponent(item.query)}`}>
-                         <Search className="ltr:mr-1 rtl:ml-1 h-4 w-4" /> {t.repeatSearch}
+                         <Search className="ltr:mr-1 rtl:ml-1 h-4 w-4 group-hover:animate-pulse-glow" /> {t.repeatSearch}
                        </Link>
                     </Button>
                   </div>
@@ -130,6 +130,13 @@ export default function SearchHistoryPage() {
           </CardContent>
         </Card>
       )}
+       <style jsx global>{`
+        [style*="animation-delay"] {
+          animation-duration: 0.4s; 
+        }
+        .animation-delay-200 { animation-delay: 0.2s; }
+      `}</style>
     </div>
   );
 }
+

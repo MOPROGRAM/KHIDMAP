@@ -56,7 +56,6 @@ export default function NewAdPage() {
       const unsubscribe = auth.onAuthStateChanged(async (user) => {
         if (user) {
           setProviderId(user.uid);
-          // Fetch provider name from Firestore
           const userDocRef = doc(db, "users", user.uid);
           try {
             const userDocSnap = await getDoc(userDocRef);
@@ -122,7 +121,7 @@ export default function NewAdPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isCoreServicesAvailable || !db || !auth?.currentUser) { // Check auth.currentUser
+    if (!isCoreServicesAvailable || !db || !auth?.currentUser) { 
       toast({ variant: "destructive", title: t.serviceUnavailableTitle, description: t.cannotPostAdCoreServices });
       setIsLoading(false);
       return;
@@ -138,7 +137,6 @@ export default function NewAdPage() {
     }
 
     let uploadedImageUrl: string | undefined | null = null;
-    // Generate a new Firestore ID for the ad, this ID will be used for the image path if an image is uploaded
     const adFirestoreId = doc(firestoreCollection(db, "serviceAds")).id;
 
     if (adImageFile) {
@@ -147,7 +145,20 @@ export default function NewAdPage() {
         uploadedImageUrl = await uploadAdImage(adImageFile, providerId, adFirestoreId);
       } catch (error: any) {
         console.error("Error uploading image:", error);
-        toast({ variant: "destructive", title: t.errorOccurred, description: error.message || t.failedUploadImage });
+        let message = t.failedUploadImage || "Failed to upload image.";
+        if (error instanceof Error && 'code' in error) {
+            const firebaseError = error as any; // Type assertion
+            if (firebaseError.code === 'storage/unauthorized') {
+                message = "Permission denied. Please check storage rules or ensure you are logged in.";
+            } else if (firebaseError.code === 'storage/object-not-found' && firebaseError.message?.includes('storage.googleapis.com')) {
+                 message = `File not found at URL. This might be an issue with the generated path or bucket config. Bucket: ${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'Not set'}`;
+            } else {
+                message = `Firebase Storage Error: ${firebaseError.message} (Code: ${firebaseError.code})`;
+            }
+        } else if (error instanceof Error) {
+            message = error.message;
+        }
+        toast({ variant: "destructive", title: t.errorOccurred, description: message });
         setIsLoading(false);
         setIsUploadingImage(false);
         return;
@@ -242,7 +253,7 @@ export default function NewAdPage() {
             </Button>
 
             {detectedCategory && (
-              <div className="p-3 bg-accent/10 border border-accent rounded-md text-sm">
+              <div className="p-3 bg-accent/10 border border-accent rounded-md text-sm animate-fadeIn">
                 <p className="font-medium">{t.detectedCategoryTitle}: <span className="text-accent font-semibold">{t[detectedCategory.toLowerCase() as keyof typeof t] || detectedCategory}</span></p>
                 <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => setCategory(detectedCategory as ServiceCategory)}>{t.confirmCategory}</Button>
               </div>
@@ -300,8 +311,8 @@ export default function NewAdPage() {
               )}
             </div>
 
-            <Button type="submit" className="w-full text-lg py-3 transform active:scale-95" disabled={isLoading || !providerId || !isCoreServicesAvailable || isUploadingImage}>
-              {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <PlusCircle className="ltr:mr-2 rtl:ml-2 h-5 w-5"/>}
+            <Button type="submit" className="w-full text-lg py-3 group" disabled={isLoading || !providerId || !isCoreServicesAvailable || isUploadingImage}>
+              {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <PlusCircle className="ltr:mr-2 rtl:ml-2 h-5 w-5 group-hover:animate-pulse-glow"/>}
               {t.postAd}
             </Button>
           </form>

@@ -112,7 +112,7 @@ export default function ContactPage() {
         </CardHeader>
         <CardContent>
           {isSubmitted ? (
-            <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 border border-green-500 rounded-lg shadow-md">
+            <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 border border-green-500 rounded-lg shadow-md animate-fadeIn">
               <CheckCircle className="mx-auto h-16 w-16 text-green-600 dark:text-green-400 mb-4" />
               <h3 className="text-2xl font-semibold text-green-700 dark:text-green-300 mb-2">{t.messageSentSuccessTitle}</h3>
               <p className="text-muted-foreground">{t.messageSentSuccessDescription}</p>
@@ -148,8 +148,8 @@ export default function ContactPage() {
                 </div>
                  <input type="hidden" name="_captcha" value="false" /> 
                  <input type="hidden" name="_template" value="table" />
-                <Button type="submit" className="w-full text-lg py-3" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <Send className="ltr:mr-2 rtl:ml-2 h-5 w-5"/>}
+                <Button type="submit" className="w-full text-lg py-3 group" disabled={isLoading}>
+                  {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <Send className="ltr:mr-2 rtl:ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300"/>}
                   {t.sendMessage}
                 </Button>
               </form>

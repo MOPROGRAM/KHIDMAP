@@ -11,7 +11,8 @@ import { ServiceAd, getAllServiceAds, UserProfile, getUserProfileById, ServiceCa
 import Link from 'next/link';
 import NextImage from 'next/image'; 
 import { Search as SearchIcon, MapPin, Briefcase, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, HardHat, Layers, ImageOff } from 'lucide-react';
-import { db } from '@/lib/firebase'; // Import db to check initialization
+import { db } from '@/lib/firebase'; 
+import { useToast } from '@/hooks/use-toast'; // Added for FormSubmit notifications
 
 interface SearchHistoryItem {
   query: string;
@@ -33,13 +34,14 @@ export default function ServiceSearchPage() {
   const t = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toast } = useToast(); // For FormSubmit notifications
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [allAds, setAllAds] = useState<ServiceAd[]>([]);
   const [filteredAds, setFilteredAds] = useState<ServiceAd[]>([]);
   const [providerDetails, setProviderDetails] = useState<Record<string, UserProfile>>({});
   
-  const [isLoading, setIsLoading] = useState(false); // For search filtering, not initial load
+  const [isLoading, setIsLoading] = useState(false); 
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentSearchQuery, setCurrentSearchQuery] = useState('');
@@ -48,7 +50,7 @@ export default function ServiceSearchPage() {
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
 
   useEffect(() => {
-    setIsDbAvailable(!!db); // Check if db is initialized
+    setIsDbAvailable(!!db); 
     if (db) {
         const storedHistory = localStorage.getItem('fullSearchHistory');
         if (storedHistory) {
@@ -72,7 +74,7 @@ export default function ServiceSearchPage() {
         setIsLoading(false);
         return;
     }
-    setIsLoading(true); // For the entire initial data fetch
+    setIsLoading(true); 
     setError(null);
     try {
       const ads = await getAllServiceAds();
@@ -84,7 +86,7 @@ export default function ServiceSearchPage() {
       if (providerIds.length > 0) {
         const providerPromises = providerIds.map(id => getUserProfileById(id).catch(err => {
             console.warn(`Failed to fetch profile for provider ${id}:`, err);
-            return null; // Return null if a specific provider fetch fails
+            return null; 
         }));
         const providersArray = await Promise.all(providerPromises);
         providersArray.forEach(provider => {
@@ -98,7 +100,7 @@ export default function ServiceSearchPage() {
       const initialQuery = searchParams.get('q');
       if (initialQuery) {
         setSearchTerm(initialQuery);
-        filterAds(initialQuery, ads, providerMap); // Pass providerMap here
+        filterAds(initialQuery, ads, providerMap); 
         setCurrentSearchQuery(initialQuery);
       } else {
         setFilteredAds(ads);
@@ -115,7 +117,7 @@ export default function ServiceSearchPage() {
     }
   }, [searchParams, t, isDbAvailable]); 
 
-  // filterAds needs to be defined before being used in fetchInitialAdsAndProviders if not memoized with useCallback
+  
   const filterAds = (query: string, adsToFilter: ServiceAd[], currentProviderDetails: Record<string, UserProfile>) => {
     if (!query.trim()) {
       setFilteredAds(adsToFilter);
@@ -140,10 +142,9 @@ export default function ServiceSearchPage() {
   };
   
   useEffect(() => {
-    // Only fetch if db is available
     if (isDbAvailable) {
         fetchInitialAdsAndProviders();
-    } else if (!isDbAvailable && !initialLoadComplete) { // if db is not available and we haven't shown error yet
+    } else if (!isDbAvailable && !initialLoadComplete) { 
         setError(t.serviceUnavailableMessage);
         setInitialLoadComplete(true);
     }
@@ -153,9 +154,8 @@ export default function ServiceSearchPage() {
   const handleSearch = (query: string) => {
     setSearchTerm(query);
     setCurrentSearchQuery(query);
-    if (initialLoadComplete) setIsLoading(true); // Set loading for search actions after initial load
+    if (initialLoadComplete) setIsLoading(true); 
 
-    // Simulating a delay for search, remove in production if not needed
     setTimeout(() => {
       filterAds(query, allAds, providerDetails);
       if (query.trim()) {
@@ -210,10 +210,10 @@ export default function ServiceSearchPage() {
             <Button 
               type="submit" 
               size="lg" 
-              className="text-lg py-3 rounded-lg shadow-lg hover:scale-105 transform transition-all duration-300" 
+              className="text-lg py-3 rounded-lg group" 
               disabled={!isDbAvailable || (isLoading && initialLoadComplete)}
             >
-              {(isLoading && initialLoadComplete) ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <SearchIcon className="ltr:mr-2 rtl:ml-2 h-5 w-5" />}
+              {(isLoading && initialLoadComplete) ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <SearchIcon className="ltr:mr-2 rtl:ml-2 h-5 w-5 group-hover:animate-pulse-glow" />}
               {t.search}
             </Button>
           </form>
@@ -232,7 +232,7 @@ export default function ServiceSearchPage() {
                 variant="outline" 
                 size="sm" 
                 onClick={() => handleHistorySearch(item.query)} 
-                className="rounded-full hover:bg-accent/20 hover:border-primary transition-colors duration-200"
+                className="rounded-full hover:bg-accent/20 hover:border-primary transition-colors duration-200 transform hover:scale-105"
               >
                 {item.query}
               </Button>
@@ -241,7 +241,7 @@ export default function ServiceSearchPage() {
         </Card>
       )}
 
-      {!initialLoadComplete && isLoading && ( // Show this loader only during initial full data fetch
+      {!initialLoadComplete && isLoading && ( 
         <div className="flex flex-col justify-center items-center py-10 min-h-[300px]">
           <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
           <p className="text-lg text-muted-foreground">{t.loading} {t.services}...</p>
@@ -261,7 +261,7 @@ export default function ServiceSearchPage() {
             <Button onClick={() => {
                 if(isDbAvailable) fetchInitialAdsAndProviders();
                 else toast({variant: "destructive", title: t.serviceUnavailableTitle, description: t.serviceUnavailableMessage});
-            }} variant="outline">
+            }} variant="outline" className="group">
                 {t.tryAgain}
             </Button>
           </CardContent>
@@ -341,7 +341,7 @@ export default function ServiceSearchPage() {
                   </div>
                 </CardContent>
                 <CardFooter className="bg-muted/30 p-4 mt-auto">
-                  <Button asChild className="w-full group/button hover:bg-primary/90 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg">
+                  <Button asChild className="w-full group/button">
                     <Link href={`/services/ad/${ad.id}`}> 
                       {t.viewDetails} <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4 group-hover/button:translate-x-0.5 transition-transform" />
                     </Link>
@@ -355,10 +355,11 @@ export default function ServiceSearchPage() {
       <style jsx global>{`
         .animation-delay-200 { animation-delay: 0.2s; }
         .animation-delay-400 { animation-delay: 0.4s; }
-        [class*="animation-delay"] {
+        [style*="animation-delay"] {
           animation-fill-mode: backwards; 
         }
       `}</style>
     </div>
   );
 }
+

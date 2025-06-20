@@ -12,7 +12,7 @@ import { ArrowLeft, MapPin, Wrench, Zap, Phone, Mail, UserCircle, Info, Loader2,
 import Link from 'next/link';
 import { Timestamp } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
-import { db } from '@/lib/firebase'; // Import db to check initialization
+import { db } from '@/lib/firebase'; 
 
 const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Plumbing: Wrench,
@@ -115,9 +115,9 @@ export default function ServiceAdDetailsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-6">{error}</p>
-            <Button asChild variant="outline" onClick={() => router.back()} className="hover:bg-destructive/10 hover:border-destructive transition-colors duration-200">
+            <Button asChild variant="outline" onClick={() => router.back()} className="hover:bg-destructive/10 hover:border-destructive transition-colors duration-200 group">
               <Link href="#"> 
-                <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4" /> {t.backButton}
+                <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:translate-x-[-2px] transition-transform" /> {t.backButton}
               </Link>
             </Button>
           </CardContent>
@@ -126,7 +126,7 @@ export default function ServiceAdDetailsPage() {
     );
   }
   
-  if (!ad) { // This covers ad not found after loading and no error (e.g. getAdById returned null)
+  if (!ad) { 
      return (
       <div className="text-center py-10 max-w-md mx-auto animate-fadeIn">
         <Card className="shadow-xl border">
@@ -138,9 +138,9 @@ export default function ServiceAdDetailsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-6">{t.adNotFoundDescription}</p>
-             <Button asChild variant="outline" onClick={() => router.back()} className="hover:bg-accent/10 hover:border-primary transition-colors duration-200">
+             <Button asChild variant="outline" onClick={() => router.back()} className="hover:bg-accent/10 hover:border-primary transition-colors duration-200 group">
               <Link href="#">
-                <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4" /> {t.backButton}
+                <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:translate-x-[-2px] transition-transform" /> {t.backButton}
               </Link>
             </Button>
           </CardContent>
@@ -155,8 +155,8 @@ export default function ServiceAdDetailsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-8 animate-fadeIn">
-      <Button variant="outline" onClick={() => router.back()} className="mb-6 group transition-all hover:shadow-md hover:scale-105 transform duration-300">
-        <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:text-primary transition-colors" /> {t.backToSearch}
+      <Button variant="outline" onClick={() => router.back()} className="mb-6 group">
+        <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:text-primary transition-colors group-hover:translate-x-[-2px]" /> {t.backToSearch}
       </Button>
 
       <Card className="overflow-hidden shadow-2xl border">
@@ -193,7 +193,7 @@ export default function ServiceAdDetailsPage() {
         </div>
         
         <CardContent className="p-6 space-y-6">
-          <div>
+          <div className="animate-fadeIn animation-delay-200">
             <h2 className="text-2xl font-semibold flex items-center gap-2 mb-3 text-primary font-headline">
                 <Info className="h-6 w-6"/> {t.adDescription}
             </h2>
@@ -206,7 +206,7 @@ export default function ServiceAdDetailsPage() {
           <Separator className="my-6" />
 
           {provider && (
-            <Card className="bg-card p-0 border-none shadow-none">
+            <Card className="bg-card p-0 border-none shadow-none animate-fadeIn animation-delay-400">
               <CardHeader className="px-0 pt-0 pb-4">
                 <CardTitle className="text-2xl font-semibold flex items-center gap-3 text-primary font-headline">
                     <UserCircle className="h-7 w-7" /> {t.serviceProvider}
@@ -270,7 +270,7 @@ export default function ServiceAdDetailsPage() {
                  )}
               </CardContent>
               <CardFooter className="px-0 pt-8">
-                 <Button size="lg" className="w-full sm:w-auto text-base py-3.5 group shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-300" asChild>
+                 <Button size="lg" className="w-full sm:w-auto text-base py-3.5 group" asChild>
                     <a href={`mailto:${provider.email}?subject=${t.inquiryAboutAd?.replace('{adTitle}', ad.title)}`}>
                         {t.contactProvider?.replace('{providerName}', provider.name.split(' ')[0])}
                         <ArrowRight className="ltr:ml-2 rtl:mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform"/>
@@ -279,14 +279,22 @@ export default function ServiceAdDetailsPage() {
               </CardFooter>
             </Card>
           )}
-           {!provider && !isLoading && ( // Show this if provider details could not be fetched
-             <div className="text-center py-6">
+           {!provider && !isLoading && ( 
+             <div className="text-center py-6 animate-fadeIn animation-delay-400">
                 <UserCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2"/>
                 <p className="text-muted-foreground">{t.providerDetailsNotAvailable}</p>
              </div>
            )}
         </CardContent>
       </Card>
+       <style jsx global>{`
+        .animation-delay-200 { animation-delay: 0.2s; }
+        .animation-delay-400 { animation-delay: 0.4s; }
+        [style*="animation-delay"] {
+          animation-fill-mode: backwards; 
+        }
+      `}</style>
     </div>
   );
 }
+
