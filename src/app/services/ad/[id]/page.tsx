@@ -33,7 +33,6 @@ const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Other: GripVertical,
 };
 
-// Inline StarRating component
 const StarRating = ({
   rating,
   setRating,
@@ -99,6 +98,7 @@ const StarRating = ({
     </div>
   );
 };
+
 
 export default function ProviderDetailsPage() {
   const t = useTranslation();
@@ -209,7 +209,7 @@ export default function ProviderDetailsPage() {
       } catch (error: any) {
           toast({ variant: "destructive", title: t.errorOccurred, description: String(error.message || t.failedSubmitRating) });
       } finally {
-          setIsSubmitting(false);
+          setIsSubmitting(true);
       }
   }
 
@@ -262,7 +262,7 @@ export default function ProviderDetailsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-6">{error}</p>
+            <p className="text-muted-foreground mb-6">{String(error)}</p>
             <Button asChild variant="outline" onClick={() => router.back()} className="hover:bg-destructive/10 hover:border-destructive transition-colors duration-200 group">
                 <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:translate-x-[-2px] transition-transform" /> {t.backButton}
             </Button>
