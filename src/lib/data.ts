@@ -53,11 +53,11 @@ export interface Message {
 export const getUserProfileById = async (uid: string): Promise<UserProfile | null> => {
   if (!db) {
     console.error("Firestore (db) is not initialized in getUserProfileById.");
-    return null;
+    throw new Error("Database service is not configured.");
   }
   if (!uid) {
       console.error("getUserProfileById called with no UID.");
-      return null;
+      throw new Error("Provider ID is missing.");
   }
   try {
     const userDocRef = doc(db, "users", uid);
@@ -74,7 +74,7 @@ export const getUserProfileById = async (uid: string): Promise<UserProfile | nul
     }
   } catch (error: any) {
     console.error(`Error fetching user profile for UID ${uid}. Code: ${error.code}. Message: ${error.message}`);
-    return null;
+    throw error;
   }
 };
 
@@ -136,10 +136,10 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
         return null;
     }
     try {
+        // Query without 'orderBy' to avoid needing a composite index. Sorting will be done in the app.
         const ratingsQuery = query(
             collection(db, "ratings"),
-            where("ratedUserId", "==", userId),
-            orderBy("createdAt", "desc")
+            where("ratedUserId", "==", userId)
         );
         const querySnapshot = await getDocs(ratingsQuery);
         const ratings = querySnapshot.docs.map(docSnap => ({
@@ -147,10 +147,20 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
             ...docSnap.data(),
         } as Rating));
         
+        // Sort the ratings by date client-side
+        ratings.sort((a, b) => {
+            const dateA = a.createdAt?.toMillis() || 0;
+            const dateB = b.createdAt?.toMillis() || 0;
+            return dateB - dateA; // Sort descending
+        });
+
         return ratings;
     } catch (error: any) {
         console.error(`Error fetching ratings for user ${userId}. Code: ${error.code}. Message: ${error.message}`);
-        return null;
+        if (error.code === 'failed-precondition') {
+             throw new Error("The database is being updated to support this query. Please try again in a few minutes.");
+        }
+        throw error;
     }
 };
 
@@ -185,31 +195,25 @@ export const getConversationsForUser = async (userId: string): Promise<Conversat
 export const findOrCreateConversation = async (user1Id: string, user2Id: string): Promise<string | null> => {
     if (!db) {
         console.error("Firestore (db) is not initialized in findOrCreateConversation.");
-        return null;
+        throw new Error("Database service is not configured.");
     }
     // Prevent users from starting a conversation with themselves
     if (user1Id === user2Id) {
         console.warn("Attempted to start a conversation with oneself.");
-        return null;
+        throw new Error("You cannot start a conversation with yourself.");
     }
     
     try {
         const conversationsRef = collection(db, "conversations");
-        const q = query(conversationsRef, where("participants", "array-contains", user1Id));
+        // A more efficient query to find a conversation between two specific users
+        const q = query(conversationsRef, 
+            where("participants", "==", [user1Id, user2Id].sort()) // Match the sorted array
+        );
         const querySnapshot = await getDocs(q);
 
-        let existingConvoId: string | null = null;
-        for (const doc of querySnapshot.docs) {
-            const convo = doc.data();
-            // Defensive check: ensure participants is an array and includes the other user
-            if (Array.isArray(convo.participants) && convo.participants.includes(user2Id)) {
-                existingConvoId = doc.id;
-                break;
-            }
-        }
-
-        if (existingConvoId) {
-            return existingConvoId;
+        if (!querySnapshot.empty) {
+            // Conversation already exists
+            return querySnapshot.docs[0].id;
         }
 
         // If no conversation exists, create a new one
@@ -219,20 +223,18 @@ export const findOrCreateConversation = async (user1Id: string, user2Id: string)
         ]);
 
         if (!user1Profile) {
-            console.error(`Could not find profile for initiating user: ${user1Id}`);
-            return null;
+            throw new Error(`Could not find profile for initiating user: ${user1Id}`);
         }
         if (!user2Profile) {
-            console.error(`Could not find profile for receiving user: ${user2Id}`);
-            return null;
+            throw new Error(`Could not find profile for receiving user: ${user2Id}`);
         }
 
         const newConversationRef = doc(collection(db, 'conversations'));
         const newConversationData = {
             participants: [user1Id, user2Id].sort(), // Sort to ensure consistency
             participantNames: {
-                [user1Id]: user1Profile.name || 'Unknown User', // Fallback for safety
-                [user2Id]: user2Profile.name || 'Unknown User', // Fallback for safety
+                [user1Id]: user1Profile.name || 'Unknown User',
+                [user2Id]: user2Profile.name || 'Unknown User',
             },
             lastMessage: "",
             lastMessageSenderId: '',
@@ -245,8 +247,6 @@ export const findOrCreateConversation = async (user1Id: string, user2Id: string)
         return newConversationRef.id;
     } catch (error) {
         console.error(`Error in findOrCreateConversation between ${user1Id} and ${user2Id}:`, error);
-        return null; // Return null to be handled by the caller
+        throw new Error("Could not start a new conversation.");
     }
 };
-
-    
