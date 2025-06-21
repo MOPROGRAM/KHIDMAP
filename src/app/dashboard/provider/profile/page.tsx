@@ -557,5 +557,3 @@ export default function ProviderProfilePage() {
     </div>
   );
 }
-
-    
