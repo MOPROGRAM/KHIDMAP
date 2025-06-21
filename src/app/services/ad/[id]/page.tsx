@@ -238,12 +238,28 @@ export default function ProviderDetailsPage() {
     }
   };
   
-  const formatDate = (dateValue: Timestamp | undefined): string => {
-    if (!dateValue) return 'N/A';
-    if (typeof dateValue.toDate === 'function') {
+  const formatDate = (dateValue: Timestamp | { seconds: number; nanoseconds: number } | undefined): string => {
+    if (!dateValue) {
+      return 'N/A';
+    }
+
+    // Case 1: It's a Firestore Timestamp object from a direct client-side fetch
+    if ('toDate' in dateValue && typeof dateValue.toDate === 'function') {
       return dateValue.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
     }
-    return new Date(dateValue as any).toLocaleDateString();
+
+    // Case 2: It's a plain object from server-side rendering (e.g., { seconds: ..., nanoseconds: ... })
+    if ('seconds' in dateValue && typeof dateValue.seconds === 'number') {
+      return new Date(dateValue.seconds * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    // Fallback for unexpected formats, though it might not be robust
+    const d = new Date(dateValue as any);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    return 'N/A'; // Return N/A instead of 'Invalid Date' for cleaner UI
   };
 
   if (isLoading) {
