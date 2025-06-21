@@ -4,12 +4,12 @@
 import React, { useEffect, useState, useCallback, FormEvent, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
-import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, Rating, findOrCreateConversation } from '@/lib/data';
+import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, Rating } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft, MapPin, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, SprayCan,
-  GripVertical, HardHat, Layers, Star, Wrench, Zap, MessageSquare, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall, Camera, Video as VideoIcon
+  GripVertical, HardHat, Layers, Star, Wrench, Zap, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall, Camera, Video as VideoIcon
 } from 'lucide-react';
 import Link from 'next/link';
 import { Timestamp } from 'firebase/firestore';
@@ -123,7 +123,6 @@ export default function ProviderDetailsPage() {
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const [ratingInput, setRatingInput] = useState(0);
   const [commentInput, setCommentInput] = useState('');
 
@@ -150,17 +149,20 @@ export default function ProviderDetailsPage() {
 
         if (foundProvider) {
             setProvider(foundProvider);
-            if (foundRatings) {
-                setRatings(foundRatings);
-                if (foundRatings.length > 0) {
-                    const totalRating = foundRatings.reduce((acc, r) => acc + (r.rating || 0), 0);
-                    setAverageRating(totalRating / foundRatings.length);
-                } else {
-                    setAverageRating(0);
-                }
-            }
         } else {
             setError(t.providerNotFound);
+            setIsLoading(false);
+            return;
+        }
+        
+        if (foundRatings) {
+            setRatings(foundRatings);
+            if (foundRatings.length > 0) {
+                const totalRating = foundRatings.reduce((acc, r) => acc + (r.rating || 0), 0);
+                setAverageRating(totalRating / foundRatings.length);
+            } else {
+                setAverageRating(0);
+            }
         }
     } catch (err: any) {
         console.error("Error fetching provider details:", err);
@@ -219,26 +221,6 @@ export default function ProviderDetailsPage() {
       }
   }
 
-  const handleStartConversation = async () => {
-    if (!authUser || !provider) {
-      toast({ variant: 'destructive', title: t.authError, description: t.userNotAuthenticated });
-      return;
-    }
-    setIsCreatingConversation(true);
-    try {
-      const conversationId = await findOrCreateConversation(authUser.uid, provider.uid);
-      if (conversationId) {
-        router.push(`/dashboard/messages?conversationId=${conversationId}`);
-      } else {
-        throw new Error("Could not create or find conversation.");
-      }
-    } catch (error) {
-      console.error("Failed to start conversation:", error);
-      toast({ variant: 'destructive', title: t.errorOccurred, description: "Could not start a conversation." });
-    } finally {
-      setIsCreatingConversation(false);
-    }
-  };
   
   const formatDate = (dateValue: Timestamp | { seconds: number; nanoseconds: number; } | undefined): string => {
     if (!dateValue) return 'N/A';
@@ -353,7 +335,7 @@ export default function ProviderDetailsPage() {
         <Separator/>
 
         <CardContent className="p-4 md:p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 my-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-3 my-4">
                  {provider.phoneNumber && (
                     <Button asChild size="lg" className="w-full group">
                         <a href={`tel:${cleanPhoneNumber}`}>
@@ -366,18 +348,6 @@ export default function ProviderDetailsPage() {
                         <a href={`https://wa.me/${cleanPhoneNumber}?text=${whatsappMessage}`} target="_blank" rel="noopener noreferrer">
                           <BotMessageSquare className="ltr:mr-2 rtl:ml-2" /> {t.contactOnWhatsApp}
                         </a>
-                    </Button>
-                )}
-                {authUser && authUser.uid !== providerId && (
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="w-full group"
-                      onClick={handleStartConversation}
-                      disabled={isCreatingConversation}
-                    >
-                      {isCreatingConversation ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageSquare className="ltr:mr-2 rtl:ml-2" />}
-                      {t.messageProvider}
                     </Button>
                 )}
             </div>
@@ -504,5 +474,3 @@ export default function ProviderDetailsPage() {
     </div>
   );
 }
-
-    

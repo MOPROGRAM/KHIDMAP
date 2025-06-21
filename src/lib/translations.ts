@@ -201,17 +201,6 @@ export type Translations = {
   of?: string; // e.g. 4.5 of 5 stars
   viewProfile?: string;
 
-  // Messaging translations
-  you?: string;
-  messages?: string;
-  typeYourMessage?: string;
-  send?: string;
-  noConversations?: string;
-  selectAConversation?: string;
-  conversationWith?: string; // "Conversation with {name}"
-  noMessagesYet?: string;
-  startTheConversation?: string;
-
   // Location-based search
   location?: string;
   useCurrentLocation?: string;
@@ -255,7 +244,6 @@ export type Translations = {
   // New Profile Page
   callNow: string;
   contactOnWhatsApp: string;
-  messageProvider: string;
   aboutProvider: string; // "About {name}"
   specialties: string;
   
@@ -485,15 +473,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     permissionDeniedError: "Access Denied. You do not have permission to view this information. This may be due to a misconfiguration of database security rules.",
     of: "of",
     viewProfile: "View Profile",
-    you: "You",
-    messages: "Messages",
-    typeYourMessage: "Type your message...",
-    send: "Send",
-    noConversations: "No conversations yet.",
-    selectAConversation: "Select a conversation",
-    conversationWith: "Conversation with {name}",
-    noMessagesYet: "No messages yet. Say hello!",
-    startTheConversation: "Select a conversation from the list to start chatting.",
     location: "Location",
     useCurrentLocation: "Use My Current Location",
     locationSet: "Location has been set.",
@@ -530,7 +509,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     requiresRecentLoginError: "This is a sensitive operation and requires recent authentication. Please log out and log back in before trying again.",
     callNow: "Call Now",
     contactOnWhatsApp: "WhatsApp",
-    messageProvider: "Message",
     aboutProvider: "About {name}",
     specialties: "Specialties",
     portfolioTitle: "Portfolio",
@@ -756,15 +734,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     permissionDeniedError: "تم رفض الوصول. ليس لديك إذن لعرض هذه المعلومات. قد يكون هذا بسبب خطأ في تكوين قواعد أمان قاعدة البيانات.",
     of: "من",
     viewProfile: "عرض الملف الشخصي",
-    you: "أنت",
-    messages: "الرسائل",
-    typeYourMessage: "اكتب رسالتك...",
-    send: "إرسال",
-    noConversations: "لا توجد محادثات بعد.",
-    selectAConversation: "اختر محادثة",
-    conversationWith: "محادثة مع {name}",
-    noMessagesYet: "لا توجد رسائل بعد. قل مرحباً!",
-    startTheConversation: "اختر محادثة من القائمة لبدء الدردشة.",
     location: "الموقع",
     useCurrentLocation: "استخدام موقعي الحالي",
     locationSet: "تم تحديد الموقع.",
@@ -801,7 +770,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     requiresRecentLoginError: "هذه عملية حساسة وتتطلب مصادقة حديثة. يرجى تسجيل الخروج ثم تسجيل الدخول مرة أخرى قبل المحاولة مرة أخرى.",
     callNow: "اتصل الآن",
     contactOnWhatsApp: "واتساب",
-    messageProvider: "مراسلة",
     aboutProvider: "عن {name}",
     specialties: "التخصصات",
     portfolioTitle: "معرض الأعمال",

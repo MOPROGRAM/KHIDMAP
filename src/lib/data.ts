@@ -32,22 +32,6 @@ export interface Rating {
     createdAt: Timestamp;
 }
 
-export interface Conversation {
-  id: string;
-  participants: string[];
-  participantNames: { [key: string]: string };
-  lastMessage: string;
-  lastMessageSenderId: string;
-  updatedAt: Timestamp;
-}
-
-export interface Message {
-  id: string;
-  senderId: string;
-  text: string;
-  createdAt: Timestamp;
-}
-
 
 // --- UserProfile Firestore Functions ---
 export const getUserProfileById = async (uid: string): Promise<UserProfile | null> => {
@@ -161,92 +145,5 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
              throw new Error("The database is being updated to support this query. Please try again in a few minutes.");
         }
         throw error;
-    }
-};
-
-// --- Messaging Functions ---
-
-export const getConversationsForUser = async (userId: string): Promise<Conversation[] | null> => {
-    if (!db) {
-        console.error("Firestore (db) is not initialized in getConversationsForUser.");
-        return null;
-    }
-    try {
-        const q = query(
-            collection(db, "conversations"),
-            where("participants", "array-contains", userId)
-        );
-        const querySnapshot = await getDocs(q);
-        const conversations = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
-        
-        conversations.sort((a, b) => {
-            const dateA = a.updatedAt?.toMillis() || 0;
-            const dateB = b.updatedAt?.toMillis() || 0;
-            return dateB - dateA;
-        });
-        
-        return conversations;
-    } catch (error) {
-        console.error(`Error fetching conversations for user ${userId}:`, error);
-        return null;
-    }
-};
-
-export const findOrCreateConversation = async (user1Id: string, user2Id: string): Promise<string | null> => {
-    if (!db) {
-        console.error("Firestore (db) is not initialized in findOrCreateConversation.");
-        throw new Error("Database service is not configured.");
-    }
-    // Prevent users from starting a conversation with themselves
-    if (user1Id === user2Id) {
-        console.warn("Attempted to start a conversation with oneself.");
-        throw new Error("You cannot start a conversation with yourself.");
-    }
-    
-    try {
-        const conversationsRef = collection(db, "conversations");
-        // A more efficient query to find a conversation between two specific users
-        const q = query(conversationsRef, 
-            where("participants", "==", [user1Id, user2Id].sort()) // Match the sorted array
-        );
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-            // Conversation already exists
-            return querySnapshot.docs[0].id;
-        }
-
-        // If no conversation exists, create a new one
-        const [user1Profile, user2Profile] = await Promise.all([
-            getUserProfileById(user1Id),
-            getUserProfileById(user2Id)
-        ]);
-
-        if (!user1Profile) {
-            throw new Error(`Could not find profile for initiating user: ${user1Id}`);
-        }
-        if (!user2Profile) {
-            throw new Error(`Could not find profile for receiving user: ${user2Id}`);
-        }
-
-        const newConversationRef = doc(collection(db, 'conversations'));
-        const newConversationData = {
-            participants: [user1Id, user2Id].sort(), // Sort to ensure consistency
-            participantNames: {
-                [user1Id]: user1Profile.name || 'Unknown User',
-                [user2Id]: user2Profile.name || 'Unknown User',
-            },
-            lastMessage: "",
-            lastMessageSenderId: '',
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-        };
-
-        await setDoc(newConversationRef, newConversationData);
-        
-        return newConversationRef.id;
-    } catch (error) {
-        console.error(`Error in findOrCreateConversation between ${user1Id} and ${user2Id}:`, error);
-        throw new Error("Could not start a new conversation.");
     }
 };
