@@ -74,7 +74,7 @@ export const getUserProfileById = async (uid: string): Promise<UserProfile | nul
     }
   } catch (error) {
     console.error(`Error fetching user profile for UID ${uid}: `, error);
-    throw error;
+    return null;
   }
 };
 
@@ -150,7 +150,7 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
         return ratings;
     } catch (error) {
         console.error(`Error fetching ratings for user ${userId}:`, error);
-        throw error;
+        return null;
     }
 };
 
