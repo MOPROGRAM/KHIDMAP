@@ -26,6 +26,7 @@ export default function HomePage() {
     <li 
         key={index} 
         className="flex-shrink-0 w-[280px] h-auto flex flex-col items-start text-left p-4 rounded-xl border bg-card/80 backdrop-blur-sm transition-all"
+        style={{ scrollSnapAlign: 'start' }}
     >
       <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 mb-3">
         {React.cloneElement(service.icon, { className: `h-6 w-6 ${service.color}` })}
@@ -46,11 +47,11 @@ export default function HomePage() {
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
-          <div className="inline-flex flex-col items-center">
-             <h1 className="px-2 text-5xl font-extrabold font-headline tracking-tighter text-foreground md:text-6xl">
+          <div className="relative inline-flex flex-col items-center group">
+             <h1 className="relative px-2 text-5xl font-extrabold font-headline tracking-tighter text-foreground md:text-6xl z-10">
                 {t.appName}
             </h1>
-            <div className="h-[8px] w-full bg-primary"></div>
+            <div className="absolute bottom-0 h-[8px] w-full bg-primary z-0"></div>
           </div>
         </div>
         <div 
@@ -84,9 +85,9 @@ export default function HomePage() {
                   {t.services}
               </h2>
           </div>
-          <div className="w-full overflow-x-auto pb-4 group" >
-            <ul className="flex flex-nowrap items-stretch justify-start gap-4 px-4 md:px-8">
-                {[...serviceCards, ...serviceCards].map((service, index) => renderServiceCard(service, index))}
+          <div className="w-full overflow-x-auto hide-scrollbar" style={{ scrollSnapType: 'x mandatory' }}>
+            <ul className="flex flex-nowrap items-stretch justify-start gap-4 px-4 md:px-8 py-2">
+                {serviceCards.map((service, index) => renderServiceCard(service, index))}
             </ul>
           </div>
         </section>
@@ -96,7 +97,7 @@ export default function HomePage() {
       {/* CTA Section */}
        <div className="w-full border-t">
         <section className="w-full container mx-auto bg-background py-16 border-x">
-            <div className="max-w-4xl px-4 text-center">
+            <div className="max-w-4xl mx-auto px-4 text-center">
               <div className="animate-fade-in-up text-center space-y-3" style={{ animationFillMode: 'backwards' }}>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
                 <p className="text-base text-muted-foreground max-w-2xl mx-auto">{t.orPostYourServices}</p>
@@ -110,6 +111,15 @@ export default function HomePage() {
             </div>
         </section>
       </div>
+      <style jsx global>{`
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   );
 }
