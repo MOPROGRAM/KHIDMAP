@@ -258,6 +258,28 @@ export type Translations = {
   messageProvider: string;
   aboutProvider: string; // "About {name}"
   specialties: string;
+  
+  // Portfolio
+  portfolioTitle: string;
+  portfolioDescription: string;
+  mediaUploadDescription: string;
+  uploadMedia: string;
+  uploading: string;
+  portfolioLimitReachedTitle: string;
+  portfolioLimitReachedDescription: string;
+  fileTooLargeTitle: string;
+  fileTooLargeDescription: string;
+  unsupportedFileTypeTitle: string;
+  unsupportedFileTypeDescription: string;
+  fileUploadedSuccessTitle: string;
+  fileUploadErrorTitle: string;
+  fileUploadErrorDescription: string;
+  fileDeletedSuccessTitle: string;
+  fileDeleteErrorTitle: string;
+  fileDeleteErrorDescription: string;
+  confirmDeleteFileTitle: string;
+  confirmDeleteFileDescription: string;
+  noPortfolioItems: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -508,6 +530,26 @@ export const translations: Record<'en' | 'ar', Translations> = {
     messageProvider: "Message",
     aboutProvider: "About {name}",
     specialties: "Specialties",
+    portfolioTitle: "Portfolio",
+    portfolioDescription: "Manage your work portfolio. Upload up to 5 images or videos.",
+    mediaUploadDescription: "Max 10MB per file. Supported: JPG, PNG, WEBP, MP4, MOV.",
+    uploadMedia: "Upload Media",
+    uploading: "Uploading...",
+    portfolioLimitReachedTitle: "Portfolio Limit Reached",
+    portfolioLimitReachedDescription: "You can upload a maximum of 5 files.",
+    fileTooLargeTitle: "File Too Large",
+    fileTooLargeDescription: "The file size cannot exceed 10MB.",
+    unsupportedFileTypeTitle: "Unsupported File Type",
+    unsupportedFileTypeDescription: "Please upload a supported image or video file.",
+    fileUploadedSuccessTitle: "File Uploaded",
+    fileUploadErrorTitle: "Upload Error",
+    fileUploadErrorDescription: "There was an error uploading your file. Please try again.",
+    fileDeletedSuccessTitle: "File Deleted",
+    fileDeleteErrorTitle: "Deletion Error",
+    fileDeleteErrorDescription: "Could not delete the file. Please try again.",
+    confirmDeleteFileTitle: "Delete File?",
+    confirmDeleteFileDescription: "Are you sure you want to delete this file from your portfolio? This action cannot be undone.",
+    noPortfolioItems: "No portfolio items have been uploaded yet.",
   },
   ar: {
     appName: "خدماب",
@@ -756,7 +798,25 @@ export const translations: Record<'en' | 'ar', Translations> = {
     messageProvider: "مراسلة",
     aboutProvider: "عن {name}",
     specialties: "التخصصات",
+    portfolioTitle: "معرض الأعمال",
+    portfolioDescription: "إدارة معرض أعمالك. يمكنك رفع حتى 5 صور أو مقاطع فيديو.",
+    mediaUploadDescription: "الحد الأقصى 10 ميجابايت للملف. الصيغ المدعومة: JPG, PNG, WEBP, MP4, MOV.",
+    uploadMedia: "رفع ملف",
+    uploading: "جاري الرفع...",
+    portfolioLimitReachedTitle: "تم الوصول للحد الأقصى",
+    portfolioLimitReachedDescription: "يمكنك رفع 5 ملفات كحد أقصى.",
+    fileTooLargeTitle: "الملف كبير جدًا",
+    fileTooLargeDescription: "حجم الملف لا يمكن أن يتجاوز 10 ميجابايت.",
+    unsupportedFileTypeTitle: "نوع الملف غير مدعوم",
+    unsupportedFileTypeDescription: "يرجى رفع صورة أو ملف فيديو مدعوم.",
+    fileUploadedSuccessTitle: "تم رفع الملف",
+    fileUploadErrorTitle: "خطأ في الرفع",
+    fileUploadErrorDescription: "حدث خطأ أثناء رفع الملف. يرجى المحاولة مرة أخرى.",
+    fileDeletedSuccessTitle: "تم حذف الملف",
+    fileDeleteErrorTitle: "خطأ في الحذف",
+    fileDeleteErrorDescription: "تعذر حذف الملف. يرجى المحاولة مرة أخرى.",
+    confirmDeleteFileTitle: "حذف الملف؟",
+    confirmDeleteFileDescription: "هل أنت متأكد من حذف هذا الملف من معرض أعمالك؟ لا يمكن التراجع عن هذا الإجراء.",
+    noPortfolioItems: "لم يتم رفع أي عناصر في معرض الأعمال بعد.",
   },
 };
-
-    

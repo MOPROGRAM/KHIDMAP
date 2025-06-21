@@ -12,11 +12,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, ServiceCategory } from '@/lib/data'; 
-import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc } from 'firebase/firestore'; 
+import { auth, db, storage } from '@/lib/firebase';
+import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'; 
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
-import { Loader2, UserCircle, Save, AlertTriangle, MapPin } from 'lucide-react';
+import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, Video, Camera } from 'lucide-react';
 import { z } from 'zod';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import Image from 'next/image';
 
 const ProfileFormSchema = z.object({
   name: z.string().min(1, { message: "requiredField" }),
@@ -26,7 +29,6 @@ const ProfileFormSchema = z.object({
   serviceAreasString: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')),
   serviceCategories: z.array(z.enum(['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HomeCleaning', 'Construction', 'Plastering', 'Other'])).min(0).optional(), 
 });
-
 
 export default function ProviderProfilePage() {
   const t = useTranslation();
@@ -42,8 +44,10 @@ export default function ProviderProfilePage() {
   const [serviceAreasString, setServiceAreasString] = useState('');
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
   const [location, setLocation] = useState<{ latitude: number, longitude: number } | null>(null);
+  const [media, setMedia] = useState<{ url: string; type: 'image' | 'video' }[]>([]);
   
-  const [isLoading, setIsLoading] =useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -68,6 +72,7 @@ export default function ProviderProfilePage() {
               setQualifications(firestoreProfile.qualifications || '');
               setServiceAreasString((firestoreProfile.serviceAreas || []).join(', ')); 
               setServiceCategories(firestoreProfile.serviceCategories || []);
+              setMedia(firestoreProfile.media || []);
               
               if (firestoreProfile.location) {
                 setLocation({
@@ -95,6 +100,81 @@ export default function ProviderProfilePage() {
       console.warn("Firebase Auth or DB not initialized in ProviderProfilePage.");
     }
   }, [router, t, toast]);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!authUser || !db || !storage) return;
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (media.length >= 5) {
+        toast({ variant: "destructive", title: t.portfolioLimitReachedTitle, description: t.portfolioLimitReachedDescription });
+        return;
+    }
+
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_SIZE) {
+        toast({ variant: "destructive", title: t.fileTooLargeTitle, description: t.fileTooLargeDescription });
+        return;
+    }
+
+    const SUPPORTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime', 'video/x-matroska'];
+    if (!SUPPORTED_TYPES.includes(file.type)) {
+        toast({ variant: "destructive", title: t.unsupportedFileTypeTitle, description: t.unsupportedFileTypeDescription });
+        return;
+    }
+
+    setIsUploading(true);
+
+    try {
+        const fileType = file.type.startsWith('image') ? 'image' : 'video';
+        const filePath = `portfolios/${authUser.uid}/${Date.now()}_${file.name}`;
+        const fileRef = ref(storage, filePath);
+        
+        await uploadBytes(fileRef, file);
+        const downloadURL = await getDownloadURL(fileRef);
+
+        const newMediaItem = { url: downloadURL, type: fileType };
+
+        const userDocRef = doc(db, "users", authUser.uid);
+        await updateDoc(userDocRef, {
+            media: arrayUnion(newMediaItem)
+        });
+
+        setMedia(prev => [...prev, newMediaItem]);
+        toast({ title: t.fileUploadedSuccessTitle });
+    } catch (error) {
+        console.error("File upload error:", error);
+        toast({ variant: "destructive", title: t.fileUploadErrorTitle, description: t.fileUploadErrorDescription });
+    } finally {
+        setIsUploading(false);
+        // Reset file input
+        event.target.value = '';
+    }
+  };
+
+  const handleFileDelete = async (fileToDelete: { url: string; type: 'image' | 'video' }) => {
+    if (!authUser || !db || !storage) return;
+
+    try {
+        // Delete from Firestore
+        const userDocRef = doc(db, "users", authUser.uid);
+        await updateDoc(userDocRef, {
+            media: arrayRemove(fileToDelete)
+        });
+
+        // Delete from Storage
+        const fileRef = ref(storage, fileToDelete.url);
+        await deleteObject(fileRef);
+
+        setMedia(prev => prev.filter(item => item.url !== fileToDelete.url));
+        toast({ title: t.fileDeletedSuccessTitle });
+
+    } catch (error) {
+        console.error("File deletion error:", error);
+        toast({ variant: "destructive", title: t.fileDeleteErrorTitle, description: t.fileDeleteErrorDescription });
+    }
+  };
+
 
   const handleServiceCategoriesChange = (value: string) => {
     const categoryValue = value as ServiceCategory;
@@ -306,8 +386,6 @@ export default function ProviderProfilePage() {
                      <p className="text-xs text-muted-foreground mt-3">{t.locationHelpText}</p>
                 </Card>
              </div>
-
-
             <Button type="submit" className="w-full text-base py-2.5" disabled={isLoading || !isCoreServicesAvailable}>
               {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Save className="ltr:mr-2 rtl:ml-2 h-4 w-4"/>}
               {t.saveChanges}
@@ -315,6 +393,69 @@ export default function ProviderProfilePage() {
           </form>
         </CardContent>
       </Card>
+
+      <Card className="shadow-xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Camera className="h-6 w-6 text-primary" />
+            {t.portfolioTitle}
+          </CardTitle>
+          <CardDescription>{t.portfolioDescription}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4">
+            {media.map((item, index) => (
+              <div key={index} className="relative group aspect-square">
+                {item.type === 'image' ? (
+                  <Image src={item.url} alt={`${t.portfolioTitle} ${index + 1}`} width={150} height={150} className="rounded-lg object-cover w-full h-full border"/>
+                ) : (
+                  <video src={item.url} controls={false} className="rounded-lg object-cover w-full h-full border" />
+                )}
+                <div className="absolute top-1 right-1 bg-black/50 text-white p-1 rounded-full">
+                  {item.type === 'image' ? <ImageIcon className="h-3 w-3"/> : <Video className="h-3 w-3"/>}
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="icon" className="absolute bottom-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Trash2 className="h-4 w-4"/>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t.confirmDeleteFileTitle}</AlertDialogTitle>
+                      <AlertDialogDescription>{t.confirmDeleteFileDescription}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleFileDelete(item)} className="bg-destructive hover:bg-destructive/90">{t.delete}</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            ))}
+          </div>
+
+          {media.length < 5 ? (
+            <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg">
+                <Label htmlFor="file-upload" className="w-full">
+                    <Button asChild variant="outline" className="w-full cursor-pointer" disabled={isUploading}>
+                        <div>
+                            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
+                            {isUploading ? t.uploading : t.uploadMedia}
+                        </div>
+                    </Button>
+                </Label>
+                <Input id="file-upload" type="file" className="hidden" onChange={handleFileUpload} accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/x-matroska" disabled={isUploading}/>
+                <p className="text-xs text-muted-foreground mt-2">{t.mediaUploadDescription}</p>
+            </div>
+          ) : (
+             <div className="p-4 bg-muted text-center rounded-lg">
+                <p className="text-sm text-muted-foreground font-medium">{t.portfolioLimitReachedDescription}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
+

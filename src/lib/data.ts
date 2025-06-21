@@ -16,6 +16,7 @@ export interface UserProfile {
   serviceCategories?: ServiceCategory[];
   serviceAreas?: string[]; 
   location?: GeoPoint | null;
+  media?: { url: string; type: 'image' | 'video' }[];
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
   emailVerified?: boolean;

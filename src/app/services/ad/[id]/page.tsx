@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft, MapPin, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, SprayCan,
-  GripVertical, HardHat, Layers, Star, Wrench, Zap, MessageSquare, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall
+  GripVertical, HardHat, Layers, Star, Wrench, Zap, MessageSquare, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall, Camera, Video as VideoIcon
 } from 'lucide-react';
 import Link from 'next/link';
 import { Timestamp } from 'firebase/firestore';
@@ -20,8 +20,9 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import Image from 'next/image';
 
 const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Plumbing: Wrench,
@@ -251,6 +252,7 @@ export default function ProviderDetailsPage() {
   
   const serviceCategories = useMemo(() => Array.isArray(provider?.serviceCategories) ? provider.serviceCategories.filter(Boolean) as ServiceCategory[] : [], [provider]);
   const serviceAreas = useMemo(() => Array.isArray(provider?.serviceAreas) ? provider.serviceAreas.filter(Boolean) : [], [provider]);
+  const media = useMemo(() => Array.isArray(provider?.media) ? provider.media : [], [provider]);
   const cleanPhoneNumber = useMemo(() => provider?.phoneNumber?.replace(/[^0-9+]/g, '') || '', [provider?.phoneNumber]);
 
   if (isLoading) {
@@ -321,7 +323,7 @@ export default function ProviderDetailsPage() {
          <div className="bg-card-foreground/5 p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row items-center text-center sm:text-left gap-6">
                 <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-background shadow-lg">
-                    <AvatarFallback className="bg-transparent">
+                    <AvatarFallback className="bg-transparent text-6xl">
                        <UserCircle className="w-full h-full text-muted" />
                     </AvatarFallback>
                 </Avatar>
@@ -409,6 +411,24 @@ export default function ProviderDetailsPage() {
                     </div>
                 )}
             </div>
+            
+            {media.length > 0 && (
+                <div className="mt-8 space-y-4">
+                    <Separator/>
+                    <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Camera/> {t.portfolioTitle}</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {media.map((item, index) => (
+                        <div key={index} className="relative group aspect-square bg-muted rounded-lg overflow-hidden">
+                            {item.type === 'image' ? (
+                                <Image src={item.url} alt={`${t.portfolioTitle} ${index + 1}`} layout="fill" className="object-cover" />
+                            ) : (
+                                <video src={item.url} controls className="w-full h-full object-cover" />
+                            )}
+                        </div>
+                        ))}
+                    </div>
+                </div>
+            )}
              
             <div className="mt-8 space-y-4">
                 <Separator/>
@@ -468,5 +488,3 @@ export default function ProviderDetailsPage() {
     </div>
   );
 }
-
-    
