@@ -11,11 +11,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
-import { UserProfile, ServiceCategory } from '@/lib/data'; 
-import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint } from 'firebase/firestore'; 
+import { UserProfile, ServiceCategory, PortfolioItem } from '@/lib/data'; 
+import { auth, db, storage } from '@/lib/firebase';
+import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'; 
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
-import { Loader2, UserCircle, Save, AlertTriangle, MapPin } from 'lucide-react';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
 import NextImage from 'next/image'; 
 import { z } from 'zod';
 
@@ -44,15 +45,18 @@ export default function ProviderProfilePage() {
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined>(undefined);
   const [location, setLocation] = useState<{ latitude: number, longitude: number } | null>(null);
-  
-  const [isLoading, setIsLoading] = useState(false);
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [imageUpload, setImageUpload] = useState<File | null>(null);
+
+  const [isLoading, setIsLoading] =useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isCoreServicesAvailable, setIsCoreServicesAvailable] = useState(false);
 
   useEffect(() => {
-    if (auth && db) {
+    if (auth && db && storage) {
       setIsCoreServicesAvailable(true);
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -71,6 +75,7 @@ export default function ProviderProfilePage() {
               setServiceAreasString((firestoreProfile.serviceAreas || []).join(', ')); 
               setServiceCategories(firestoreProfile.serviceCategories || []);
               setProfilePictureUrl(firestoreProfile.profilePictureUrl);
+              setPortfolioItems(firestoreProfile.portfolio || []);
               if (firestoreProfile.location) {
                 setLocation({
                   latitude: firestoreProfile.location.latitude,
@@ -94,7 +99,7 @@ export default function ProviderProfilePage() {
     } else {
       setIsCoreServicesAvailable(false);
       setIsFetching(false);
-      console.warn("Firebase Auth or DB not initialized in ProviderProfilePage.");
+      console.warn("Firebase Auth, DB or Storage not initialized in ProviderProfilePage.");
     }
   }, [router, t, toast]);
 
@@ -133,6 +138,57 @@ export default function ProviderProfilePage() {
       }
     );
   };
+
+  const handleImageUpload = async () => {
+    if (!imageUpload || !authUser || !db || !storage) {
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.selectImageError });
+        return;
+    }
+    setIsUploading(true);
+    const imageId = `${Date.now()}-${imageUpload.name}`;
+    const imageRef = ref(storage, `portfolios/${authUser.uid}/${imageId}`);
+
+    try {
+        await uploadBytes(imageRef, imageUpload);
+        const downloadURL = await getDownloadURL(imageRef);
+        const newPortfolioItem: PortfolioItem = { id: imageId, url: downloadURL };
+        
+        const userDocRef = doc(db, "users", authUser.uid);
+        await updateDoc(userDocRef, {
+            portfolio: arrayUnion(newPortfolioItem)
+        });
+
+        setPortfolioItems(prev => [...prev, newPortfolioItem]);
+        setImageUpload(null); // Clear the file input
+        toast({ title: t.imageUploadedSuccess });
+    } catch (error) {
+        console.error("Error uploading image:", error);
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.imageUploadError });
+    } finally {
+        setIsUploading(false);
+    }
+  };
+
+  const handleImageDelete = async (itemToDelete: PortfolioItem) => {
+    if (!authUser || !db || !storage) return;
+    
+    const imageRef = ref(storage, `portfolios/${authUser.uid}/${itemToDelete.id}`);
+    try {
+        await deleteObject(imageRef);
+        
+        const userDocRef = doc(db, "users", authUser.uid);
+        await updateDoc(userDocRef, {
+            portfolio: arrayRemove(itemToDelete)
+        });
+
+        setPortfolioItems(prev => prev.filter(item => item.id !== itemToDelete.id));
+        toast({ title: t.imageDeletedSuccess });
+    } catch (error) {
+        console.error("Error deleting image:", error);
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.imageDeleteError });
+    }
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,7 +271,7 @@ export default function ProviderProfilePage() {
   ];
 
   return (
-    <div className="max-w-3xl mx-auto py-2">
+    <div className="max-w-3xl mx-auto py-2 space-y-6">
       <Card className="shadow-xl">
         <CardHeader>
           <div className="flex items-center gap-3 mb-2">
@@ -332,6 +388,53 @@ export default function ProviderProfilePage() {
               {t.saveChanges}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+      
+      {/* Portfolio Section */}
+      <Card className="shadow-xl">
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5 text-primary"/>{t.portfolio}</CardTitle>
+            <CardDescription>{t.portfolioDescription}</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                    <Input 
+                        id="image-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                                setImageUpload(e.target.files[0]);
+                            }
+                        }}
+                        disabled={isUploading || !isCoreServicesAvailable}
+                        className="flex-1"
+                    />
+                    <Button onClick={handleImageUpload} disabled={!imageUpload || isUploading || !isCoreServicesAvailable}>
+                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4" />}
+                        {t.uploadImage}
+                    </Button>
+                </div>
+                
+                {portfolioItems.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {portfolioItems.map(item => (
+                            <div key={item.id} className="relative group">
+                                <NextImage src={item.url} alt="Portfolio item" width={200} height={200} className="rounded-md object-cover aspect-square w-full" />
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <Button variant="destructive" size="icon" onClick={() => handleImageDelete(item)}>
+                                        <Trash2 className="h-4 w-4"/>
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">{t.noPortfolioItems}</p>
+                )}
+            </div>
         </CardContent>
       </Card>
     </div>

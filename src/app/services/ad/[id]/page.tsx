@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import NextImage from 'next/image';
 import {
   ArrowLeft, MapPin, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, SprayCan,
-  GripVertical, HardHat, Layers, Star, Wrench, Zap, MessageSquare
+  GripVertical, HardHat, Layers, Star, Wrench, Zap, MessageSquare, Image as ImageIcon
 } from 'lucide-react';
 import Link from 'next/link';
 import { Timestamp } from 'firebase/firestore';
@@ -120,26 +120,16 @@ export default function ProviderDetailsPage() {
   const [ratingInput, setRatingInput] = useState(0);
   const [commentInput, setCommentInput] = useState('');
 
-  useEffect(() => {
-    // Set up auth listener
-    if (!auth) {
-      return;
-    }
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      setAuthUser(user);
-      setUserRole(user ? localStorage.getItem('userRole') : null);
-    });
-
-    // Fetch provider data
-    if (!db) {
+  const fetchProviderData = useCallback(() => {
+     if (!db) {
         setError(t.serviceUnavailableMessage);
         setIsLoading(false);
-        return () => unsubscribeAuth();
+        return;
     }
     if (!providerId) {
       setError(t.providerIdMissing);
       setIsLoading(false);
-      return () => unsubscribeAuth();
+      return;
     }
 
     setIsLoading(true);
@@ -172,11 +162,24 @@ export default function ProviderDetailsPage() {
     }).finally(() => {
       setIsLoading(false);
     });
+  }, [providerId, t]);
+
+  useEffect(() => {
+    // Set up auth listener
+    if (!auth) {
+      return;
+    }
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setAuthUser(user);
+      setUserRole(user ? localStorage.getItem('userRole') : null);
+    });
+    
+    fetchProviderData();
 
     return () => {
       unsubscribeAuth();
     };
-  }, [providerId, t]);
+  }, [fetchProviderData]);
 
   const handleRatingSubmit = async (e: FormEvent) => {
       e.preventDefault();
@@ -201,15 +204,7 @@ export default function ProviderDetailsPage() {
           setRatingInput(0);
           setCommentInput('');
           // Re-fetch ratings after submission
-          getRatingsForUser(provider.uid).then(foundRatings => {
-            setRatings(foundRatings);
-            if (foundRatings.length > 0) {
-                const totalRating = foundRatings.reduce((acc, r) => acc + r.rating, 0);
-                setAverageRating(totalRating / foundRatings.length);
-            } else {
-                setAverageRating(0);
-            }
-          });
+          fetchProviderData();
       } catch (error: any) {
           toast({ variant: "destructive", title: t.errorOccurred, description: String(error.message || t.failedSubmitRating) });
       } finally {
@@ -238,28 +233,18 @@ export default function ProviderDetailsPage() {
     }
   };
   
-  const formatDate = (dateValue: Timestamp | { seconds: number; nanoseconds: number } | undefined): string => {
-    if (!dateValue) {
-      return 'N/A';
-    }
-
-    // Case 1: It's a Firestore Timestamp object from a direct client-side fetch
+  const formatDate = (dateValue: Timestamp | { seconds: number; nanoseconds: number; } | undefined): string => {
+    if (!dateValue) return 'N/A';
+    let date: Date;
     if ('toDate' in dateValue && typeof dateValue.toDate === 'function') {
-      return dateValue.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+      date = dateValue.toDate();
+    } else if ('seconds' in dateValue && typeof dateValue.seconds === 'number') {
+      date = new Date(dateValue.seconds * 1000);
+    } else {
+      const d = new Date(dateValue as any);
+      if (!isNaN(d.getTime())) { date = d; } else { return 'N/A'; }
     }
-
-    // Case 2: It's a plain object from server-side rendering (e.g., { seconds: ..., nanoseconds: ... })
-    if ('seconds' in dateValue && typeof dateValue.seconds === 'number') {
-      return new Date(dateValue.seconds * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-    }
-
-    // Fallback for unexpected formats, though it might not be robust
-    const d = new Date(dateValue as any);
-    if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-    }
-
-    return 'N/A'; // Return N/A instead of 'Invalid Date' for cleaner UI
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   if (isLoading) {
@@ -377,7 +362,33 @@ export default function ProviderDetailsPage() {
           
           <Separator className="my-4" />
 
+          {/* Portfolio Section */}
+          {provider.portfolio && provider.portfolio.length > 0 && (
+            <div className="space-y-4 animate-fadeIn animation-delay-300">
+                <h2 className="text-xl font-semibold text-primary font-headline flex items-center gap-2">
+                    <ImageIcon className="h-5 w-5" /> {t.portfolio}
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {provider.portfolio.map(item => (
+                        <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" className="block group">
+                           <div className="aspect-square relative overflow-hidden rounded-lg">
+                             <NextImage 
+                                src={item.url} 
+                                alt={t.portfolioItem || 'Portfolio Item'} 
+                                layout="fill" 
+                                objectFit="cover"
+                                className="group-hover:scale-110 transition-transform duration-300"
+                             />
+                           </div>
+                        </a>
+                    ))}
+                </div>
+                <Separator className="my-4" />
+            </div>
+          )}
+          
           {authUser && authUser.uid !== provider.uid && (
+            <>
             <CardFooter className="p-0 pt-0 flex flex-col sm:flex-row gap-2">
               <Button
                 size="lg"
@@ -389,10 +400,10 @@ export default function ProviderDetailsPage() {
                 {t.messages}
               </Button>
             </CardFooter>
+            <Separator className="my-4" />
+            </>
           )}
-
-          <Separator className="my-4" />
-
+          
           {/* Reviews Section */}
           <div className="space-y-4 animate-fadeIn animation-delay-400">
             <h2 className="text-xl font-semibold text-primary font-headline">{t.reviews}</h2>
@@ -448,6 +459,7 @@ export default function ProviderDetailsPage() {
       </Card>
        <style jsx global>{`
         .animation-delay-200 { animation-delay: 0.2s; }
+        .animation-delay-300 { animation-delay: 0.3s; }
         .animation-delay-400 { animation-delay: 0.4s; }
         .animation-delay-600 { animation-delay: 0.6s; }
         [style*="animation-delay"] {

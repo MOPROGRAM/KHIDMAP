@@ -1,10 +1,15 @@
-
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch, GeoPoint } from 'firebase/firestore';
 
 // ServiceCategory is still relevant for provider profiles
 export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
 export type UserRole = 'provider' | 'seeker' | 'admin';
+
+export interface PortfolioItem {
+  id: string; // Unique ID for the item, e.g., the filename in storage
+  url: string; // The public URL of the image/video
+  description?: string; // Optional description
+}
 
 export interface UserProfile {
   uid: string;
@@ -17,6 +22,7 @@ export interface UserProfile {
   serviceAreas?: string[]; 
   profilePictureUrl?: string;
   location?: GeoPoint;
+  portfolio?: PortfolioItem[];
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
   emailVerified?: boolean;

@@ -234,6 +234,34 @@ export type Translations = {
   resetPasswordErrorTitle?: string;
   userNotFound?: string;
   backToLogin?: string;
+
+  // Settings & Account Deletion
+  settings: string;
+  manageAccountSettings: string;
+  dangerZone: string;
+  dangerZoneDescription: string;
+  deleteAccount: string;
+  deleteAccountDescription: string;
+  confirmDeleteAccountTitle: string;
+  confirmDeleteAccountDescription: string;
+  confirmDelete: string;
+  accountDeletedTitle: string;
+  accountDeletedSuccess: string;
+  accountDeletionFailed: string;
+  accountDeletionError: string;
+  requiresRecentLoginError: string;
+
+  // Portfolio
+  portfolio: string;
+  portfolioDescription: string;
+  uploadImage: string;
+  noPortfolioItems: string;
+  selectImageError: string;
+  imageUploadedSuccess: string;
+  imageUploadError: string;
+  imageDeletedSuccess: string;
+  imageDeleteError: string;
+  portfolioItem: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -436,7 +464,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     firestoreIndexError: "The database is being updated to support this query. Please try again in a few minutes.",
     of: "of",
     viewProfile: "View Profile",
-    // Messaging translations
     messages: "Messages",
     typeYourMessage: "Type your message...",
     send: "Send",
@@ -445,7 +472,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     conversationWith: "Conversation with {name}",
     noMessagesYet: "No messages yet. Say hello!",
     startTheConversation: "Select a conversation from the list to start chatting.",
-    // Location-based search
     location: "Location",
     useCurrentLocation: "Use My Current Location",
     locationSet: "Location has been set.",
@@ -458,7 +484,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     locationNotSet: "Location not set",
     locationUnavailable: "Location information is not available in this browser.",
     locationHelpText: "Set your location to appear in proximity searches.",
-    // Forgot Password
     forgotPassword: "Forgot Password",
     forgotPasswordDescription: "Enter your email address and we'll send you a link to reset your password.",
     sendResetLink: "Send Reset Link",
@@ -467,6 +492,30 @@ export const translations: Record<'en' | 'ar', Translations> = {
     resetPasswordErrorTitle: "Error Sending Link",
     userNotFound: "No user found with this email address.",
     backToLogin: "Back to Login",
+    settings: "Settings",
+    manageAccountSettings: "Manage your account and site settings.",
+    dangerZone: "Danger Zone",
+    dangerZoneDescription: "These actions are permanent and cannot be undone.",
+    deleteAccount: "Delete Account",
+    deleteAccountDescription: "Permanently delete your account and all associated data.",
+    confirmDeleteAccountTitle: "Are you absolutely sure?",
+    confirmDeleteAccountDescription: "This action cannot be undone. This will permanently delete your account, profile, and all other associated data from our servers.",
+    confirmDelete: "Yes, delete my account",
+    accountDeletedTitle: "Account Deleted",
+    accountDeletedSuccess: "Your account has been permanently deleted.",
+    accountDeletionFailed: "Account Deletion Failed",
+    accountDeletionError: "An error occurred while deleting your account. Please try again.",
+    requiresRecentLoginError: "This is a sensitive operation and requires recent authentication. Please log out and log back in before trying again.",
+    portfolio: "Work Portfolio",
+    portfolioDescription: "Showcase your best work by uploading images.",
+    uploadImage: "Upload Image",
+    noPortfolioItems: "You haven't uploaded any portfolio items yet.",
+    selectImageError: "Please select an image file to upload.",
+    imageUploadedSuccess: "Image uploaded successfully!",
+    imageUploadError: "Failed to upload image.",
+    imageDeletedSuccess: "Image deleted successfully!",
+    imageDeleteError: "Failed to delete image.",
+    portfolioItem: "Portfolio Item"
   },
   ar: {
     appName: "خدماب",
@@ -667,7 +716,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     firestoreIndexError: "قاعدة البيانات قيد التحديث لدعم هذا الاستعلام. يرجى المحاولة مرة أخرى في غضون دقائق قليلة.",
     of: "من",
     viewProfile: "عرض الملف الشخصي",
-    // Messaging translations
     messages: "الرسائل",
     typeYourMessage: "اكتب رسالتك...",
     send: "إرسال",
@@ -676,7 +724,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     conversationWith: "محادثة مع {name}",
     noMessagesYet: "لا توجد رسائل بعد. قل مرحباً!",
     startTheConversation: "اختر محادثة من القائمة لبدء الدردشة.",
-    // Location-based search
     location: "الموقع",
     useCurrentLocation: "استخدام موقعي الحالي",
     locationSet: "تم تحديد الموقع.",
@@ -689,7 +736,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     locationNotSet: "الموقع غير محدد",
     locationUnavailable: "معلومات الموقع غير متوفرة في هذا المتصفح.",
     locationHelpText: "حدد موقعك للظهور في عمليات البحث القريبة.",
-    // Forgot Password
     forgotPassword: "هل نسيت كلمة المرور",
     forgotPasswordDescription: "أدخل عنوان بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور الخاصة بك.",
     sendResetLink: "إرسال رابط إعادة التعيين",
@@ -698,5 +744,29 @@ export const translations: Record<'en' | 'ar', Translations> = {
     resetPasswordErrorTitle: "خطأ في إرسال الرابط",
     userNotFound: "لم يتم العثور على مستخدم بهذا البريد الإلكتروني.",
     backToLogin: "العودة إلى تسجيل الدخول",
+    settings: "الإعدادات",
+    manageAccountSettings: "إدارة حسابك وإعدادات الموقع.",
+    dangerZone: "منطقة الخطر",
+    dangerZoneDescription: "هذه الإجراءات دائمة ولا يمكن التراجع عنها.",
+    deleteAccount: "حذف الحساب",
+    deleteAccountDescription: "حذف حسابك وجميع البيانات المرتبطة به بشكل دائم.",
+    confirmDeleteAccountTitle: "هل أنت متأكد تمامًا؟",
+    confirmDeleteAccountDescription: "لا يمكن التراجع عن هذا الإجراء. سيؤدي هذا إلى حذف حسابك وملفك الشخصي وجميع البيانات الأخرى المرتبطة به بشكل دائم من خوادمنا.",
+    confirmDelete: "نعم، احذف حسابي",
+    accountDeletedTitle: "تم حذف الحساب",
+    accountDeletedSuccess: "تم حذف حسابك بشكل دائم.",
+    accountDeletionFailed: "فشل حذف الحساب",
+    accountDeletionError: "حدث خطأ أثناء حذف حسابك. يرجى المحاولة مرة أخرى.",
+    requiresRecentLoginError: "هذه عملية حساسة وتتطلب مصادقة حديثة. يرجى تسجيل الخروج ثم تسجيل الدخول مرة أخرى قبل المحاولة مرة أخرى.",
+    portfolio: "معرض الأعمال",
+    portfolioDescription: "اعرض أفضل أعمالك عن طريق تحميل الصور.",
+    uploadImage: "تحميل صورة",
+    noPortfolioItems: "لم تقم بتحميل أي عناصر في معرض أعمالك بعد.",
+    selectImageError: "يرجى تحديد ملف صورة لتحميله.",
+    imageUploadedSuccess: "تم تحميل الصورة بنجاح!",
+    imageUploadError: "فشل تحميل الصورة.",
+    imageDeletedSuccess: "تم حذف الصورة بنجاح!",
+    imageDeleteError: "فشل حذف الصورة.",
+    portfolioItem: "عنصر من معرض الأعمال"
   },
 };

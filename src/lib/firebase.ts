@@ -1,8 +1,8 @@
-
 // src/lib/firebase.ts
 import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 // Your web app's Firebase configuration
 // These values are sourced from your .env file
@@ -18,6 +18,7 @@ const firebaseConfigValues = {
 let app: FirebaseApp | undefined = undefined;
 let auth: Auth | undefined = undefined;
 let db: Firestore | undefined = undefined;
+let storage: FirebaseStorage | undefined = undefined;
 
 if (
   firebaseConfigValues.apiKey &&
@@ -38,9 +39,10 @@ if (
     try {
       auth = getAuth(app);
       db = getFirestore(app);
+      storage = getStorage(app);
     } catch (e) {
-      console.error("Error getting Firebase auth or firestore instance:", e);
-      // auth and db will remain undefined
+      console.error("Error getting Firebase auth, firestore, or storage instance:", e);
+      // auth, db, and storage will remain undefined
     }
   } else {
      console.error(
@@ -52,7 +54,7 @@ if (
   console.error(
     'CRITICAL: Firebase configuration is missing or incomplete (apiKey, authDomain, or projectId). Firebase services will not be available. Please check your environment variables.'
   );
-  // app, auth, and db will remain undefined
+  // app, auth, db, and storage will remain undefined
 }
 
-export { app, auth, db };
+export { app, auth, db, storage };

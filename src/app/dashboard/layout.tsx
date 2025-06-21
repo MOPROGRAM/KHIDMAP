@@ -105,6 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: '/services/search', labelKey: 'search', icon: <Search className="h-5 w-5" />, roles: ['seeker', 'provider'] },
     { href: '/dashboard/seeker/history', labelKey: 'searchHistory', icon: <History className="h-5 w-5" />, roles: ['seeker'] },
     { href: '/admin/dashboard', labelKey: 'adminDashboard', icon: <ShieldCheck className="h-5 w-5" />, roles: ['admin'] },
+    { href: '/dashboard/settings', labelKey: 'settings', icon: <Settings className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
   ];
   
   const handleLogout = async () => {
@@ -164,12 +165,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {filteredNavItems.map((item) => (
             <Button
               key={item.href}
-              variant={pathname === item.href || (item.href === '/dashboard/messages' && pathname.startsWith('/dashboard/messages')) ? 'secondary' : 'ghost'}
+              variant={pathname.startsWith(item.href) && item.href !== '/dashboard' || pathname === item.href ? 'secondary' : 'ghost'}
               className="w-full justify-start"
               asChild
             >
               <Link href={item.href}>
-                {React.cloneElement(item.icon, { className: cn("ltr:mr-2 rtl:ml-2 h-5 w-5", pathname === item.href ? "text-primary" : "") })}
+                {React.cloneElement(item.icon, { className: cn("ltr:mr-2 rtl:ml-2 h-5 w-5", pathname.startsWith(item.href) ? "text-primary" : "") })}
                 {t[item.labelKey]}
               </Link>
             </Button>
