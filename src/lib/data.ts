@@ -187,16 +187,22 @@ export const findOrCreateConversation = async (user1Id: string, user2Id: string)
         console.error("Firestore (db) is not initialized in findOrCreateConversation.");
         return null;
     }
+    // Prevent users from starting a conversation with themselves
+    if (user1Id === user2Id) {
+        console.warn("Attempted to start a conversation with oneself.");
+        return null;
+    }
+    
     try {
-        // More robust query that doesn't require a composite index
         const conversationsRef = collection(db, "conversations");
         const q = query(conversationsRef, where("participants", "array-contains", user1Id));
         const querySnapshot = await getDocs(q);
 
         let existingConvoId: string | null = null;
         for (const doc of querySnapshot.docs) {
-            const convo = doc.data() as Conversation;
-            if (convo.participants.includes(user2Id)) {
+            const convo = doc.data();
+            // Defensive check: ensure participants is an array and includes the other user
+            if (Array.isArray(convo.participants) && convo.participants.includes(user2Id)) {
                 existingConvoId = doc.id;
                 break;
             }
@@ -212,16 +218,21 @@ export const findOrCreateConversation = async (user1Id: string, user2Id: string)
             getUserProfileById(user2Id)
         ]);
 
-        if (!user1Profile || !user2Profile) {
-            throw new Error("Could not find user profiles to start conversation.");
+        if (!user1Profile) {
+            console.error(`Could not find profile for initiating user: ${user1Id}`);
+            return null;
+        }
+        if (!user2Profile) {
+            console.error(`Could not find profile for receiving user: ${user2Id}`);
+            return null;
         }
 
         const newConversationRef = doc(collection(db, 'conversations'));
         const newConversationData = {
-            participants: [user1Id, user2Id].sort(),
+            participants: [user1Id, user2Id].sort(), // Sort to ensure consistency
             participantNames: {
-                [user1Id]: user1Profile.name,
-                [user2Id]: user2Profile.name,
+                [user1Id]: user1Profile.name || 'Unknown User', // Fallback for safety
+                [user2Id]: user2Profile.name || 'Unknown User', // Fallback for safety
             },
             lastMessage: "",
             lastMessageSenderId: '',
@@ -233,8 +244,8 @@ export const findOrCreateConversation = async (user1Id: string, user2Id: string)
         
         return newConversationRef.id;
     } catch (error) {
-        console.error(`Error finding or creating conversation between ${user1Id} and ${user2Id}:`, error);
-        return null;
+        console.error(`Error in findOrCreateConversation between ${user1Id} and ${user2Id}:`, error);
+        return null; // Return null to be handled by the caller
     }
 };
 
