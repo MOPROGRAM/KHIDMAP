@@ -247,8 +247,8 @@ export default function ProviderDetailsPage() {
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
   };
   
-  const serviceCategories = useMemo(() => Array.isArray(provider?.serviceCategories) ? provider.serviceCategories : [], [provider]);
-  const serviceAreas = useMemo(() => Array.isArray(provider?.serviceAreas) ? provider.serviceAreas : [], [provider]);
+  const serviceCategories = useMemo(() => Array.isArray(provider?.serviceCategories) ? provider.serviceCategories.filter(Boolean) as ServiceCategory[] : [], [provider]);
+  const serviceAreas = useMemo(() => Array.isArray(provider?.serviceAreas) ? provider.serviceAreas.filter(Boolean) : [], [provider]);
   const cleanPhoneNumber = useMemo(() => provider?.phoneNumber?.replace(/[^0-9+]/g, '') || '', [provider?.phoneNumber]);
 
   if (isLoading) {
@@ -319,9 +319,9 @@ export default function ProviderDetailsPage() {
                 </Avatar>
                 <div className="space-y-2">
                     <h1 className="text-3xl md:text-4xl font-bold font-headline text-foreground">{provider.name}</h1>
-                    {serviceCategories.length > 0 && (
+                    {serviceCategories.length > 0 && serviceCategories[0] && (
                         <p className="text-lg text-primary font-semibold">
-                            {t[serviceCategories[0].toLowerCase() as keyof Translations] || serviceCategories[0]}
+                            {t[(serviceCategories[0]).toLowerCase() as keyof Translations] || serviceCategories[0]}
                         </p>
                     )}
                     <div className="flex items-center justify-center sm:justify-start gap-2">
@@ -386,6 +386,7 @@ export default function ProviderDetailsPage() {
                        <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Briefcase/> {t.specialties}</h2>
                        <div className="flex flex-col gap-2">
                             {serviceCategories.map(cat => {
+                                if (!cat || typeof cat !== 'string') return null;
                                 const CatIcon = categoryIcons[cat] || GripVertical;
                                 return(
                                   <div key={cat} className="flex items-center gap-2 text-muted-foreground">
@@ -409,7 +410,7 @@ export default function ProviderDetailsPage() {
                                <div className="flex justify-between items-start">
                                  <div className="flex items-center gap-2">
                                     <Avatar className="h-8 w-8">
-                                       <AvatarFallback>{rating.raterName.charAt(0)}</AvatarFallback>
+                                       <AvatarFallback>{rating.raterName?.charAt(0) || 'U'}</AvatarFallback>
                                     </Avatar>
                                     <div>
                                        <p className="font-semibold text-foreground text-sm">{rating.raterName}</p>
@@ -457,3 +458,5 @@ export default function ProviderDetailsPage() {
     </div>
   );
 }
+
+    
