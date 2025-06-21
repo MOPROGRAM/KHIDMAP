@@ -196,17 +196,25 @@ export const findOrCreateConversation = async (user1Id: string, user2Id: string)
         return null;
     }
     try {
-        const participants = [user1Id, user2Id].sort();
-        
+        // More robust query that doesn't require a composite index
         const conversationsRef = collection(db, "conversations");
-        const q = query(conversationsRef, where("participants", "==", participants), limit(1));
-
+        const q = query(conversationsRef, where("participants", "array-contains", user1Id));
         const querySnapshot = await getDocs(q);
-        
-        if (!querySnapshot.empty) {
-            return querySnapshot.docs[0].id;
+
+        let existingConvoId: string | null = null;
+        for (const doc of querySnapshot.docs) {
+            const convo = doc.data() as Conversation;
+            if (convo.participants.includes(user2Id)) {
+                existingConvoId = doc.id;
+                break;
+            }
         }
 
+        if (existingConvoId) {
+            return existingConvoId;
+        }
+
+        // If no conversation exists, create a new one
         const [user1Profile, user2Profile] = await Promise.all([
             getUserProfileById(user1Id),
             getUserProfileById(user2Id)
@@ -218,7 +226,7 @@ export const findOrCreateConversation = async (user1Id: string, user2Id: string)
 
         const newConversationRef = doc(collection(db, 'conversations'));
         const newConversationData = {
-            participants: participants,
+            participants: [user1Id, user2Id].sort(),
             participantNames: {
                 [user1Id]: user1Profile.name,
                 [user2Id]: user2Profile.name,
