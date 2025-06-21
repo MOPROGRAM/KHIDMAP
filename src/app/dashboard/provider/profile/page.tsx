@@ -16,7 +16,7 @@ import { auth, db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'; 
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
-import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, Video, Camera } from 'lucide-react';
+import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, Video } from 'lucide-react';
 import { z } from 'zod';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Image from 'next/image';
@@ -54,7 +54,7 @@ export default function ProviderProfilePage() {
   const [isCoreServicesAvailable, setIsCoreServicesAvailable] = useState(false);
 
   useEffect(() => {
-    if (auth && db) {
+    if (auth && db && storage) {
       setIsCoreServicesAvailable(true);
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -97,7 +97,7 @@ export default function ProviderProfilePage() {
     } else {
       setIsCoreServicesAvailable(false);
       setIsFetching(false);
-      console.warn("Firebase Auth or DB not initialized in ProviderProfilePage.");
+      console.warn("Firebase Auth, DB, or Storage not initialized in ProviderProfilePage.");
     }
   }, [router, t, toast]);
 
@@ -124,6 +124,7 @@ export default function ProviderProfilePage() {
     }
 
     setIsUploading(true);
+    const fileInput = event.target;
 
     try {
         const fileType = file.type.startsWith('image') ? 'image' : 'video';
@@ -142,13 +143,18 @@ export default function ProviderProfilePage() {
 
         setMedia(prev => [...prev, newMediaItem]);
         toast({ title: t.fileUploadedSuccessTitle });
-    } catch (error) {
+    } catch (error: any) {
         console.error("File upload error:", error);
-        toast({ variant: "destructive", title: t.fileUploadErrorTitle, description: t.fileUploadErrorDescription });
+        let description = t.fileUploadErrorDescription;
+        if (error.code === 'storage/unauthorized') {
+            description = t.storageUnauthorizedError || "Permission Denied. Please check your Firebase Storage security rules to allow uploads.";
+        }
+        toast({ variant: "destructive", title: t.fileUploadErrorTitle, description });
     } finally {
         setIsUploading(false);
-        // Reset file input
-        event.target.value = '';
+        if (fileInput) {
+            fileInput.value = '';
+        }
     }
   };
 
@@ -156,22 +162,24 @@ export default function ProviderProfilePage() {
     if (!authUser || !db || !storage) return;
 
     try {
-        // Delete from Firestore
         const userDocRef = doc(db, "users", authUser.uid);
         await updateDoc(userDocRef, {
             media: arrayRemove(fileToDelete)
         });
 
-        // Delete from Storage
         const fileRef = ref(storage, fileToDelete.url);
         await deleteObject(fileRef);
 
         setMedia(prev => prev.filter(item => item.url !== fileToDelete.url));
         toast({ title: t.fileDeletedSuccessTitle });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("File deletion error:", error);
-        toast({ variant: "destructive", title: t.fileDeleteErrorTitle, description: t.fileDeleteErrorDescription });
+        let description = t.fileDeleteErrorDescription;
+        if (error.code === 'storage/unauthorized') {
+            description = t.storageUnauthorizedDeleteError || "Permission Denied. Please check your Firebase Storage security rules to allow file deletion.";
+        }
+        toast({ variant: "destructive", title: t.fileDeleteErrorTitle, description });
     }
   };
 
@@ -397,7 +405,7 @@ export default function ProviderProfilePage() {
       <Card className="shadow-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Camera className="h-6 w-6 text-primary" />
+            <ImageIcon className="h-6 w-6 text-primary" />
             {t.portfolioTitle}
           </CardTitle>
           <CardDescription>{t.portfolioDescription}</CardDescription>
@@ -438,14 +446,14 @@ export default function ProviderProfilePage() {
           {media.length < 5 ? (
             <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg">
                 <Label htmlFor="file-upload" className="w-full">
-                    <Button asChild variant="outline" className="w-full cursor-pointer" disabled={isUploading}>
+                    <Button asChild variant="outline" className="w-full cursor-pointer" disabled={isUploading || !isCoreServicesAvailable}>
                         <div>
                             {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
                             {isUploading ? t.uploading : t.uploadMedia}
                         </div>
                     </Button>
                 </Label>
-                <Input id="file-upload" type="file" className="hidden" onChange={handleFileUpload} accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/x-matroska" disabled={isUploading}/>
+                <Input id="file-upload" type="file" className="hidden" onChange={handleFileUpload} accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/x-matroska" disabled={isUploading || !isCoreServicesAvailable}/>
                 <p className="text-xs text-muted-foreground mt-2">{t.mediaUploadDescription}</p>
             </div>
           ) : (
@@ -458,4 +466,3 @@ export default function ProviderProfilePage() {
     </div>
   );
 }
-

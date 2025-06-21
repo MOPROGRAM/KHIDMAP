@@ -274,6 +274,8 @@ export type Translations = {
   fileUploadedSuccessTitle: string;
   fileUploadErrorTitle: string;
   fileUploadErrorDescription: string;
+  storageUnauthorizedError: string;
+  storageUnauthorizedDeleteError: string;
   fileDeletedSuccessTitle: string;
   fileDeleteErrorTitle: string;
   fileDeleteErrorDescription: string;
@@ -544,6 +546,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     fileUploadedSuccessTitle: "File Uploaded",
     fileUploadErrorTitle: "Upload Error",
     fileUploadErrorDescription: "There was an error uploading your file. Please try again.",
+    storageUnauthorizedError: "Permission Denied. Please check your Firebase Storage security rules to allow uploads for authenticated users.",
+    storageUnauthorizedDeleteError: "Permission Denied. Please ensure your Firebase Storage security rules allow deleting files.",
     fileDeletedSuccessTitle: "File Deleted",
     fileDeleteErrorTitle: "Deletion Error",
     fileDeleteErrorDescription: "Could not delete the file. Please try again.",
@@ -812,6 +816,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     fileUploadedSuccessTitle: "تم رفع الملف",
     fileUploadErrorTitle: "خطأ في الرفع",
     fileUploadErrorDescription: "حدث خطأ أثناء رفع الملف. يرجى المحاولة مرة أخرى.",
+    storageUnauthorizedError: "تم رفض الإذن. يرجى التحقق من قواعد أمان Firebase Storage للسماح بالتحميل للمستخدمين الموثوقين.",
+    storageUnauthorizedDeleteError: "تم رفض الإذن. يرجى التأكد من أن قواعد أمان Firebase Storage تسمح بحذف الملفات.",
     fileDeletedSuccessTitle: "تم حذف الملف",
     fileDeleteErrorTitle: "خطأ في الحذف",
     fileDeleteErrorDescription: "تعذر حذف الملف. يرجى المحاولة مرة أخرى.",
