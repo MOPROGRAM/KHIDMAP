@@ -10,10 +10,10 @@ import { Button } from '@/components/ui/button';
 import NextImage from 'next/image';
 import {
   ArrowLeft, MapPin, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, SprayCan,
-  GripVertical, HardHat, Layers, Star, Wrench, Zap, MessageSquare, Image as ImageIcon, Film
+  GripVertical, HardHat, Layers, Star, Wrench, Zap, MessageSquare, Image as ImageIcon, Video, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall
 } from 'lucide-react';
 import Link from 'next/link';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, GeoPoint } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
 import { db, auth } from '@/lib/firebase';
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,8 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Plumbing: Wrench,
@@ -141,13 +143,14 @@ export default function ProviderDetailsPage() {
     ]).then(([foundProvider, foundRatings]) => {
       if (foundProvider) {
         setProvider(foundProvider);
-        setRatings(foundRatings);
-
-        if (foundRatings.length > 0) {
-          const totalRating = foundRatings.reduce((acc, r) => acc + r.rating, 0);
-          setAverageRating(totalRating / foundRatings.length);
-        } else {
-          setAverageRating(0);
+        if (Array.isArray(foundRatings)) {
+            setRatings(foundRatings);
+            if (foundRatings.length > 0) {
+              const totalRating = foundRatings.reduce((acc, r) => acc + r.rating, 0);
+              setAverageRating(totalRating / foundRatings.length);
+            } else {
+              setAverageRating(0);
+            }
         }
       } else {
         setError(t.providerNotFound);
@@ -165,7 +168,6 @@ export default function ProviderDetailsPage() {
   }, [providerId, t]);
 
   useEffect(() => {
-    // Set up auth listener
     if (!auth) {
       return;
     }
@@ -203,9 +205,8 @@ export default function ProviderDetailsPage() {
           toast({ title: t.ratingSubmitted, description: t.thankYouForFeedback });
           setRatingInput(0);
           setCommentInput('');
-          // Re-fetch ratings after submission
           fetchProviderData();
-      } catch (error: any) {
+      } catch (error: any) => {
           toast({ variant: "destructive", title: t.errorOccurred, description: String(error.message || t.failedSubmitRating) });
       } finally {
           setIsSubmitting(false);
@@ -248,15 +249,13 @@ export default function ProviderDetailsPage() {
   };
   
   const validPortfolio = useMemo(() => {
-    if (!provider || !Array.isArray(provider.portfolio)) {
-        return [];
-    }
+    if (!provider || !Array.isArray(provider.portfolio)) return [];
     return provider.portfolio.filter(item => item && item.id && item.url && item.type);
   }, [provider]);
 
   const serviceCategories = useMemo(() => Array.isArray(provider?.serviceCategories) ? provider.serviceCategories : [], [provider]);
   const serviceAreas = useMemo(() => Array.isArray(provider?.serviceAreas) ? provider.serviceAreas : [], [provider]);
-
+  const cleanPhoneNumber = useMemo(() => provider?.phoneNumber?.replace(/[^0-9+]/g, '') || '', [provider?.phoneNumber]);
 
   if (isLoading) {
     return (
@@ -308,185 +307,204 @@ export default function ProviderDetailsPage() {
       </div>
     );
   }
+  
+  const whatsappMessage = encodeURIComponent(`Hello, I found your profile on ${t.appName} and I'm interested in your services.`);
+
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 py-4 animate-fadeIn">
+    <div className="max-w-4xl mx-auto space-y-6 py-4 animate-fadeIn">
       <Button variant="outline" onClick={() => router.back()} className="mb-2 group">
         <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:text-primary transition-colors group-hover:translate-x-[-2px]" /> {t.backToSearch}
       </Button>
 
-      <Card className="overflow-hidden shadow-2xl border">
-        <CardHeader className="p-6 flex flex-col md:flex-row items-start md:items-center gap-6">
+      <Card className="overflow-hidden shadow-2xl border-none">
+        <div className="relative">
+          <div className="h-40 md:h-56 w-full bg-muted">
             <NextImage 
-                src={provider.profilePictureUrl || "https://placehold.co/128x128.png"} 
-                alt={provider.name} 
-                width={128} 
-                height={128} 
-                className="rounded-full border-4 border-primary shadow-lg object-cover"
-                data-ai-hint="person portrait"
-                priority
+              src="https://placehold.co/1000x400.png"
+              alt={`${provider.name}'s banner`}
+              layout="fill"
+              objectFit="cover"
+              className="opacity-50"
+              data-ai-hint="tools workshop"
             />
-            <div className="flex-1">
-                <h1 className="text-2xl md:text-3xl font-bold font-headline text-foreground">{provider.name}</h1>
-                <div className="flex items-center gap-2 mt-2">
-                    <StarRating rating={averageRating} />
-                    <span className="text-sm text-muted-foreground">
-                        {averageRating.toFixed(1)} {t.of} 5 ({ratings.length} {t.reviews})
-                    </span>
-                </div>
-                 <p className="text-sm text-muted-foreground mt-2">{t.postedOnFull} {formatDate(provider.createdAt)}</p>
-            </div>
-        </CardHeader>
-        
-        <CardContent className="p-6 space-y-4">
-          <div className="space-y-4 animate-fadeIn animation-delay-200">
-            {provider.qualifications && (
-              <div>
-                <h3 className="text-base font-semibold text-muted-foreground mb-1.5">{t.qualifications}:</h3>
-                <p className="text-sm bg-muted/50 p-3 rounded-lg border whitespace-pre-wrap text-foreground/90 shadow-inner">{provider.qualifications}</p>
+          </div>
+          <div className="absolute top-20 md:top-32 left-1/2 -translate-x-1/2 w-full px-4">
+              <div className="flex flex-col items-center text-center">
+                 <Avatar className="w-32 h-32 border-4 border-background shadow-lg">
+                    <AvatarImage src={provider.profilePictureUrl} alt={provider.name} data-ai-hint="person portrait"/>
+                    <AvatarFallback className="text-4xl"><UserCircle /></AvatarFallback>
+                </Avatar>
               </div>
-            )}
-            {serviceCategories.length > 0 && (
-                <div>
-                    <h3 className="text-base font-semibold text-muted-foreground mb-1.5">{t.serviceCategoriesTitle}:</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {serviceCategories.map(cat => {
-                        const ProviderCatIcon = categoryIcons[cat] || GripVertical;
-                        const providerCatKey = cat.toLowerCase() as keyof Translations;
-                        return (
-                        <span key={cat} className="px-3 py-1.5 bg-accent text-accent-foreground text-sm rounded-full shadow-sm flex items-center gap-1.5">
-                            <ProviderCatIcon className="h-4 w-4" />
-                            {t[providerCatKey] || cat}
-                        </span>
-                        );
-                        })}
-                    </div>
-                </div>
-            )}
-            {serviceAreas.length > 0 && (
-                <div>
-                <h3 className="text-base font-semibold text-muted-foreground mb-1.5">{t.servesAreasTitle}:</h3>
-                <p className="text-sm text-foreground/90">{serviceAreas.join(', ')}</p>
-                </div>
-            )}
           </div>
-          
-          <Separator className="my-4" />
+        </div>
 
-          {/* Portfolio Section */}
-          {validPortfolio.length > 0 && (
-            <div className="space-y-4 animate-fadeIn animation-delay-300">
-                <h2 className="text-xl font-semibold text-primary font-headline flex items-center gap-2">
-                    <ImageIcon className="h-5 w-5" /> {t.portfolio}
-                </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {validPortfolio.map(item => (
-                       <div key={item.id} className="group aspect-square relative overflow-hidden rounded-lg shadow-md bg-muted">
-                           {item.type === 'video' ? (
-                               <video
-                                   src={item.url}
-                                   controls
-                                   className="w-full h-full object-cover"
-                               >
-                                   {t.videoNotSupported}
-                               </video>
-                           ) : (
-                               <NextImage 
-                                   src={item.url} 
-                                   alt={t.portfolioItem || 'Portfolio Item'} 
-                                   layout="fill" 
-                                   objectFit="cover"
-                                   className="group-hover:scale-105 transition-transform duration-300"
-                               />
-                           )}
-                       </div>
-                    ))}
-                </div>
-                <Separator className="my-4" />
+        <div className="pt-20 p-6 flex flex-col items-center text-center">
+            <h1 className="text-3xl md:text-4xl font-bold font-headline text-foreground">{provider.name}</h1>
+             {serviceCategories.length > 0 && (
+                <p className="text-base text-muted-foreground mt-1">
+                    {t[serviceCategories[0].toLowerCase() as keyof Translations] || serviceCategories[0]}
+                </p>
+             )}
+            <div className="flex items-center gap-2 mt-3">
+                <StarRating rating={averageRating} />
+                <span className="text-sm text-muted-foreground">
+                    {averageRating > 0 ? `${averageRating.toFixed(1)} (${ratings.length} ${t.reviews})` : t.noReviewsYet}
+                </span>
             </div>
-          )}
-          
-          {authUser && authUser.uid !== provider.uid && (
-            <>
-            <CardFooter className="p-0 pt-0 flex flex-col sm:flex-row gap-2">
-              <Button
-                size="lg"
-                className="w-full text-base py-3 group"
-                onClick={handleStartConversation}
-                disabled={isCreatingConversation}
-              >
-                {isCreatingConversation ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageSquare className="ltr:mr-2 rtl:ml-2 h-5 w-5" />}
-                {t.messages}
-              </Button>
-            </CardFooter>
-            <Separator className="my-4" />
-            </>
-          )}
-          
-          {/* Reviews Section */}
-          <div className="space-y-4 animate-fadeIn animation-delay-400">
-            <h2 className="text-xl font-semibold text-primary font-headline">{t.reviews}</h2>
-            {ratings.length > 0 ? (
-                <div className="space-y-4">
-                    {ratings.map(rating => (
-                        <Card key={rating.id} className="bg-muted/30 border p-4 shadow-sm">
-                           <div className="flex justify-between items-start">
-                             <div>
-                               <p className="font-semibold text-foreground">{rating.raterName}</p>
-                               <p className="text-xs text-muted-foreground">{formatDate(rating.createdAt)}</p>
-                             </div>
-                             <StarRating rating={rating.rating} />
-                           </div>
-                           {rating.comment && <p className="mt-2 text-sm text-foreground/80">{rating.comment}</p>}
-                        </Card>
-                    ))}
-                </div>
-            ) : (
-                <p className="text-muted-foreground">{t.noReviewsYet}</p>
-            )}
-          </div>
-          
-          <Separator className="my-4" />
+        </div>
+        
+        <Separator/>
 
-          {/* Rating Form */}
-          {authUser && userRole === 'seeker' && authUser.uid !== providerId && (
-            <div className="pt-2 animate-fadeIn animation-delay-600">
-                <h2 className="text-xl font-semibold text-primary font-headline mb-4">{t.rateThisProvider}</h2>
-                <form onSubmit={handleRatingSubmit} className="space-y-4">
-                    <div>
-                        <Label htmlFor="rating">{t.rating}</Label>
-                        <StarRating rating={ratingInput} setRating={setRatingInput} interactive={true} className="mt-2" />
-                    </div>
-                    <div>
-                        <Label htmlFor="comment">{t.comment}</Label>
-                        <Textarea 
-                            id="comment" 
-                            value={commentInput} 
-                            onChange={(e) => setCommentInput(e.target.value)}
-                            placeholder="..."
-                            disabled={isSubmitting}
-                        />
-                    </div>
-                    <Button type="submit" disabled={isSubmitting || ratingInput === 0}>
-                        {isSubmitting && <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" />}
-                        {t.submitRating}
+        <CardContent className="p-4 md:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 my-4">
+                 {provider.phoneNumber && (
+                    <Button asChild size="lg" className="w-full">
+                        <a href={`tel:${cleanPhoneNumber}`}>
+                          <PhoneCall className="ltr:mr-2 rtl:ml-2"/> {t.callNow}
+                        </a>
                     </Button>
-                </form>
+                )}
+                 {provider.phoneNumber && (
+                    <Button asChild size="lg" variant="outline" className="w-full">
+                        <a href={`https://wa.me/${cleanPhoneNumber}?text=${whatsappMessage}`} target="_blank" rel="noopener noreferrer">
+                          <BotMessageSquare className="ltr:mr-2 rtl:ml-2" /> {t.contactOnWhatsApp}
+                        </a>
+                    </Button>
+                )}
+                {authUser && authUser.uid !== provider.uid && (
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleStartConversation}
+                      disabled={isCreatingConversation}
+                    >
+                      {isCreatingConversation ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageSquare className="ltr:mr-2 rtl:ml-2" />}
+                      {t.messageProvider}
+                    </Button>
+                )}
             </div>
-          )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div className="space-y-6">
+                     {provider.qualifications && (
+                        <div className="space-y-2">
+                           <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Sparkles/> {t.aboutProvider.replace('{name}', provider.name)}</h2>
+                           <p className="text-muted-foreground whitespace-pre-wrap">{provider.qualifications}</p>
+                        </div>
+                     )}
+                     {serviceAreas.length > 0 && (
+                        <div className="space-y-2">
+                           <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Building/> {t.servesAreasTitle}</h2>
+                           <p className="text-muted-foreground">{serviceAreas.join(', ')}</p>
+                        </div>
+                     )}
+                </div>
+                 {serviceCategories.length > 0 && (
+                    <div className="space-y-2">
+                       <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Briefcase/> {t.specialties}</h2>
+                       <div className="flex flex-col gap-2">
+                            {serviceCategories.map(cat => {
+                                const CatIcon = categoryIcons[cat] || GripVertical;
+                                return(
+                                  <div key={cat} className="flex items-center gap-2 text-muted-foreground">
+                                    <CatIcon className="h-4 w-4 text-primary" />
+                                    <span>{t[cat.toLowerCase() as keyof Translations] || cat}</span>
+                                  </div>
+                                )
+                            })}
+                       </div>
+                    </div>
+                )}
+            </div>
+
+             {validPortfolio.length > 0 && (
+                <div className="mt-8 space-y-4">
+                  <Separator/>
+                   <h2 className="text-xl font-bold text-primary flex items-center gap-2"><ImageIcon/> {t.gallery}</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {validPortfolio.map(item => (
+                           <div key={item.id} className="group aspect-square relative overflow-hidden rounded-lg shadow-md bg-muted">
+                               {item.type === 'video' ? (
+                                   <video
+                                       src={item.url}
+                                       controls
+                                       className="w-full h-full object-cover"
+                                       aria-label={t.portfolioItem}
+                                   >
+                                       {t.videoNotSupported}
+                                   </video>
+                               ) : (
+                                   <NextImage 
+                                       src={item.url} 
+                                       alt={t.portfolioItem || 'Portfolio Item'} 
+                                       layout="fill" 
+                                       objectFit="cover"
+                                       className="group-hover:scale-105 transition-transform duration-300"
+                                   />
+                               )}
+                           </div>
+                        ))}
+                    </div>
+                </div>
+              )}
+             
+            <div className="mt-8 space-y-4">
+                <Separator/>
+                <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Star/> {t.reviews}</h2>
+                {ratings.length > 0 ? (
+                    <div className="space-y-4">
+                        {ratings.map(rating => (
+                            <Card key={rating.id} className="bg-muted/30 border p-4 shadow-sm">
+                               <div className="flex justify-between items-start">
+                                 <div className="flex items-center gap-2">
+                                    <Avatar className="h-8 w-8">
+                                       <AvatarFallback>{rating.raterName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                       <p className="font-semibold text-foreground text-sm">{rating.raterName}</p>
+                                       <p className="text-xs text-muted-foreground">{formatDate(rating.createdAt)}</p>
+                                    </div>
+                                 </div>
+                                 <StarRating rating={rating.rating} />
+                               </div>
+                               {rating.comment && <p className="mt-3 text-sm text-foreground/80 pl-10">{rating.comment}</p>}
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-muted-foreground">{t.noReviewsYet}</p>
+                )}
+            </div>
+            
+            {authUser && userRole === 'seeker' && authUser.uid !== providerId && (
+                <div className="mt-8 pt-4 border-t">
+                    <h2 className="text-xl font-semibold text-primary font-headline mb-4">{t.rateThisProvider}</h2>
+                    <form onSubmit={handleRatingSubmit} className="space-y-4">
+                        <div>
+                            <Label htmlFor="rating">{t.rating}</Label>
+                            <StarRating rating={ratingInput} setRating={setRatingInput} interactive={true} className="mt-2" />
+                        </div>
+                        <div>
+                            <Label htmlFor="comment">{t.comment}</Label>
+                            <Textarea 
+                                id="comment" 
+                                value={commentInput} 
+                                onChange={(e) => setCommentInput(e.target.value)}
+                                placeholder="..."
+                                disabled={isSubmitting}
+                            />
+                        </div>
+                        <Button type="submit" disabled={isSubmitting || ratingInput === 0}>
+                            {isSubmitting && <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" />}
+                            {t.submitRating}
+                        </Button>
+                    </form>
+                </div>
+            )}
         </CardContent>
       </Card>
-       <style jsx global>{`
-        .animation-delay-200 { animation-delay: 0.2s; }
-        .animation-delay-300 { animation-delay: 0.3s; }
-        .animation-delay-400 { animation-delay: 0.4s; }
-        .animation-delay-600 { animation-delay: 0.6s; }
-        [style*="animation-delay"] {
-          animation-fill-mode: backwards; 
-        }
-      `}</style>
     </div>
   );
 }
-
-    

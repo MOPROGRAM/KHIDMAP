@@ -265,6 +265,14 @@ export type Translations = {
   uploadFile: string;
   portfolioLimitReached: string;
   videoNotSupported: string;
+
+  // New Profile Page
+  callNow: string;
+  contactOnWhatsApp: string;
+  messageProvider: string;
+  aboutProvider: string; // "About {name}"
+  specialties: string;
+  gallery: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -392,7 +400,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     backToSearch: "Back to Search",
     postedOnFull: "Joined on:",
     serviceCategoriesTitle: "Service Categories:",
-    servesAreasTitle: "Serves Areas:",
+    servesAreasTitle: "Service Areas",
     contactProvider: "Contact {providerName}",
     providerDetailsNotAvailable: "Provider details are not available.",
     searchServicesPageDescription: "Find skilled artisans by searching by name, service type, or keywords.",
@@ -451,7 +459,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     otherServicesDescription: "Various other services to meet your unique needs.",
     reviews: "Reviews",
     averageRating: "Average Rating",
-    noReviewsYet: "No reviews yet. Be the first to rate this provider!",
+    noReviewsYet: "No reviews yet",
     rateThisProvider: "Rate this Provider",
     rating: "Your Rating",
     comment: "Your Comment (optional)",
@@ -521,7 +529,13 @@ export const translations: Record<'en' | 'ar', Translations> = {
     portfolioItem: "Portfolio Item",
     uploadFile: "Upload File",
     portfolioLimitReached: "You have reached the portfolio limit (5 files).",
-    videoNotSupported: "Your browser does not support the video tag."
+    videoNotSupported: "Your browser does not support the video tag.",
+    callNow: "Call Now",
+    contactOnWhatsApp: "WhatsApp",
+    messageProvider: "Message",
+    aboutProvider: "About {name}",
+    specialties: "Specialties",
+    gallery: "Gallery",
   },
   ar: {
     appName: "خدماب",
@@ -647,7 +661,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     backToSearch: "العودة إلى البحث",
     postedOnFull: "انضم في:",
     serviceCategoriesTitle: "فئات الخدمة:",
-    servesAreasTitle: "يخدم المناطق:",
+    servesAreasTitle: "يخدم في المناطق",
     contactProvider: "اتصل بـ {providerName}",
     providerDetailsNotAvailable: "تفاصيل المزود غير متوفرة.",
     searchServicesPageDescription: "ابحث عن حرفيين ماهرين من خلال البحث بالاسم أو نوع الخدمة أو الكلمات المفتاحية.",
@@ -706,7 +720,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     otherServicesDescription: "خدمات أخرى متنوعة لتلبية احتياجاتك الفريدة.",
     reviews: "التقييمات",
     averageRating: "متوسط التقييم",
-    noReviewsYet: "لا توجد تقييمات بعد. كن أول من يقيم هذا المزود!",
+    noReviewsYet: "لا توجد تقييمات بعد",
     rateThisProvider: "قيم هذا المزود",
     rating: "تقييمك",
     comment: "تعليقك (اختياري)",
@@ -776,6 +790,12 @@ export const translations: Record<'en' | 'ar', Translations> = {
     portfolioItem: "عنصر من معرض الأعمال",
     uploadFile: "تحميل ملف",
     portfolioLimitReached: "لقد وصلت إلى الحد الأقصى لمعرض الأعمال (5 ملفات).",
-    videoNotSupported: "متصفحك لا يدعم وسم الفيديو."
+    videoNotSupported: "متصفحك لا يدعم وسم الفيديو.",
+    callNow: "اتصل الآن",
+    contactOnWhatsApp: "واتساب",
+    messageProvider: "مراسلة",
+    aboutProvider: "عن {name}",
+    specialties: "التخصصات",
+    gallery: "معرض الأعمال",
   },
 };
