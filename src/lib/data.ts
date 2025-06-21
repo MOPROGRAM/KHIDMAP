@@ -150,24 +150,16 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
         return null;
     }
     try {
-        // The query is now simpler: just filter by the user ID.
         const ratingsQuery = query(
             collection(db, "ratings"),
-            where("ratedUserId", "==", userId)
+            where("ratedUserId", "==", userId),
+            orderBy("createdAt", "desc")
         );
         const querySnapshot = await getDocs(ratingsQuery);
         const ratings = querySnapshot.docs.map(docSnap => ({
             id: docSnap.id,
             ...docSnap.data(),
         } as Rating));
-        
-        // Sorting is now handled in the application code, not in the database query.
-        ratings.sort((a, b) => {
-            const dateA = a.createdAt?.toMillis() || 0;
-            const dateB = b.createdAt?.toMillis() || 0;
-            return dateB - dateA; // Sort by most recent first
-        });
-
         return ratings;
     } catch (error: any) {
         console.error(`Error fetching ratings for user ${userId}. Code: ${error.code}. Message: ${error.message}`);

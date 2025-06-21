@@ -140,22 +140,16 @@ export default function ProviderDetailsPage() {
     }
 
     setIsLoading(true);
-    setError(null);
     
     try {
-        const [foundProvider, foundRatings] = await Promise.all([
-            getUserProfileById(providerId),
-            getRatingsForUser(providerId),
-        ]);
-
+        const foundProvider = await getUserProfileById(providerId);
         if (foundProvider) {
             setProvider(foundProvider);
         } else {
             setError(t.providerNotFound);
-            setIsLoading(false);
-            return;
         }
         
+        const foundRatings = await getRatingsForUser(providerId);
         if (foundRatings) {
             setRatings(foundRatings);
             if (foundRatings.length > 0) {
@@ -167,13 +161,7 @@ export default function ProviderDetailsPage() {
         }
     } catch (err: any) {
         console.error("Error fetching provider details:", err);
-        if (err.message?.includes('permission-denied') || err.message?.includes('insufficient permissions')) {
-            setError(t.permissionDeniedError);
-        } else if(err.message?.includes('needs an index')) {
-            setError(t.firestoreIndexError);
-        } else {
-            setError(t.failedLoadProviderDetails);
-        }
+        setError(t.failedLoadProviderDetails);
     } finally {
         setIsLoading(false);
     }
