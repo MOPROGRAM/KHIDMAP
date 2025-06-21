@@ -51,6 +51,7 @@ export default function ProviderProfilePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -186,7 +187,9 @@ export default function ProviderProfilePage() {
   };
   
   const handleFileDelete = async (urlToDelete: string, fileType: 'image' | 'video') => {
-    if (!authUser || !db || !storage) return;
+    if (!authUser || !db || !storage || deletingUrl) return;
+
+    setDeletingUrl(urlToDelete);
 
     const config = {
         image: { setState: setImages, firestoreField: 'images' },
@@ -194,23 +197,36 @@ export default function ProviderProfilePage() {
     }[fileType];
 
     try {
+      const fileRef = ref(storage, urlToDelete);
+      await deleteObject(fileRef);
+
       const userDocRef = doc(db, "users", authUser.uid);
       await updateDoc(userDocRef, {
         [config.firestoreField]: arrayRemove(urlToDelete)
       });
 
-      const fileRef = ref(storage, urlToDelete);
-      await deleteObject(fileRef);
-
       config.setState(prev => prev.filter(url => url !== urlToDelete));
       toast({ title: t.fileDeletedSuccessTitle });
-    } catch (error: any) {
+    } catch (error: any)
+     {
       console.error("File deletion error:", error);
       let description = t.fileDeleteErrorDescription;
-      if (error.code === 'storage/unauthorized') {
+      if (error.code === 'storage/object-not-found') {
+        description = t.fileNotFoundInStorage || "File not found. It may have already been deleted.";
+        // Clean up firestore just in case
+        try {
+            const userDocRef = doc(db, "users", authUser.uid);
+            await updateDoc(userDocRef, { [config.firestoreField]: arrayRemove(urlToDelete) });
+            config.setState(prev => prev.filter(url => url !== urlToDelete));
+        } catch (dbError) {
+             console.error("Secondary Firestore deletion error:", dbError);
+        }
+      } else if (error.code === 'storage/unauthorized') {
         description = t.storageUnauthorizedDeleteError;
       }
       toast({ variant: "destructive", title: t.fileDeleteErrorTitle, description });
+    } finally {
+        setDeletingUrl(null);
     }
   };
 
@@ -450,9 +466,14 @@ export default function ProviderProfilePage() {
             {images.map((url, index) => (
               <div key={index} className="relative group aspect-square">
                 <Image src={url} alt={`Portfolio image ${index + 1}`} width={150} height={150} className="rounded-lg object-cover w-full h-full border"/>
+                {deletingUrl === url ? (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
+                    <Loader2 className="h-6 w-6 animate-spin text-white" />
+                  </div>
+                ) : (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="icon" className="absolute bottom-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="destructive" size="icon" className="absolute bottom-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" disabled={!!deletingUrl}>
                       <Trash2 className="h-4 w-4"/>
                     </Button>
                   </AlertDialogTrigger>
@@ -464,6 +485,7 @@ export default function ProviderProfilePage() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                )}
               </div>
             ))}
           </div>
@@ -495,9 +517,14 @@ export default function ProviderProfilePage() {
             {videos.map((url, index) => (
               <div key={index} className="relative group aspect-square">
                 <video src={url} controls={false} className="rounded-lg object-cover w-full h-full border" />
+                 {deletingUrl === url ? (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
+                    <Loader2 className="h-6 w-6 animate-spin text-white" />
+                  </div>
+                ) : (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="icon" className="absolute bottom-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="destructive" size="icon" className="absolute bottom-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" disabled={!!deletingUrl}>
                       <Trash2 className="h-4 w-4"/>
                     </Button>
                   </AlertDialogTrigger>
@@ -509,6 +536,7 @@ export default function ProviderProfilePage() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                )}
               </div>
             ))}
           </div>

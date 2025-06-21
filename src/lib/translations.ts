@@ -282,6 +282,7 @@ export type Translations = {
   confirmDeleteFileTitle: string;
   confirmDeleteFileDescription: string;
   noPortfolioItems: string;
+  fileNotFoundInStorage?: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -554,6 +555,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     confirmDeleteFileTitle: "Delete File?",
     confirmDeleteFileDescription: "Are you sure you want to delete this file from your portfolio? This action cannot be undone.",
     noPortfolioItems: "No portfolio items have been uploaded yet.",
+    fileNotFoundInStorage: "File not found. It may have already been deleted.",
   },
   ar: {
     appName: "خدماب",
@@ -824,5 +826,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     confirmDeleteFileTitle: "حذف الملف؟",
     confirmDeleteFileDescription: "هل أنت متأكد من حذف هذا الملف من معرض أعمالك؟ لا يمكن التراجع عن هذا الإجراء.",
     noPortfolioItems: "لم يتم رفع أي عناصر في معرض الأعمال بعد.",
+    fileNotFoundInStorage: "لم يتم العثور على الملف. ربما تم حذفه بالفعل.",
   },
 };
