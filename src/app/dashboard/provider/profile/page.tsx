@@ -75,7 +75,15 @@ export default function ProviderProfilePage() {
               setServiceAreasString((firestoreProfile.serviceAreas || []).join(', ')); 
               setServiceCategories(firestoreProfile.serviceCategories || []);
               setProfilePictureUrl(firestoreProfile.profilePictureUrl);
-              setPortfolioItems(firestoreProfile.portfolio || []);
+              
+              const portfolioData = firestoreProfile.portfolio;
+              if (Array.isArray(portfolioData)) {
+                  const validItems = portfolioData.filter(item => item && item.id && item.url && item.type);
+                  setPortfolioItems(validItems);
+              } else {
+                  setPortfolioItems([]);
+              }
+
               if (firestoreProfile.location) {
                 setLocation({
                   latitude: firestoreProfile.location.latitude,
@@ -144,41 +152,32 @@ export default function ProviderProfilePage() {
         toast({ variant: "destructive", title: t.errorOccurred, description: t.selectImageError });
         return;
     }
-    if (portfolioItems.length >= 5) {
-        toast({ variant: "destructive", title: t.errorOccurred, description: t.portfolioLimitReached });
-        return;
-    }
+
     setIsUploading(true);
     const fileId = `${Date.now()}-${fileUpload.name}`;
     const fileRef = ref(storage, `portfolios/${authUser.uid}/${fileId}`);
 
     try {
-        await uploadBytes(fileRef, fileUpload);
-        const downloadURL = await getDownloadURL(fileRef);
-        const fileType = fileUpload.type.startsWith('video/') ? 'video' : 'image';
-        const newPortfolioItem: PortfolioItem = { id: fileId, url: downloadURL, type: fileType };
-        
         const userDocRef = doc(db, "users", authUser.uid);
-        
         const docSnap = await getDoc(userDocRef);
-        const currentData = docSnap.exists() ? docSnap.data() : {};
-        let currentPortfolio = currentData.portfolio || [];
-
-        if (!Array.isArray(currentPortfolio)) {
-            console.warn("Portfolio field was not an array, it will be reset.");
-            currentPortfolio = [];
-        }
+        
+        const currentPortfolio = (docSnap.exists() && Array.isArray(docSnap.data().portfolio))
+          ? docSnap.data().portfolio
+          : [];
 
         if (currentPortfolio.length >= 5) {
             toast({ variant: "destructive", title: t.errorOccurred, description: t.portfolioLimitReached });
-            await deleteObject(fileRef); // Clean up the orphaned upload
             setIsUploading(false);
             return;
         }
 
+        await uploadBytes(fileRef, fileUpload);
+        const downloadURL = await getDownloadURL(fileRef);
+        const fileType = fileUpload.type.startsWith('video/') ? 'video' : 'image';
+        const newPortfolioItem: PortfolioItem = { id: fileId, url: downloadURL, type: fileType };
+
         const newPortfolio = [...currentPortfolio, newPortfolioItem];
-        
-        await updateDoc(userDocRef, { portfolio: newPortfolio });
+        await setDoc(userDocRef, { portfolio: newPortfolio }, { merge: true });
 
         setPortfolioItems(newPortfolio);
         setFileUpload(null);
@@ -186,6 +185,7 @@ export default function ProviderProfilePage() {
     } catch (error) {
         console.error("Error uploading file:", error);
         toast({ variant: "destructive", title: t.errorOccurred, description: t.imageUploadError });
+        try { await deleteObject(fileRef); } catch (e) { console.error("Could not clean up orphaned file", e); }
     } finally {
         setIsUploading(false);
     }
@@ -196,20 +196,19 @@ export default function ProviderProfilePage() {
     
     const fileRef = ref(storage, `portfolios/${authUser.uid}/${itemToDelete.id}`);
     try {
-        await deleteObject(fileRef);
-        
         const userDocRef = doc(db, "users", authUser.uid);
         const docSnap = await getDoc(userDocRef);
 
         if (docSnap.exists()) {
-            const currentPortfolio = docSnap.data().portfolio || [];
-            if (Array.isArray(currentPortfolio)) {
-                const newPortfolio = currentPortfolio.filter((item: PortfolioItem) => item.id !== itemToDelete.id);
-                await updateDoc(userDocRef, { portfolio: newPortfolio });
-                setPortfolioItems(newPortfolio); // Update state with the new array
-            }
+            const currentPortfolio = Array.isArray(docSnap.data().portfolio) ? docSnap.data().portfolio : [];
+            const newPortfolio = currentPortfolio.filter((item: PortfolioItem) => item && item.id !== itemToDelete.id);
+            
+            await updateDoc(userDocRef, { portfolio: newPortfolio });
+            await deleteObject(fileRef);
+            
+            setPortfolioItems(newPortfolio);
+            toast({ title: t.imageDeletedSuccess });
         }
-        toast({ title: t.imageDeletedSuccess });
     } catch (error) {
         console.error("Error deleting file:", error);
         toast({ variant: "destructive", title: t.errorOccurred, description: t.imageDeleteError });
@@ -477,3 +476,5 @@ export default function ProviderProfilePage() {
     </div>
   );
 }
+
+    

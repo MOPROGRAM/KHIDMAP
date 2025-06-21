@@ -246,6 +246,17 @@ export default function ProviderDetailsPage() {
     }
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
   };
+  
+  const validPortfolio = useMemo(() => {
+    if (!provider || !Array.isArray(provider.portfolio)) {
+        return [];
+    }
+    return provider.portfolio.filter(item => item && item.id && item.url && item.type);
+  }, [provider]);
+
+  const serviceCategories = useMemo(() => Array.isArray(provider?.serviceCategories) ? provider.serviceCategories : [], [provider]);
+  const serviceAreas = useMemo(() => Array.isArray(provider?.serviceAreas) ? provider.serviceAreas : [], [provider]);
+
 
   if (isLoading) {
     return (
@@ -335,11 +346,11 @@ export default function ProviderDetailsPage() {
                 <p className="text-sm bg-muted/50 p-3 rounded-lg border whitespace-pre-wrap text-foreground/90 shadow-inner">{provider.qualifications}</p>
               </div>
             )}
-            {Array.isArray(provider.serviceCategories) && provider.serviceCategories.length > 0 && (
+            {serviceCategories.length > 0 && (
                 <div>
                     <h3 className="text-base font-semibold text-muted-foreground mb-1.5">{t.serviceCategoriesTitle}:</h3>
                     <div className="flex flex-wrap gap-2">
-                        {provider.serviceCategories.map(cat => {
+                        {serviceCategories.map(cat => {
                         const ProviderCatIcon = categoryIcons[cat] || GripVertical;
                         const providerCatKey = cat.toLowerCase() as keyof Translations;
                         return (
@@ -352,10 +363,10 @@ export default function ProviderDetailsPage() {
                     </div>
                 </div>
             )}
-            {Array.isArray(provider.serviceAreas) && provider.serviceAreas.length > 0 && (
+            {serviceAreas.length > 0 && (
                 <div>
                 <h3 className="text-base font-semibold text-muted-foreground mb-1.5">{t.servesAreasTitle}:</h3>
-                <p className="text-sm text-foreground/90">{provider.serviceAreas.join(', ')}</p>
+                <p className="text-sm text-foreground/90">{serviceAreas.join(', ')}</p>
                 </div>
             )}
           </div>
@@ -363,13 +374,13 @@ export default function ProviderDetailsPage() {
           <Separator className="my-4" />
 
           {/* Portfolio Section */}
-          {Array.isArray(provider.portfolio) && provider.portfolio.length > 0 && (
+          {validPortfolio.length > 0 && (
             <div className="space-y-4 animate-fadeIn animation-delay-300">
                 <h2 className="text-xl font-semibold text-primary font-headline flex items-center gap-2">
                     <ImageIcon className="h-5 w-5" /> {t.portfolio}
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {provider.portfolio.map(item => (
+                    {validPortfolio.map(item => (
                        <div key={item.id} className="group aspect-square relative overflow-hidden rounded-lg shadow-md bg-muted">
                            {item.type === 'video' ? (
                                <video
@@ -477,3 +488,5 @@ export default function ProviderDetailsPage() {
     </div>
   );
 }
+
+    
