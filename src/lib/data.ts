@@ -5,11 +5,10 @@ import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp
 export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
 export type UserRole = 'provider' | 'seeker' | 'admin';
 
-export interface PortfolioItem {
+export interface MediaItem {
   id: string; // Unique ID for the item, e.g., the filename in storage
   url: string; // The public URL of the image/video
   type: 'image' | 'video';
-  description?: string; // Optional description
 }
 
 export interface UserProfile {
@@ -23,7 +22,7 @@ export interface UserProfile {
   serviceAreas?: string[]; 
   profilePictureUrl?: string;
   location?: GeoPoint;
-  portfolio?: PortfolioItem[];
+  media?: MediaItem[];
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
   emailVerified?: boolean;

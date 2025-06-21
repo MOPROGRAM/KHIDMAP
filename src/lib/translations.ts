@@ -251,20 +251,21 @@ export type Translations = {
   accountDeletionError: string;
   requiresRecentLoginError: string;
 
-  // Portfolio
-  portfolio: string;
-  portfolioDescription: string;
-  uploadImage: string;
-  noPortfolioItems: string;
-  selectImageError: string;
-  imageUploadedSuccess: string;
-  imageUploadError: string;
-  imageDeletedSuccess: string;
-  imageDeleteError: string;
-  portfolioItem: string;
+  // Media Gallery
+  mediaGallery: string;
+  mediaGalleryDescription: string;
   uploadFile: string;
-  portfolioLimitReached: string;
+  noMediaItems: string;
+  mediaLimitReached: string;
+  mediaUploadedSuccess: string;
+  mediaDeletedSuccess: string;
+  mediaUploadError: string;
+  mediaDeleteError: string;
+  mediaItem: string;
+  fileTooLarge: string;
+  invalidFileType: string;
   videoNotSupported: string;
+
 
   // New Profile Page
   callNow: string;
@@ -517,18 +518,18 @@ export const translations: Record<'en' | 'ar', Translations> = {
     accountDeletionFailed: "Account Deletion Failed",
     accountDeletionError: "An error occurred while deleting your account. Please try again.",
     requiresRecentLoginError: "This is a sensitive operation and requires recent authentication. Please log out and log back in before trying again.",
-    portfolio: "Work Portfolio",
-    portfolioDescription: "Showcase your best work by uploading up to 5 images or videos.",
-    uploadImage: "Upload Image",
-    noPortfolioItems: "You haven't uploaded any portfolio items yet.",
-    selectImageError: "Please select a file to upload.",
-    imageUploadedSuccess: "File uploaded successfully!",
-    imageUploadError: "Failed to upload file.",
-    imageDeletedSuccess: "File deleted successfully!",
-    imageDeleteError: "Failed to delete file.",
-    portfolioItem: "Portfolio Item",
+    mediaGallery: "Work Gallery",
+    mediaGalleryDescription: "Showcase your best work. You can upload up to 5 images or videos (max 10MB each).",
     uploadFile: "Upload File",
-    portfolioLimitReached: "You have reached the portfolio limit (5 files).",
+    noMediaItems: "You haven't uploaded any media items yet.",
+    mediaLimitReached: "You have reached the media limit (5 files).",
+    mediaUploadedSuccess: "Media uploaded successfully!",
+    mediaDeletedSuccess: "Media deleted successfully!",
+    mediaUploadError: "Failed to upload media.",
+    mediaDeleteError: "Failed to delete media.",
+    mediaItem: "Media Item",
+    fileTooLarge: "File is too large. Max size is 10MB.",
+    invalidFileType: "Invalid file type. Only images (JPG, PNG, WEBP) and videos (MP4, MOV) are allowed.",
     videoNotSupported: "Your browser does not support the video tag.",
     callNow: "Call Now",
     contactOnWhatsApp: "WhatsApp",
@@ -778,18 +779,18 @@ export const translations: Record<'en' | 'ar', Translations> = {
     accountDeletionFailed: "فشل حذف الحساب",
     accountDeletionError: "حدث خطأ أثناء حذف حسابك. يرجى المحاولة مرة أخرى.",
     requiresRecentLoginError: "هذه عملية حساسة وتتطلب مصادقة حديثة. يرجى تسجيل الخروج ثم تسجيل الدخول مرة أخرى قبل المحاولة مرة أخرى.",
-    portfolio: "معرض الأعمال",
-    portfolioDescription: "اعرض أفضل أعمالك عن طريق تحميل ما يصل إلى 5 صور أو مقاطع فيديو.",
-    uploadImage: "تحميل صورة",
-    noPortfolioItems: "لم تقم بتحميل أي عناصر في معرض أعمالك بعد.",
-    selectImageError: "يرجى تحديد ملف لتحميله.",
-    imageUploadedSuccess: "تم تحميل الملف بنجاح!",
-    imageUploadError: "فشل تحميل الملف.",
-    imageDeletedSuccess: "تم حذف الملف بنجاح!",
-    imageDeleteError: "فشل حذف الملف.",
-    portfolioItem: "عنصر من معرض الأعمال",
+    mediaGallery: "معرض الأعمال",
+    mediaGalleryDescription: "اعرض أفضل أعمالك. يمكنك تحميل ما يصل إلى 5 صور أو مقاطع فيديو (بحد أقصى 10 ميجابايت لكل منها).",
     uploadFile: "تحميل ملف",
-    portfolioLimitReached: "لقد وصلت إلى الحد الأقصى لمعرض الأعمال (5 ملفات).",
+    noMediaItems: "لم تقم بتحميل أي وسائط بعد.",
+    mediaLimitReached: "لقد وصلت إلى الحد الأقصى للوسائط (5 ملفات).",
+    mediaUploadedSuccess: "تم تحميل الوسائط بنجاح!",
+    mediaDeletedSuccess: "تم حذف الوسائط بنجاح!",
+    mediaUploadError: "فشل تحميل الوسائط.",
+    mediaDeleteError: "فشل حذف الوسائط.",
+    mediaItem: "عنصر وسائط",
+    fileTooLarge: "الملف كبير جدًا. الحجم الأقصى هو 10 ميجابايت.",
+    invalidFileType: "نوع ملف غير صالح. يُسمح فقط بالصور (JPG, PNG, WEBP) ومقاطع الفيديو (MP4, MOV).",
     videoNotSupported: "متصفحك لا يدعم وسم الفيديو.",
     callNow: "اتصل الآن",
     contactOnWhatsApp: "واتساب",

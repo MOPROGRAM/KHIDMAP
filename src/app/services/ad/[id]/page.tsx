@@ -206,7 +206,7 @@ export default function ProviderDetailsPage() {
           setRatingInput(0);
           setCommentInput('');
           fetchProviderData();
-      } catch (error: any) => {
+      } catch (error: any) {
           toast({ variant: "destructive", title: t.errorOccurred, description: String(error.message || t.failedSubmitRating) });
       } finally {
           setIsSubmitting(false);
@@ -248,9 +248,9 @@ export default function ProviderDetailsPage() {
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
   };
   
-  const validPortfolio = useMemo(() => {
-    if (!provider || !Array.isArray(provider.portfolio)) return [];
-    return provider.portfolio.filter(item => item && item.id && item.url && item.type);
+  const validMedia = useMemo(() => {
+    if (!provider || !Array.isArray(provider.media)) return [];
+    return provider.media.filter(item => item && item.id && item.url && item.type);
   }, [provider]);
 
   const serviceCategories = useMemo(() => Array.isArray(provider?.serviceCategories) ? provider.serviceCategories : [], [provider]);
@@ -419,31 +419,34 @@ export default function ProviderDetailsPage() {
                 )}
             </div>
 
-             {validPortfolio.length > 0 && (
+             {validMedia.length > 0 && (
                 <div className="mt-8 space-y-4">
                   <Separator/>
                    <h2 className="text-xl font-bold text-primary flex items-center gap-2"><ImageIcon/> {t.gallery}</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {validPortfolio.map(item => (
+                        {validMedia.map(item => (
                            <div key={item.id} className="group aspect-square relative overflow-hidden rounded-lg shadow-md bg-muted">
                                {item.type === 'video' ? (
                                    <video
                                        src={item.url}
                                        controls
                                        className="w-full h-full object-cover"
-                                       aria-label={t.portfolioItem}
+                                       aria-label={t.mediaItem}
                                    >
                                        {t.videoNotSupported}
                                    </video>
                                ) : (
                                    <NextImage 
                                        src={item.url} 
-                                       alt={t.portfolioItem || 'Portfolio Item'} 
+                                       alt={t.mediaItem || 'Media Item'} 
                                        layout="fill" 
                                        objectFit="cover"
                                        className="group-hover:scale-105 transition-transform duration-300"
                                    />
                                )}
+                                <div className="absolute top-1 left-1 bg-black/50 text-white p-1 rounded-full pointer-events-none">
+                                    {item.type === 'video' ? <Video className="h-3 w-3" /> : <ImageIcon className="h-3 w-3" />}
+                                </div>
                            </div>
                         ))}
                     </div>

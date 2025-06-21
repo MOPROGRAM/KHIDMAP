@@ -11,12 +11,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
-import { UserProfile, ServiceCategory, PortfolioItem } from '@/lib/data'; 
+import { UserProfile, ServiceCategory, MediaItem } from '@/lib/data'; 
 import { auth, db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc } from 'firebase/firestore'; 
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, PlayCircle } from 'lucide-react';
+import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, Video } from 'lucide-react';
 import NextImage from 'next/image'; 
 import { z } from 'zod';
 
@@ -45,7 +45,7 @@ export default function ProviderProfilePage() {
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined>(undefined);
   const [location, setLocation] = useState<{ latitude: number, longitude: number } | null>(null);
-  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [fileUpload, setFileUpload] = useState<File | null>(null);
 
   const [isLoading, setIsLoading] =useState(false);
@@ -76,12 +76,12 @@ export default function ProviderProfilePage() {
               setServiceCategories(firestoreProfile.serviceCategories || []);
               setProfilePictureUrl(firestoreProfile.profilePictureUrl);
               
-              const portfolioData = firestoreProfile.portfolio;
-              if (Array.isArray(portfolioData)) {
-                  const validItems = portfolioData.filter(item => item && item.id && item.url && item.type);
-                  setPortfolioItems(validItems);
+              const mediaData = firestoreProfile.media;
+              if (Array.isArray(mediaData)) {
+                  const validItems = mediaData.filter(item => item && item.id && item.url && item.type);
+                  setMediaItems(validItems);
               } else {
-                  setPortfolioItems([]);
+                  setMediaItems([]);
               }
 
               if (firestoreProfile.location) {
@@ -148,70 +148,81 @@ export default function ProviderProfilePage() {
   };
 
   const handleFileUpload = async () => {
-    if (!fileUpload || !authUser || !db || !storage) {
-        toast({ variant: "destructive", title: t.errorOccurred, description: t.selectImageError });
+    if (!fileUpload || !authUser || !db || !storage) return;
+
+    // Validation
+    const MAX_FILES = 5;
+    const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+    const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/quicktime'];
+    const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
+
+    if (mediaItems.length >= MAX_FILES) {
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.mediaLimitReached });
+        return;
+    }
+    if (!ALLOWED_TYPES.includes(fileUpload.type)) {
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.invalidFileType });
+        return;
+    }
+    if (fileUpload.size > MAX_SIZE_BYTES) {
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.fileTooLarge });
         return;
     }
 
     setIsUploading(true);
     const fileId = `${Date.now()}-${fileUpload.name}`;
-    const fileRef = ref(storage, `portfolios/${authUser.uid}/${fileId}`);
+    const fileRef = ref(storage, `media/${authUser.uid}/${fileId}`);
 
     try {
         const userDocRef = doc(db, "users", authUser.uid);
-        const docSnap = await getDoc(userDocRef);
         
-        const currentPortfolio = (docSnap.exists() && Array.isArray(docSnap.data().portfolio))
-          ? docSnap.data().portfolio
-          : [];
-
-        if (currentPortfolio.length >= 5) {
-            toast({ variant: "destructive", title: t.errorOccurred, description: t.portfolioLimitReached });
-            setIsUploading(false);
-            return;
-        }
-
         await uploadBytes(fileRef, fileUpload);
         const downloadURL = await getDownloadURL(fileRef);
-        const fileType = fileUpload.type.startsWith('video/') ? 'video' : 'image';
-        const newPortfolioItem: PortfolioItem = { id: fileId, url: downloadURL, type: fileType };
+        const fileType = ALLOWED_VIDEO_TYPES.includes(fileUpload.type) ? 'video' : 'image';
+        const newMediaItem: MediaItem = { id: fileId, url: downloadURL, type: fileType };
 
-        const newPortfolio = [...currentPortfolio, newPortfolioItem];
-        await setDoc(userDocRef, { portfolio: newPortfolio }, { merge: true });
+        const docSnap = await getDoc(userDocRef);
+        const currentMedia = (docSnap.exists() && Array.isArray(docSnap.data().media))
+          ? docSnap.data().media
+          : [];
+        
+        const newMedia = [...currentMedia, newMediaItem];
+        await updateDoc(userDocRef, { media: newMedia });
 
-        setPortfolioItems(newPortfolio);
+        setMediaItems(newMedia);
         setFileUpload(null);
-        toast({ title: t.imageUploadedSuccess });
+        toast({ title: t.mediaUploadedSuccess });
     } catch (error) {
         console.error("Error uploading file:", error);
-        toast({ variant: "destructive", title: t.errorOccurred, description: t.imageUploadError });
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.mediaUploadError });
         try { await deleteObject(fileRef); } catch (e) { console.error("Could not clean up orphaned file", e); }
     } finally {
         setIsUploading(false);
     }
   };
 
-  const handleFileDelete = async (itemToDelete: PortfolioItem) => {
+  const handleFileDelete = async (itemToDelete: MediaItem) => {
     if (!authUser || !db || !storage) return;
     
-    const fileRef = ref(storage, `portfolios/${authUser.uid}/${itemToDelete.id}`);
+    const fileRef = ref(storage, `media/${authUser.uid}/${itemToDelete.id}`);
     try {
         const userDocRef = doc(db, "users", authUser.uid);
         const docSnap = await getDoc(userDocRef);
 
         if (docSnap.exists()) {
-            const currentPortfolio = Array.isArray(docSnap.data().portfolio) ? docSnap.data().portfolio : [];
-            const newPortfolio = currentPortfolio.filter((item: PortfolioItem) => item && item.id !== itemToDelete.id);
+            const currentMedia = Array.isArray(docSnap.data().media) ? docSnap.data().media : [];
+            const newMedia = currentMedia.filter((item: MediaItem) => item && item.id !== itemToDelete.id);
             
-            await updateDoc(userDocRef, { portfolio: newPortfolio });
+            await updateDoc(userDocRef, { media: newMedia });
             await deleteObject(fileRef);
             
-            setPortfolioItems(newPortfolio);
-            toast({ title: t.imageDeletedSuccess });
+            setMediaItems(newMedia);
+            toast({ title: t.mediaDeletedSuccess });
         }
     } catch (error) {
         console.error("Error deleting file:", error);
-        toast({ variant: "destructive", title: t.errorOccurred, description: t.imageDeleteError });
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.mediaDeleteError });
     }
   };
 
@@ -296,7 +307,7 @@ export default function ProviderProfilePage() {
     { value: 'Other', labelKey: 'other' },
   ];
 
-  const canUploadMore = portfolioItems.length < 5;
+  const canUploadMore = mediaItems.length < 5;
 
   return (
     <div className="max-w-3xl mx-auto py-2 space-y-6">
@@ -419,11 +430,11 @@ export default function ProviderProfilePage() {
         </CardContent>
       </Card>
       
-      {/* Portfolio Section */}
+      {/* Media Gallery Section */}
       <Card className="shadow-xl">
         <CardHeader>
-            <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5 text-primary"/>{t.portfolio}</CardTitle>
-            <CardDescription>{t.portfolioDescription}</CardDescription>
+            <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5 text-primary"/>{t.mediaGallery}</CardTitle>
+            <CardDescription>{t.mediaGalleryDescription}</CardDescription>
         </CardHeader>
         <CardContent>
             <div className="space-y-4">
@@ -431,7 +442,7 @@ export default function ProviderProfilePage() {
                     <Input 
                         id="file-upload"
                         type="file"
-                        accept="image/*,video/*"
+                        accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
                         onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
                                 setFileUpload(e.target.files[0]);
@@ -446,20 +457,22 @@ export default function ProviderProfilePage() {
                     </Button>
                 </div>
                  {!canUploadMore && (
-                    <p className="text-sm text-destructive text-center">{t.portfolioLimitReached}</p>
+                    <p className="text-sm text-destructive text-center">{t.mediaLimitReached}</p>
                  )}
                 
-                {portfolioItems.length > 0 ? (
+                {mediaItems.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {portfolioItems.map(item => (
+                        {mediaItems.map(item => (
                             <div key={item.id} className="relative group aspect-square">
                                 {item.type === 'video' ? (
                                     <video src={item.url} className="rounded-md object-cover w-full h-full bg-black" />
                                 ) : (
-                                    <NextImage src={item.url} alt="Portfolio item" layout="fill" className="rounded-md object-cover" />
+                                    <NextImage src={item.url} alt={t.mediaItem || 'Media item'} layout="fill" className="rounded-md object-cover" />
                                 )}
+                                <div className="absolute top-1 left-1 bg-black/50 text-white p-1 rounded-full pointer-events-none">
+                                    {item.type === 'video' ? <Video className="h-3 w-3" /> : <ImageIcon className="h-3 w-3" />}
+                                </div>
                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
-                                    {item.type === 'video' && <PlayCircle className="h-8 w-8 text-white absolute" />}
                                     <Button variant="destructive" size="icon" className="absolute z-10" onClick={() => handleFileDelete(item)}>
                                         <Trash2 className="h-4 w-4"/>
                                     </Button>
@@ -468,7 +481,7 @@ export default function ProviderProfilePage() {
                         ))}
                     </div>
                 ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">{t.noPortfolioItems}</p>
+                    <p className="text-sm text-muted-foreground text-center py-4">{t.noMediaItems}</p>
                 )}
             </div>
         </CardContent>
@@ -476,5 +489,3 @@ export default function ProviderProfilePage() {
     </div>
   );
 }
-
-    
