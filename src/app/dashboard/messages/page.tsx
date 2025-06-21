@@ -11,8 +11,8 @@ import type { Conversation, Message } from '@/lib/data';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, updateDoc, type Timestamp, where } from 'firebase/firestore';
-import { Loader2, Send, MessageSquare, ArrowLeft } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Loader2, Send, MessageSquare, ArrowLeft, UserCircle } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -36,16 +36,15 @@ export default function MessagesPage() {
 
   const getOtherParticipant = useCallback((conversation?: Conversation | null) => {
     if (!conversation || !Array.isArray(conversation.participants) || !authUser) {
-      return { id: null, name: 'Unknown', profilePictureUrl: '' };
+      return { id: null, name: 'Unknown' };
     }
     const otherId = conversation.participants.find(p => p !== authUser.uid);
     if (!otherId) {
-      return { id: null, name: 'Unknown User', profilePictureUrl: '' };
+      return { id: null, name: 'Unknown User' };
     }
     return {
       id: otherId,
       name: conversation.participantNames?.[otherId] || 'Unknown User',
-      profilePictureUrl: conversation.participantProfilePictures?.[otherId] || '',
     };
   }, [authUser]);
 
@@ -203,7 +202,6 @@ export default function MessagesPage() {
                   )}
                 >
                   <Avatar>
-                    <AvatarImage src={otherUser.profilePictureUrl} alt={otherUser.name} />
                     <AvatarFallback>{otherUser.name?.charAt(0) || 'U'}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 overflow-hidden">
@@ -234,7 +232,6 @@ export default function MessagesPage() {
                   <ArrowLeft className="h-5 w-5" />
               </Button>
               <Avatar>
-                  <AvatarImage src={otherParticipantInSelectedConvo.profilePictureUrl} alt={otherParticipantInSelectedConvo.name} />
                   <AvatarFallback>{otherParticipantInSelectedConvo.name?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
               <div>

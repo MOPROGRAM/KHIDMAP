@@ -107,7 +107,6 @@ export type Translations = {
   profileChangesSaved?: string;
   failedUpdateProfile?: string;
   profilePageDescription?: string;
-  profilePictureAlt?: string;
   profileEditingUnavailable?: string;
   profileHelpTextCategory?: string;
   searchHistoryClearedTitle?: string;
@@ -252,29 +251,12 @@ export type Translations = {
   accountDeletionError: string;
   requiresRecentLoginError: string;
 
-  // Media Gallery
-  mediaGallery: string;
-  mediaGalleryDescription: string;
-  uploadFile: string;
-  noMediaItems: string;
-  mediaLimitReached: string;
-  mediaUploadedSuccess: string;
-  mediaDeletedSuccess: string;
-  mediaUploadError: string;
-  mediaDeleteError: string;
-  mediaItem: string;
-  fileTooLarge: string;
-  invalidFileType: string;
-  videoNotSupported: string;
-
-
   // New Profile Page
   callNow: string;
   contactOnWhatsApp: string;
   messageProvider: string;
   aboutProvider: string; // "About {name}"
   specialties: string;
-  gallery: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -386,7 +368,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     profileChangesSaved: "Your profile changes have been saved.",
     failedUpdateProfile: "Failed to update profile.",
     profilePageDescription: "Manage your provider profile details for {appName}.",
-    profilePictureAlt: "Profile Picture",
     profileEditingUnavailable: "Profile editing is currently unavailable because core services are not configured.",
     profileHelpTextCategory: "Select your primary service category.",
     searchHistoryClearedTitle: "Search History Cleared",
@@ -520,25 +501,11 @@ export const translations: Record<'en' | 'ar', Translations> = {
     accountDeletionFailed: "Account Deletion Failed",
     accountDeletionError: "An error occurred while deleting your account. Please try again.",
     requiresRecentLoginError: "This is a sensitive operation and requires recent authentication. Please log out and log back in before trying again.",
-    mediaGallery: "Work Gallery",
-    mediaGalleryDescription: "Showcase your best work. You can upload up to 5 images or videos (max 10MB each).",
-    uploadFile: "Upload File",
-    noMediaItems: "You haven't uploaded any media items yet.",
-    mediaLimitReached: "You have reached the media limit (5 files).",
-    mediaUploadedSuccess: "Media uploaded successfully!",
-    mediaDeletedSuccess: "Media deleted successfully!",
-    mediaUploadError: "Failed to upload media.",
-    mediaDeleteError: "Failed to delete media.",
-    mediaItem: "Media Item",
-    fileTooLarge: "File is too large. Max size is 10MB.",
-    invalidFileType: "Invalid file type. Only images (JPG, PNG, WEBP) and videos (MP4, MOV) are allowed.",
-    videoNotSupported: "Your browser does not support the video tag.",
     callNow: "Call Now",
     contactOnWhatsApp: "WhatsApp",
     messageProvider: "Message",
     aboutProvider: "About {name}",
     specialties: "Specialties",
-    gallery: "Gallery",
   },
   ar: {
     appName: "خدماب",
@@ -648,7 +615,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     profileChangesSaved: "تم حفظ تغييرات ملفك الشخصي.",
     failedUpdateProfile: "فشل تحديث الملف الشخصي.",
     profilePageDescription: "إدارة تفاصيل ملف تعريف المزود الخاص بك لـ {appName}.",
-    profilePictureAlt: "الصورة الشخصية",
     profileEditingUnavailable: "تعديل الملف الشخصي غير متاح حاليًا لأن الخدمات الأساسية غير مهيأة.",
     profileHelpTextCategory: "اختر فئة خدمتك الأساسية.",
     searchHistoryClearedTitle: "تم مسح سجل البحث",
@@ -782,24 +748,10 @@ export const translations: Record<'en' | 'ar', Translations> = {
     accountDeletionFailed: "فشل حذف الحساب",
     accountDeletionError: "حدث خطأ أثناء حذف حسابك. يرجى المحاولة مرة أخرى.",
     requiresRecentLoginError: "هذه عملية حساسة وتتطلب مصادقة حديثة. يرجى تسجيل الخروج ثم تسجيل الدخول مرة أخرى قبل المحاولة مرة أخرى.",
-    mediaGallery: "معرض الأعمال",
-    mediaGalleryDescription: "اعرض أفضل أعمالك. يمكنك تحميل ما يصل إلى 5 صور أو مقاطع فيديو (بحد أقصى 10 ميجابايت لكل منها).",
-    uploadFile: "تحميل ملف",
-    noMediaItems: "لم تقم بتحميل أي وسائط بعد.",
-    mediaLimitReached: "لقد وصلت إلى الحد الأقصى للوسائط (5 ملفات).",
-    mediaUploadedSuccess: "تم تحميل الوسائط بنجاح!",
-    mediaDeletedSuccess: "تم حذف الوسائط بنجاح!",
-    mediaUploadError: "فشل تحميل الوسائط.",
-    mediaDeleteError: "فشل حذف الوسائط.",
-    mediaItem: "عنصر وسائط",
-    fileTooLarge: "الملف كبير جدًا. الحجم الأقصى هو 10 ميجابايت.",
-    invalidFileType: "نوع ملف غير صالح. يُسمح فقط بالصور (JPG, PNG, WEBP) ومقاطع الفيديو (MP4, MOV).",
-    videoNotSupported: "متصفحك لا يدعم وسم الفيديو.",
     callNow: "اتصل الآن",
     contactOnWhatsApp: "واتساب",
     messageProvider: "مراسلة",
     aboutProvider: "عن {name}",
     specialties: "التخصصات",
-    gallery: "معرض الأعمال",
   },
 };

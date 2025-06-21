@@ -7,13 +7,12 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, Rating, findOrCreateConversation } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import NextImage from 'next/image';
 import {
   ArrowLeft, MapPin, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, SprayCan,
-  GripVertical, HardHat, Layers, Star, Wrench, Zap, MessageSquare, Image as ImageIcon, Video, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall
+  GripVertical, HardHat, Layers, Star, Wrench, Zap, MessageSquare, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall
 } from 'lucide-react';
 import Link from 'next/link';
-import { Timestamp, GeoPoint } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
 import { db, auth } from '@/lib/firebase';
 import { useToast } from "@/hooks/use-toast";
@@ -21,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 
 const categoryIcons: Record<ServiceCategory, React.ElementType> = {
@@ -248,11 +247,6 @@ export default function ProviderDetailsPage() {
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
   };
   
-  const validMedia = useMemo(() => {
-    if (!provider || !Array.isArray(provider.media)) return [];
-    return provider.media.filter(item => item && item.id && item.url && item.type);
-  }, [provider]);
-
   const serviceCategories = useMemo(() => Array.isArray(provider?.serviceCategories) ? provider.serviceCategories : [], [provider]);
   const serviceAreas = useMemo(() => Array.isArray(provider?.serviceAreas) ? provider.serviceAreas : [], [provider]);
   const cleanPhoneNumber = useMemo(() => provider?.phoneNumber?.replace(/[^0-9+]/g, '') || '', [provider?.phoneNumber]);
@@ -318,39 +312,25 @@ export default function ProviderDetailsPage() {
       </Button>
 
       <Card className="overflow-hidden shadow-2xl border-none">
-        <div className="relative">
-          <div className="h-40 md:h-56 w-full bg-muted">
-            <NextImage 
-              src="https://placehold.co/1000x400.png"
-              alt={`${provider.name}'s banner`}
-              layout="fill"
-              objectFit="cover"
-              className="opacity-50"
-              data-ai-hint="tools workshop"
-            />
-          </div>
-          <div className="absolute top-20 md:top-32 left-1/2 -translate-x-1/2 w-full px-4">
-              <div className="flex flex-col items-center text-center">
-                 <Avatar className="w-32 h-32 border-4 border-background shadow-lg">
-                    <AvatarImage src={provider.profilePictureUrl} alt={provider.name} data-ai-hint="person portrait"/>
-                    <AvatarFallback className="text-4xl"><UserCircle /></AvatarFallback>
+        <div className="bg-muted p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row items-center text-center sm:text-left gap-6">
+                <Avatar className="w-32 h-32 border-4 border-background shadow-lg">
+                    <AvatarFallback className="text-5xl"><UserCircle/></AvatarFallback>
                 </Avatar>
-              </div>
-          </div>
-        </div>
-
-        <div className="pt-20 p-6 flex flex-col items-center text-center">
-            <h1 className="text-3xl md:text-4xl font-bold font-headline text-foreground">{provider.name}</h1>
-             {serviceCategories.length > 0 && (
-                <p className="text-base text-muted-foreground mt-1">
-                    {t[serviceCategories[0].toLowerCase() as keyof Translations] || serviceCategories[0]}
-                </p>
-             )}
-            <div className="flex items-center gap-2 mt-3">
-                <StarRating rating={averageRating} />
-                <span className="text-sm text-muted-foreground">
-                    {averageRating > 0 ? `${averageRating.toFixed(1)} (${ratings.length} ${t.reviews})` : t.noReviewsYet}
-                </span>
+                <div className="space-y-2">
+                    <h1 className="text-3xl md:text-4xl font-bold font-headline text-foreground">{provider.name}</h1>
+                    {serviceCategories.length > 0 && (
+                        <p className="text-lg text-primary font-semibold">
+                            {t[serviceCategories[0].toLowerCase() as keyof Translations] || serviceCategories[0]}
+                        </p>
+                    )}
+                    <div className="flex items-center justify-center sm:justify-start gap-2">
+                        <StarRating rating={averageRating} />
+                        <span className="text-sm text-muted-foreground">
+                            {averageRating > 0 ? `${averageRating.toFixed(1)} (${ratings.length} ${t.reviews})` : t.noReviewsYet}
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -372,7 +352,7 @@ export default function ProviderDetailsPage() {
                         </a>
                     </Button>
                 )}
-                {authUser && authUser.uid !== provider.uid && (
+                {authUser && authUser.uid !== providerId && (
                     <Button
                       size="lg"
                       variant="outline"
@@ -418,40 +398,6 @@ export default function ProviderDetailsPage() {
                     </div>
                 )}
             </div>
-
-             {validMedia.length > 0 && (
-                <div className="mt-8 space-y-4">
-                  <Separator/>
-                   <h2 className="text-xl font-bold text-primary flex items-center gap-2"><ImageIcon/> {t.gallery}</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {validMedia.map(item => (
-                           <div key={item.id} className="group aspect-square relative overflow-hidden rounded-lg shadow-md bg-muted">
-                               {item.type === 'video' ? (
-                                   <video
-                                       src={item.url}
-                                       controls
-                                       className="w-full h-full object-cover"
-                                       aria-label={t.mediaItem}
-                                   >
-                                       {t.videoNotSupported}
-                                   </video>
-                               ) : (
-                                   <NextImage 
-                                       src={item.url} 
-                                       alt={t.mediaItem || 'Media Item'} 
-                                       layout="fill" 
-                                       objectFit="cover"
-                                       className="group-hover:scale-105 transition-transform duration-300"
-                                   />
-                               )}
-                                <div className="absolute top-1 left-1 bg-black/50 text-white p-1 rounded-full pointer-events-none">
-                                    {item.type === 'video' ? <Video className="h-3 w-3" /> : <ImageIcon className="h-3 w-3" />}
-                                </div>
-                           </div>
-                        ))}
-                    </div>
-                </div>
-              )}
              
             <div className="mt-8 space-y-4">
                 <Separator/>

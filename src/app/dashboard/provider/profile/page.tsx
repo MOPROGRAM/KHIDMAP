@@ -11,13 +11,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
-import { UserProfile, ServiceCategory, MediaItem } from '@/lib/data'; 
-import { auth, db, storage } from '@/lib/firebase';
-import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'; 
+import { UserProfile, ServiceCategory } from '@/lib/data'; 
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc } from 'firebase/firestore'; 
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, Video } from 'lucide-react';
-import NextImage from 'next/image'; 
+import { Loader2, UserCircle, Save, AlertTriangle, MapPin } from 'lucide-react';
 import { z } from 'zod';
 
 const ProfileFormSchema = z.object({
@@ -43,20 +41,16 @@ export default function ProviderProfilePage() {
   const [qualifications, setQualifications] = useState('');
   const [serviceAreasString, setServiceAreasString] = useState('');
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
-  const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined>(undefined);
   const [location, setLocation] = useState<{ latitude: number, longitude: number } | null>(null);
-  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
-  const [fileUpload, setFileUpload] = useState<File | null>(null);
-
+  
   const [isLoading, setIsLoading] =useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isCoreServicesAvailable, setIsCoreServicesAvailable] = useState(false);
 
   useEffect(() => {
-    if (auth && db && storage) {
+    if (auth && db) {
       setIsCoreServicesAvailable(true);
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -74,16 +68,7 @@ export default function ProviderProfilePage() {
               setQualifications(firestoreProfile.qualifications || '');
               setServiceAreasString((firestoreProfile.serviceAreas || []).join(', ')); 
               setServiceCategories(firestoreProfile.serviceCategories || []);
-              setProfilePictureUrl(firestoreProfile.profilePictureUrl);
               
-              const mediaData = firestoreProfile.media;
-              if (Array.isArray(mediaData)) {
-                  const validItems = mediaData.filter(item => item && item.id && item.url && item.type);
-                  setMediaItems(validItems);
-              } else {
-                  setMediaItems([]);
-              }
-
               if (firestoreProfile.location) {
                 setLocation({
                   latitude: firestoreProfile.location.latitude,
@@ -107,7 +92,7 @@ export default function ProviderProfilePage() {
     } else {
       setIsCoreServicesAvailable(false);
       setIsFetching(false);
-      console.warn("Firebase Auth, DB or Storage not initialized in ProviderProfilePage.");
+      console.warn("Firebase Auth or DB not initialized in ProviderProfilePage.");
     }
   }, [router, t, toast]);
 
@@ -146,79 +131,6 @@ export default function ProviderProfilePage() {
       }
     );
   };
-
-  const handleFileUpload = async () => {
-    if (!fileUpload || !authUser || !db || !storage) return;
-
-    // Validation
-    const MAX_FILES = 5;
-    const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-    const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-    const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/mov'];
-    const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
-
-    if (mediaItems.length >= MAX_FILES) {
-        toast({ variant: "destructive", title: t.errorOccurred, description: t.mediaLimitReached });
-        return;
-    }
-    if (!ALLOWED_TYPES.includes(fileUpload.type.toLowerCase())) {
-        toast({ variant: "destructive", title: t.errorOccurred, description: t.invalidFileType });
-        return;
-    }
-    if (fileUpload.size > MAX_SIZE_BYTES) {
-        toast({ variant: "destructive", title: t.errorOccurred, description: t.fileTooLarge });
-        return;
-    }
-
-    setIsUploading(true);
-    const fileId = `${Date.now()}-${fileUpload.name}`;
-    const fileRef = ref(storage, `media/${authUser.uid}/${fileId}`);
-
-    try {
-        const userDocRef = doc(db, "users", authUser.uid);
-        
-        await uploadBytes(fileRef, fileUpload);
-        const downloadURL = await getDownloadURL(fileRef);
-        const fileType = ALLOWED_VIDEO_TYPES.includes(fileUpload.type.toLowerCase()) ? 'video' : 'image';
-        const newMediaItem: MediaItem = { id: fileId, url: downloadURL, type: fileType };
-
-        await updateDoc(userDocRef, {
-            media: arrayUnion(newMediaItem)
-        });
-
-        setMediaItems(prevItems => [...prevItems, newMediaItem]);
-        setFileUpload(null); // Clear the file input after successful upload
-        toast({ title: t.mediaUploadedSuccess });
-    } catch (error) {
-        console.error("Error uploading file:", error);
-        toast({ variant: "destructive", title: t.errorOccurred, description: t.mediaUploadError });
-        try { await deleteObject(fileRef); } catch (e) { console.error("Could not clean up orphaned file", e); }
-    } finally {
-        setIsUploading(false);
-    }
-  };
-
-  const handleFileDelete = async (itemToDelete: MediaItem) => {
-    if (!authUser || !db || !storage) return;
-    
-    const fileRef = ref(storage, `media/${authUser.uid}/${itemToDelete.id}`);
-    const userDocRef = doc(db, "users", authUser.uid);
-
-    try {
-        await updateDoc(userDocRef, {
-            media: arrayRemove(itemToDelete)
-        });
-
-        await deleteObject(fileRef);
-        
-        setMediaItems(prevItems => prevItems.filter(item => item.id !== itemToDelete.id));
-        toast({ title: t.mediaDeletedSuccess });
-    } catch (error) {
-        console.error("Error deleting file:", error);
-        toast({ variant: "destructive", title: t.errorOccurred, description: t.mediaDeleteError });
-    }
-  };
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,7 +172,6 @@ export default function ProviderProfilePage() {
       qualifications: data.qualifications,
       serviceAreas: data.serviceAreasString ? data.serviceAreasString.split(',').map(area => area.trim()).filter(Boolean) : [],
       serviceCategories: data.serviceCategories || [], 
-      profilePictureUrl: profilePictureUrl || null, 
       role: 'provider',
       updatedAt: serverTimestamp(),
       location: location ? new GeoPoint(location.latitude, location.longitude) : null,
@@ -300,8 +211,6 @@ export default function ProviderProfilePage() {
     { value: 'Other', labelKey: 'other' },
   ];
 
-  const canUploadMore = mediaItems.length < 5;
-
   return (
     <div className="max-w-3xl mx-auto py-2 space-y-6">
       <Card className="shadow-xl">
@@ -312,22 +221,6 @@ export default function ProviderProfilePage() {
               <CardTitle className="text-xl font-headline">{t.profile}</CardTitle>
               <CardDescription className="text-xs">{t.profilePageDescription?.replace("{appName}", t.appName)}</CardDescription>
             </div>
-          </div>
-          <div className="flex justify-center">
-            {profilePictureUrl ? (
-              <NextImage 
-                src={profilePictureUrl} 
-                alt={t.profilePictureAlt || "Profile Picture"} 
-                width={120} 
-                height={120} 
-                className="rounded-full border-4 border-primary shadow-md object-cover"
-                data-ai-hint="profile avatar"
-              />
-            ) : (
-              <div className="w-[120px] h-[120px] rounded-full border-4 border-primary shadow-md bg-muted flex items-center justify-center">
-                <UserCircle className="h-16 w-16 text-muted-foreground/70" />
-              </div>
-            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -420,63 +313,6 @@ export default function ProviderProfilePage() {
               {t.saveChanges}
             </Button>
           </form>
-        </CardContent>
-      </Card>
-      
-      {/* Media Gallery Section */}
-      <Card className="shadow-xl">
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5 text-primary"/>{t.mediaGallery}</CardTitle>
-            <CardDescription>{t.mediaGalleryDescription}</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                    <Input 
-                        id="file-upload"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/mov"
-                        onChange={(e) => {
-                            if (e.target.files && e.target.files[0]) {
-                                setFileUpload(e.target.files[0]);
-                            }
-                        }}
-                        disabled={!canUploadMore || isUploading || !isCoreServicesAvailable}
-                        className="flex-1"
-                    />
-                    <Button onClick={handleFileUpload} disabled={!fileUpload || !canUploadMore || isUploading || !isCoreServicesAvailable}>
-                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4" />}
-                        {t.uploadFile}
-                    </Button>
-                </div>
-                 {!canUploadMore && (
-                    <p className="text-sm text-destructive text-center">{t.mediaLimitReached}</p>
-                 )}
-                
-                {mediaItems.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {mediaItems.map(item => (
-                            <div key={item.id} className="relative group aspect-square">
-                                {item.type === 'video' ? (
-                                    <video controls src={item.url} className="rounded-md object-cover w-full h-full bg-black" />
-                                ) : (
-                                    <NextImage src={item.url} alt={t.mediaItem || 'Media item'} layout="fill" className="rounded-md object-cover" />
-                                )}
-                                <div className="absolute top-1 left-1 bg-black/50 text-white p-1 rounded-full pointer-events-none">
-                                    {item.type === 'video' ? <Video className="h-3 w-3" /> : <ImageIcon className="h-3 w-3" />}
-                                </div>
-                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
-                                    <Button variant="destructive" size="icon" className="absolute z-10" onClick={() => handleFileDelete(item)}>
-                                        <Trash2 className="h-4 w-4"/>
-                                    </Button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">{t.noMediaItems}</p>
-                )}
-            </div>
         </CardContent>
       </Card>
     </div>

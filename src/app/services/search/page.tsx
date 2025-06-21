@@ -9,12 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { UserProfile, getAllProviders, ServiceCategory } from '@/lib/data';
 import Link from 'next/link';
-import NextImage from 'next/image'; 
 import { Search as SearchIcon, MapPin, User, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, HardHat, Layers, UserCircle, Star, Briefcase, LocateFixed } from 'lucide-react';
 import { db } from '@/lib/firebase'; 
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import type { GeoPoint } from 'firebase/firestore';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
 
 type UserProfileWithDistance = UserProfile & { distance?: number };
 
@@ -300,37 +301,41 @@ export default function ServiceSearchPage() {
                 className="overflow-hidden shadow-md hover:shadow-lg border transition-all duration-300 ease-in-out flex flex-col group transform hover:-translate-y-1"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <CardHeader className="p-0">
-                  <div className="relative h-40 w-full">
-                    <NextImage 
-                      src={provider.profilePictureUrl || `https://placehold.co/400x250.png`}
-                      alt={provider.name}
-                      layout="fill"
-                      objectFit="cover"
-                      className="group-hover:scale-105 transition-transform duration-500"
-                      data-ai-hint="person portrait"
-                    />
-                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                     {provider.distance !== undefined && provider.distance !== Infinity && (
-                        <Badge variant="destructive" className="absolute top-2 right-2">
-                           <MapPin className="h-3 w-3 mr-1"/>
-                           {provider.distance.toFixed(1)} {t.kmAway?.replace('{distance}', '')}
-                        </Badge>
-                     )}
-                  </div>
+                <CardHeader>
+                   <div className="flex items-center gap-4">
+                     <Avatar className="h-14 w-14">
+                       <AvatarFallback className="text-2xl">
+                         <UserCircle/>
+                       </AvatarFallback>
+                     </Avatar>
+                     <div className='flex-1'>
+                       <CardTitle className="text-base font-semibold truncate hover:text-primary transition-colors" title={provider.name}>
+                          <Link href={`/services/ad/${provider.uid}`}>{provider.name}</Link>
+                       </CardTitle>
+                       <div className="flex items-center gap-2 mt-1">
+                        {(provider.serviceCategories || []).slice(0, 1).map(cat => {
+                            const CatIcon = categoryIcons[cat] || Briefcase;
+                            return (
+                                <Badge key={cat} variant="secondary" className="font-normal">
+                                    <CatIcon className="h-3 w-3 mr-1"/>
+                                    {t[cat.toLowerCase() as keyof Translations] || cat}
+                                </Badge>
+                            )
+                        })}
+                        {provider.distance !== undefined && provider.distance !== Infinity && (
+                            <Badge variant="outline" className="font-normal">
+                               <MapPin className="h-3 w-3 mr-1"/>
+                               {provider.distance.toFixed(1)} {t.kmAway?.replace('{distance}', '')}
+                            </Badge>
+                         )}
+                       </div>
+                     </div>
+                   </div>
                 </CardHeader>
-                <CardContent className="flex-grow p-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    {(provider.serviceCategories || []).slice(0, 2).map(cat => (
-                        <Badge key={cat} variant="secondary">{t[cat.toLowerCase() as keyof Translations] || cat}</Badge>
-                    ))}
-                  </div>
-                  <CardTitle className="text-base font-semibold truncate hover:text-primary transition-colors" title={provider.name}>
-                     <Link href={`/services/ad/${provider.uid}`}>{provider.name}</Link>
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground line-clamp-2 h-10 mt-1">{provider.qualifications || t.provider + " " + (t[provider.serviceCategories?.[0]?.toLowerCase() as keyof Translations] || '')}</p>
+                <CardContent className="flex-grow p-4 pt-0">
+                  <p className="text-sm text-muted-foreground line-clamp-2 h-10">{provider.qualifications || t.provider + " " + (t[provider.serviceCategories?.[0]?.toLowerCase() as keyof Translations] || '')}</p>
                 </CardContent>
-                <CardFooter className="p-4 mt-auto">
+                <CardFooter className="p-4 pt-0 mt-auto">
                   <Button asChild className="w-full group/button" size="sm">
                     <Link href={`/services/ad/${provider.uid}`}>
                       {t.viewProfile} <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4 group-hover/button:translate-x-0.5 transition-transform" />

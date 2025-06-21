@@ -122,9 +122,7 @@ export default function RegisterPage() {
             qualifications: '',
             serviceCategories: [],
             serviceAreas: [],
-            profilePictureUrl: '',
             location: null,
-            media: [], // Initialize media field as an empty array
         });
       }
 
