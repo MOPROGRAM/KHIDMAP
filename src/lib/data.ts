@@ -1,6 +1,6 @@
 
 import { db, auth } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch, GeoPoint } from 'firebase/firestore';
 
 // ServiceCategory is still relevant for provider profiles
 export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
@@ -16,6 +16,7 @@ export interface UserProfile {
   serviceCategories?: ServiceCategory[];
   serviceAreas?: string[]; 
   profilePictureUrl?: string;
+  location?: GeoPoint;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
   emailVerified?: boolean;

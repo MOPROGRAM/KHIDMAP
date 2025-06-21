@@ -10,10 +10,13 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { UserProfile, getAllProviders, ServiceCategory } from '@/lib/data';
 import Link from 'next/link';
 import NextImage from 'next/image'; 
-import { Search as SearchIcon, MapPin, User, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, HardHat, Layers, UserCircle, Star, Briefcase } from 'lucide-react';
+import { Search as SearchIcon, MapPin, User, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, HardHat, Layers, UserCircle, Star, Briefcase, LocateFixed } from 'lucide-react';
 import { db } from '@/lib/firebase'; 
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import type { GeoPoint } from 'firebase/firestore';
+
+type UserProfileWithDistance = UserProfile & { distance?: number };
 
 interface SearchHistoryItem {
   query: string;
@@ -31,6 +34,19 @@ const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Other: GripVertical,
 };
 
+function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
+  return d;
+}
+
 export default function ServiceSearchPage() {
   const t = useTranslation();
   const router = useRouter();
@@ -39,25 +55,47 @@ export default function ServiceSearchPage() {
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [allProviders, setAllProviders] = useState<UserProfile[]>([]);
-  const [filteredProviders, setFilteredProviders] = useState<UserProfile[]>([]);
+  const [filteredProviders, setFilteredProviders] = useState<UserProfileWithDistance[]>([]);
   
-  const [isLoading, setIsLoading] = useState(false); 
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); 
+  const [isFindingLocation, setIsFindingLocation] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentSearchQuery, setCurrentSearchQuery] = useState('');
-  const [isDbAvailable, setIsDbAvailable] = useState(false);
+  
+  const [seekerLocation, setSeekerLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [isSortedByLocation, setIsSortedByLocation] = useState(false);
 
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
 
   useEffect(() => {
-    setIsDbAvailable(!!db); 
-    if (db) {
-        const storedHistory = localStorage.getItem('fullSearchHistory');
-        if (storedHistory) {
-        setSearchHistory(JSON.parse(storedHistory));
-        }
+    const isDbAvailable = !!db;
+    if (!isDbAvailable) {
+        setError(t.serviceUnavailableMessage);
+        setIsLoading(false);
+        return;
     }
-  }, []);
+    
+    const storedHistory = localStorage.getItem('fullSearchHistory');
+    if (storedHistory) {
+      setSearchHistory(JSON.parse(storedHistory));
+    }
+    
+    setIsLoading(true);
+    getAllProviders()
+      .then(providers => {
+        setAllProviders(providers);
+        // Initial filter based on URL param
+        const initialQuery = searchParams.get('q') || '';
+        setSearchTerm(initialQuery);
+        updateDisplayedProviders(initialQuery, providers, null);
+      })
+      .catch(err => {
+        console.error("Error fetching providers:", err);
+        setError(err.message || t.failedLoadServices);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []); // Only on mount
 
   const updateSearchHistory = (query: string) => {
     if (!query.trim()) return;
@@ -66,106 +104,95 @@ export default function ServiceSearchPage() {
     setSearchHistory(newHistory);
     localStorage.setItem('fullSearchHistory', JSON.stringify(newHistory));
   };
+  
+  const updateDisplayedProviders = (query: string, providers: UserProfile[], location: {latitude: number, longitude: number} | null) => {
+      let results: UserProfileWithDistance[] = providers;
 
-  const fetchInitialProviders = useCallback(async () => {
-    if (!isDbAvailable) {
-        setError(t.serviceUnavailableMessage);
-        setInitialLoadComplete(true);
-        setIsLoading(false);
-        return;
-    }
-    setIsLoading(true); 
-    setError(null);
-    try {
-      const providers = await getAllProviders();
-      setAllProviders(providers);
-      
-      const initialQuery = searchParams.get('q');
-      if (initialQuery) {
-        setSearchTerm(initialQuery);
-        filterProviders(initialQuery, providers); 
-        setCurrentSearchQuery(initialQuery);
-      } else {
-        setFilteredProviders(providers);
+      // 1. Filter by search term
+      if (query.trim()) {
+        const lowerCaseQuery = query.toLowerCase();
+        results = providers.filter(provider => {
+            const categories = (provider.serviceCategories || []).map(cat => (t[cat.toLowerCase() as keyof Translations] || cat).toLowerCase());
+            const areas = (provider.serviceAreas || []).map(area => area.toLowerCase());
+            
+            return (
+                provider.name.toLowerCase().includes(lowerCaseQuery) ||
+                (provider.qualifications || '').toLowerCase().includes(lowerCaseQuery) ||
+                categories.some(cat => cat.includes(lowerCaseQuery)) ||
+                areas.some(area => area.includes(lowerCaseQuery))
+            );
+        });
       }
 
-    } catch (err: any) {
-      console.error("Error fetching providers:", err);
-      setError(err.message || t.failedLoadServices);
-      setAllProviders([]);
-      setFilteredProviders([]);
-    } finally {
-      setIsLoading(false);
-      setInitialLoadComplete(true);
-    }
-  }, [searchParams, t, isDbAvailable]); 
+      // 2. Sort by distance if location is available
+      if (location) {
+          results = results
+              .map(p => {
+                  if (p.location) {
+                      const distance = getDistanceInKm(location.latitude, location.longitude, p.location.latitude, p.location.longitude);
+                      return { ...p, distance };
+                  }
+                  return { ...p, distance: Infinity }; // Put providers without location at the end
+              })
+              .sort((a, b) => a.distance! - b.distance!);
+          setIsSortedByLocation(true);
+      } else {
+          setIsSortedByLocation(false);
+      }
 
-  
-  const filterProviders = (query: string, providersToFilter: UserProfile[]) => {
-    if (!query.trim()) {
-      setFilteredProviders(providersToFilter);
-      return;
-    }
-    const lowerCaseQuery = query.toLowerCase();
-    const results = providersToFilter.filter(provider => {
-        const categories = (provider.serviceCategories || []).map(cat => (t[cat.toLowerCase() as keyof Translations] || cat).toLowerCase());
-        const areas = (provider.serviceAreas || []).map(area => area.toLowerCase());
-        
-        return (
-            provider.name.toLowerCase().includes(lowerCaseQuery) ||
-            (provider.qualifications || '').toLowerCase().includes(lowerCaseQuery) ||
-            categories.some(cat => cat.includes(lowerCaseQuery)) ||
-            areas.some(area => area.includes(lowerCaseQuery))
-        );
-    });
-    setFilteredProviders(results);
+      setFilteredProviders(results);
   };
   
   useEffect(() => {
-    if (isDbAvailable) {
-        fetchInitialProviders();
-    } else if (!isDbAvailable && !initialLoadComplete) { 
-        setError(t.serviceUnavailableMessage);
-        setInitialLoadComplete(true);
+    if (!isLoading) { // Avoid running on initial data load
+        updateDisplayedProviders(searchTerm, allProviders, seekerLocation);
     }
-  }, [isDbAvailable, fetchInitialProviders, initialLoadComplete, t.serviceUnavailableMessage]);
-
-
-  const handleSearch = (query: string) => {
-    setSearchTerm(query);
-    setCurrentSearchQuery(query);
-    if (initialLoadComplete) setIsLoading(true); 
-
-    setTimeout(() => {
-      filterProviders(query, allProviders);
-      if (query.trim()) {
-        updateSearchHistory(query);
-        router.push(`/services/search?q=${encodeURIComponent(query)}`, { scroll: false });
+    
+    // Update URL without full page reload
+    const handler = setTimeout(() => {
+      if (searchTerm.trim()) {
+          updateSearchHistory(searchTerm);
+          router.push(`/services/search?q=${encodeURIComponent(searchTerm)}`, { scroll: false });
       } else {
-         router.push(`/services/search`, { scroll: false });
+          router.push(`/services/search`, { scroll: false });
       }
-      if (initialLoadComplete) setIsLoading(false);
-    }, 300); 
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [searchTerm, seekerLocation, allProviders]); // Rerun when search, location, or provider list changes
+
+
+  const handleFindNearMe = () => {
+    if (!navigator.geolocation) {
+      toast({ variant: "destructive", title: t.locationError, description: t.locationUnavailable });
+      return;
+    }
+    setIsFindingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const newLocation = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+        setSeekerLocation(newLocation);
+        toast({ title: t.sortedByDistance });
+        setIsFindingLocation(false);
+      },
+      (error) => {
+        let description = t.locationError;
+        if (error.code === error.PERMISSION_DENIED) {
+          description = t.locationPermissionDenied;
+        }
+        toast({ variant: "destructive", title: t.locationError, description });
+        setIsFindingLocation(false);
+      }
+    );
   };
   
-  const onSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isDbAvailable) {
-      toast({ variant: "destructive", title: t.serviceUnavailableTitle, description: t.serviceUnavailableMessage });
-      return;
-    }
-    handleSearch(searchTerm);
-  };
-
   const handleHistorySearch = (term: string) => {
-    if (!isDbAvailable) {
-      toast({ variant: "destructive", title: t.serviceUnavailableTitle, description: t.serviceUnavailableMessage });
-      return;
-    }
     setSearchTerm(term);
-    handleSearch(term);
-  }
-
+  };
+  
   return (
     <div className="space-y-4 py-4 animate-fadeIn">
       <Card className="shadow-md sticky top-[calc(var(--header-height,4rem)+1rem)] z-40 backdrop-blur-md bg-background/90 border">
@@ -177,7 +204,7 @@ export default function ServiceSearchPage() {
           <CardDescription>{t.searchServicesPageDescription}</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onSearchSubmit} className="flex flex-col sm:flex-row gap-4">
+          <form onSubmit={(e) => e.preventDefault()} className="flex flex-col sm:flex-row gap-2">
             <Input
               type="search"
               placeholder={t.searchPlaceholder}
@@ -185,22 +212,30 @@ export default function ServiceSearchPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-grow text-base p-3 rounded-lg shadow-inner focus:ring-2 focus:ring-primary border-input"
               aria-label={t.searchPlaceholder}
-              disabled={!isDbAvailable || (isLoading && initialLoadComplete)}
+              disabled={isLoading || !db}
             />
-            <Button 
-              type="submit" 
-              size="lg" 
-              className="text-base py-3 rounded-lg group" 
-              disabled={!isDbAvailable || (isLoading && initialLoadComplete)}
+             <Button 
+              type="button"
+              onClick={handleFindNearMe}
+              size="lg"
+              variant="outline"
+              className="text-base py-3 rounded-lg group"
+              disabled={isFindingLocation || isLoading || !db}
             >
-              {(isLoading && initialLoadComplete) ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <SearchIcon className="ltr:mr-2 rtl:ml-2 h-5 w-5 group-hover:animate-pulse-glow" />}
-              {t.search}
+              {isFindingLocation ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <LocateFixed className="ltr:mr-2 rtl:ml-2 h-5 w-5 group-hover:animate-pulse-glow"/>}
+              {t.findNearMe}
             </Button>
           </form>
         </CardContent>
       </Card>
+      
+      {isSortedByLocation && (
+        <div className="p-3 bg-accent/10 text-accent-foreground/80 rounded-lg text-sm text-center font-medium animate-fadeIn">
+            {t.sortedByDistance}
+        </div>
+      )}
 
-      {isDbAvailable && searchHistory.length > 0 && initialLoadComplete && (
+      {db && searchHistory.length > 0 && !isLoading && (
         <Card className="shadow-sm animate-fadeIn animation-delay-200 border">
           <CardHeader>
             <CardTitle className="text-xl font-semibold text-foreground">{t.recentSearches}</CardTitle>
@@ -221,14 +256,14 @@ export default function ServiceSearchPage() {
         </Card>
       )}
 
-      {!initialLoadComplete && isLoading && ( 
+      {isLoading && ( 
         <div className="flex flex-col justify-center items-center py-10 min-h-[300px]">
           <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
           <p className="text-lg text-muted-foreground">{t.loading} {t.serviceProviders}...</p>
         </div>
       )}
       
-      {initialLoadComplete && error && (
+      {!isLoading && error && (
          <Card className="text-center py-12 bg-destructive/10 border-destructive shadow-lg animate-fadeIn">
           <CardHeader>
             <AlertTriangle className="mx-auto h-16 w-16 text-destructive mb-4" />
@@ -238,46 +273,28 @@ export default function ServiceSearchPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => {
-                if(isDbAvailable) fetchInitialProviders();
-                else toast({variant: "destructive", title: t.serviceUnavailableTitle, description: t.serviceUnavailableMessage});
-            }} variant="outline" className="group">
+            <Button onClick={() => window.location.reload()} variant="outline" className="group">
                 {t.tryAgain}
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {initialLoadComplete && !error && currentSearchQuery && filteredProviders.length === 0 && (
+      {!isLoading && !error && filteredProviders.length === 0 && (
         <Card className="text-center py-12 shadow-md animate-fadeIn border">
           <CardHeader>
              <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-            <CardTitle className="text-xl text-foreground">{t.noResultsFound}</CardTitle>
+            <CardTitle className="text-xl text-foreground">{searchTerm ? t.noResultsFound : t.noServicesAvailableYet}</CardTitle>
             <CardDescription className="text-muted-foreground">
-              {t.tryDifferentKeywords}
+              {searchTerm ? t.tryDifferentKeywords : t.checkBackLater}
             </CardDescription>
           </CardHeader>
         </Card>
       )}
       
-      {initialLoadComplete && !error && filteredProviders.length === 0 && !currentSearchQuery && allProviders.length === 0 && (
-         <Card className="text-center py-12 shadow-md animate-fadeIn border">
-          <CardHeader>
-             <UserCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-            <CardTitle className="text-xl text-foreground">{t.noServicesAvailableYet}</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              {t.checkBackLater}
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      )}
-
-      {initialLoadComplete && !isLoading && !error && filteredProviders.length > 0 && (
+      {!isLoading && !error && filteredProviders.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fadeIn animation-delay-400">
-          {filteredProviders.map((provider, index) => {
-            const mainCategory = provider.serviceCategories?.[0];
-            const Icon = mainCategory ? (categoryIcons[mainCategory] || Briefcase) : Briefcase;
-            return (
+          {filteredProviders.map((provider, index) => (
               <Card 
                 key={provider.uid} 
                 className="overflow-hidden shadow-md hover:shadow-lg border transition-all duration-300 ease-in-out flex flex-col group transform hover:-translate-y-1"
@@ -294,6 +311,12 @@ export default function ServiceSearchPage() {
                       data-ai-hint="person portrait"
                     />
                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                     {provider.distance !== undefined && provider.distance !== Infinity && (
+                        <Badge variant="destructive" className="absolute top-2 right-2">
+                           <MapPin className="h-3 w-3 mr-1"/>
+                           {provider.distance.toFixed(1)} {t.kmAway?.replace('{distance}', '')}
+                        </Badge>
+                     )}
                   </div>
                 </CardHeader>
                 <CardContent className="flex-grow p-5">
@@ -315,8 +338,7 @@ export default function ServiceSearchPage() {
                   </Button>
                 </CardFooter>
               </Card>
-            );
-          })}
+          ))}
         </div>
       )}
       <style jsx global>{`

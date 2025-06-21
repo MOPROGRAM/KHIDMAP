@@ -210,6 +210,20 @@ export type Translations = {
   conversationWith?: string; // "Conversation with {name}"
   noMessagesYet?: string;
   startTheConversation?: string;
+
+  // Location-based search
+  location?: string;
+  useCurrentLocation?: string;
+  locationSet?: string;
+  locationError?: string;
+  findNearMe?: string;
+  findingLocation?: string;
+  sortedByDistance?: string;
+  kmAway?: string;
+  locationPermissionDenied?: string;
+  locationNotSet?: string;
+  locationUnavailable?: string;
+  locationHelpText?: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -421,6 +435,19 @@ export const translations: Record<'en' | 'ar', Translations> = {
     conversationWith: "Conversation with {name}",
     noMessagesYet: "No messages yet. Say hello!",
     startTheConversation: "Select a conversation from the list to start chatting.",
+    // Location-based search
+    location: "Location",
+    useCurrentLocation: "Use My Current Location",
+    locationSet: "Location has been set.",
+    locationError: "Could not get location.",
+    findNearMe: "Find Near Me",
+    findingLocation: "Finding your location...",
+    sortedByDistance: "Results sorted by distance from you.",
+    kmAway: "{distance} km",
+    locationPermissionDenied: "Location permission denied. Please enable it in your browser settings.",
+    locationNotSet: "Location not set",
+    locationUnavailable: "Location information is not available in this browser.",
+    locationHelpText: "Set your location to appear in proximity searches.",
   },
   ar: {
     appName: "خدماب",
@@ -630,5 +657,18 @@ export const translations: Record<'en' | 'ar', Translations> = {
     conversationWith: "محادثة مع {name}",
     noMessagesYet: "لا توجد رسائل بعد. قل مرحباً!",
     startTheConversation: "اختر محادثة من القائمة لبدء الدردشة.",
+    // Location-based search
+    location: "الموقع",
+    useCurrentLocation: "استخدام موقعي الحالي",
+    locationSet: "تم تحديد الموقع.",
+    locationError: "تعذر الحصول على الموقع.",
+    findNearMe: "البحث بالقرب مني",
+    findingLocation: "جاري تحديد موقعك...",
+    sortedByDistance: "تم ترتيب النتائج حسب المسافة منك.",
+    kmAway: "{distance} كم",
+    locationPermissionDenied: "تم رفض إذن تحديد الموقع. يرجى تمكينه في إعدادات المتصفح.",
+    locationNotSet: "الموقع غير محدد",
+    locationUnavailable: "معلومات الموقع غير متوفرة في هذا المتصفح.",
+    locationHelpText: "حدد موقعك للظهور في عمليات البحث القريبة.",
   },
 };

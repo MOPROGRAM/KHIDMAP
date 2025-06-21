@@ -13,9 +13,9 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, ServiceCategory } from '@/lib/data'; 
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, Timestamp, serverTimestamp } from 'firebase/firestore'; 
+import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint } from 'firebase/firestore'; 
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
-import { Loader2, UserCircle, Save, AlertTriangle } from 'lucide-react';
+import { Loader2, UserCircle, Save, AlertTriangle, MapPin } from 'lucide-react';
 import NextImage from 'next/image'; 
 import { z } from 'zod';
 
@@ -43,8 +43,10 @@ export default function ProviderProfilePage() {
   const [serviceAreasString, setServiceAreasString] = useState('');
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined>(undefined);
+  const [location, setLocation] = useState<{ latitude: number, longitude: number } | null>(null);
   
   const [isLoading, setIsLoading] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isCoreServicesAvailable, setIsCoreServicesAvailable] = useState(false);
@@ -69,6 +71,12 @@ export default function ProviderProfilePage() {
               setServiceAreasString((firestoreProfile.serviceAreas || []).join(', ')); 
               setServiceCategories(firestoreProfile.serviceCategories || []);
               setProfilePictureUrl(firestoreProfile.profilePictureUrl);
+              if (firestoreProfile.location) {
+                setLocation({
+                  latitude: firestoreProfile.location.latitude,
+                  longitude: firestoreProfile.location.longitude,
+                });
+              }
             } else {
               toast({ variant: "default", title: t.welcome, description: t.completeYourProfile });
             }
@@ -99,6 +107,32 @@ export default function ProviderProfilePage() {
     }
   };
 
+  const handleSetLocation = () => {
+    if (!navigator.geolocation) {
+      toast({ variant: "destructive", title: t.locationError, description: t.locationUnavailable });
+      return;
+    }
+    setIsGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        toast({ title: t.locationSet });
+        setIsGettingLocation(false);
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        let description = t.locationError;
+        if (error.code === error.PERMISSION_DENIED) {
+            description = t.locationPermissionDenied;
+        }
+        toast({ variant: "destructive", title: t.locationError, description });
+        setIsGettingLocation(false);
+      }
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,6 +177,7 @@ export default function ProviderProfilePage() {
       profilePictureUrl: profilePictureUrl || null, 
       role: 'provider',
       updatedAt: serverTimestamp(),
+      location: location ? new GeoPoint(location.latitude, location.longitude) : null,
     };
 
     try {
@@ -265,6 +300,32 @@ export default function ProviderProfilePage() {
               <Input id="serviceAreas" value={serviceAreasString} onChange={(e) => setServiceAreasString(e.target.value)} placeholder={t.serviceAreasPlaceholder} disabled={!isCoreServicesAvailable || isLoading}/>
               {errors.serviceAreasString && <p className="text-sm text-destructive">{errors.serviceAreasString}</p>}
             </div>
+
+             <div className="space-y-1.5">
+                <Label>{t.location}</Label>
+                <Card className="p-4 bg-muted/50 border-dashed">
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleSetLocation}
+                            disabled={isGettingLocation || !isCoreServicesAvailable || isLoading}
+                            className="flex-shrink-0"
+                        >
+                            {isGettingLocation ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />}
+                            {t.useCurrentLocation}
+                        </Button>
+                        <div className="text-sm text-muted-foreground text-center sm:text-left">
+                            {location
+                                ? `Lat: ${location.latitude.toFixed(4)}, Lon: ${location.longitude.toFixed(4)}`
+                                : t.locationNotSet
+                            }
+                        </div>
+                    </div>
+                     <p className="text-xs text-muted-foreground mt-3">{t.locationHelpText}</p>
+                </Card>
+             </div>
+
 
             <Button type="submit" className="w-full text-base py-2.5" disabled={isLoading || !isCoreServicesAvailable}>
               {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Save className="ltr:mr-2 rtl:ml-2 h-4 w-4"/>}
