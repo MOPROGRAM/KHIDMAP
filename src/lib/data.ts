@@ -165,19 +165,18 @@ export const getConversationsForUser = async (userId: string): Promise<Conversat
 export const findOrCreateConversation = async (user1Id: string, user2Id: string): Promise<string> => {
     if (!db) throw new Error("Database service is not available.");
     
-    // Query for an existing conversation
+    // Sort IDs to create a consistent, predictable query and document structure
+    const participants = [user1Id, user2Id].sort();
+    
+    // Query for an existing conversation with the exact sorted participants array
     const conversationsRef = collection(db, "conversations");
-    const q = query(conversationsRef, 
-        where("participants", "array-contains", user1Id)
-    );
+    const q = query(conversationsRef, where("participants", "==", participants), limit(1));
 
     const querySnapshot = await getDocs(q);
-    const existingConversation = querySnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .find(convo => convo.participants.includes(user2Id));
-
-    if (existingConversation) {
-        return existingConversation.id;
+    
+    if (!querySnapshot.empty) {
+        // Conversation already exists
+        return querySnapshot.docs[0].id;
     }
 
     // If no conversation exists, create a new one
@@ -192,7 +191,7 @@ export const findOrCreateConversation = async (user1Id: string, user2Id: string)
 
     const newConversationRef = doc(collection(db, 'conversations'));
     const newConversationData = {
-        participants: [user1Id, user2Id],
+        participants: participants, // Use the sorted array
         participantNames: {
             [user1Id]: user1Profile.name,
             [user2Id]: user2Profile.name,
