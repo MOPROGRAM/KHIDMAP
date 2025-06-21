@@ -72,8 +72,8 @@ export const getUserProfileById = async (uid: string): Promise<UserProfile | nul
       console.log(`No user profile found for UID: ${uid}`);
       return null;
     }
-  } catch (error) {
-    console.error(`Error fetching user profile for UID ${uid}: `, error);
+  } catch (error: any) {
+    console.error(`Error fetching user profile for UID ${uid}. Code: ${error.code}. Message: ${error.message}`);
     return null;
   }
 };
@@ -148,8 +148,8 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
         } as Rating));
         
         return ratings;
-    } catch (error) {
-        console.error(`Error fetching ratings for user ${userId}:`, error);
+    } catch (error: any) {
+        console.error(`Error fetching ratings for user ${userId}. Code: ${error.code}. Message: ${error.message}`);
         return null;
     }
 };
