@@ -7,12 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Conversation, Message, getConversationsForUser } from '@/lib/data';
+import type { Conversation, Message } from '@/lib/data';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, updateDoc, type Timestamp, where } from 'firebase/firestore';
 import { Loader2, Send, MessageSquare, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -55,7 +54,7 @@ export default function MessagesPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!authUser) return;
+    if (!authUser || !db) return;
 
     setLoadingConversations(true);
     const unsubscribeConversations = onSnapshot(
@@ -82,10 +81,10 @@ export default function MessagesPage() {
     );
 
     return () => unsubscribeConversations();
-  }, [authUser, searchParams, t.errorOccurred, toast]);
+  }, [authUser, searchParams, t.errorOccurred, toast, db]);
 
   useEffect(() => {
-    if (!selectedConversation?.id) {
+    if (!selectedConversation?.id || !db) {
       setMessages([]);
       return;
     }
@@ -104,11 +103,11 @@ export default function MessagesPage() {
     });
 
     return () => unsubscribeMessages();
-  }, [selectedConversation, t.errorOccurred, toast]);
+  }, [selectedConversation, t.errorOccurred, toast, db]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !authUser || !selectedConversation) return;
+    if (!newMessage.trim() || !authUser || !selectedConversation || !db) return;
 
     setSendingMessage(true);
     const conversationId = selectedConversation.id;
@@ -146,9 +145,29 @@ export default function MessagesPage() {
     };
   };
 
-  const formatMessageTimestamp = (timestamp: Timestamp | null): string => {
-    if (!timestamp) return '';
-    return timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formatMessageTimestamp = (timestamp: Timestamp | { seconds: number; nanoseconds: number; } | null): string => {
+    if (!timestamp) {
+        return '';
+    }
+
+    let date: Date;
+    if ('toDate' in timestamp && typeof timestamp.toDate === 'function') {
+        // It's a Firestore Timestamp object
+        date = timestamp.toDate();
+    } else if ('seconds' in timestamp && typeof timestamp.seconds === 'number') {
+        // It's a plain object from serialization
+        date = new Date(timestamp.seconds * 1000);
+    } else {
+        // Fallback for unexpected formats
+        const d = new Date(timestamp as any);
+        if (!isNaN(d.getTime())) {
+            date = d;
+        } else {
+            return ''; // Return empty string for invalid date
+        }
+    }
+    
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
   return (
@@ -260,3 +279,5 @@ export default function MessagesPage() {
     </div>
   );
 }
+
+    
