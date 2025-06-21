@@ -13,7 +13,7 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, ServiceCategory, PortfolioItem } from '@/lib/data'; 
 import { auth, db, storage } from '@/lib/firebase';
-import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'; 
+import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc } from 'firebase/firestore'; 
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, PlayCircle } from 'lucide-react';
@@ -159,13 +159,28 @@ export default function ProviderProfilePage() {
         const newPortfolioItem: PortfolioItem = { id: fileId, url: downloadURL, type: fileType };
         
         const userDocRef = doc(db, "users", authUser.uid);
-        // Switched to updateDoc, which is the standard way to modify an existing document's fields.
-        // This should be more robust.
-        await updateDoc(userDocRef, {
-            portfolio: arrayUnion(newPortfolioItem)
-        });
+        
+        const docSnap = await getDoc(userDocRef);
+        const currentData = docSnap.exists() ? docSnap.data() : {};
+        let currentPortfolio = currentData.portfolio || [];
 
-        setPortfolioItems(prev => [...prev, newPortfolioItem]);
+        if (!Array.isArray(currentPortfolio)) {
+            console.warn("Portfolio field was not an array, it will be reset.");
+            currentPortfolio = [];
+        }
+
+        if (currentPortfolio.length >= 5) {
+            toast({ variant: "destructive", title: t.errorOccurred, description: t.portfolioLimitReached });
+            await deleteObject(fileRef); // Clean up the orphaned upload
+            setIsUploading(false);
+            return;
+        }
+
+        const newPortfolio = [...currentPortfolio, newPortfolioItem];
+        
+        await updateDoc(userDocRef, { portfolio: newPortfolio });
+
+        setPortfolioItems(newPortfolio);
         setFileUpload(null);
         toast({ title: t.imageUploadedSuccess });
     } catch (error) {
@@ -184,11 +199,16 @@ export default function ProviderProfilePage() {
         await deleteObject(fileRef);
         
         const userDocRef = doc(db, "users", authUser.uid);
-        await updateDoc(userDocRef, {
-            portfolio: arrayRemove(itemToDelete)
-        });
+        const docSnap = await getDoc(userDocRef);
 
-        setPortfolioItems(prev => prev.filter(item => item.id !== itemToDelete.id));
+        if (docSnap.exists()) {
+            const currentPortfolio = docSnap.data().portfolio || [];
+            if (Array.isArray(currentPortfolio)) {
+                const newPortfolio = currentPortfolio.filter((item: PortfolioItem) => item.id !== itemToDelete.id);
+                await updateDoc(userDocRef, { portfolio: newPortfolio });
+                setPortfolioItems(newPortfolio); // Update state with the new array
+            }
+        }
         toast({ title: t.imageDeletedSuccess });
     } catch (error) {
         console.error("Error deleting file:", error);

@@ -335,7 +335,7 @@ export default function ProviderDetailsPage() {
                 <p className="text-sm bg-muted/50 p-3 rounded-lg border whitespace-pre-wrap text-foreground/90 shadow-inner">{provider.qualifications}</p>
               </div>
             )}
-            {provider.serviceCategories && provider.serviceCategories.length > 0 && (
+            {Array.isArray(provider.serviceCategories) && provider.serviceCategories.length > 0 && (
                 <div>
                     <h3 className="text-base font-semibold text-muted-foreground mb-1.5">{t.serviceCategoriesTitle}:</h3>
                     <div className="flex flex-wrap gap-2">
@@ -352,7 +352,7 @@ export default function ProviderDetailsPage() {
                     </div>
                 </div>
             )}
-            {provider.serviceAreas && provider.serviceAreas.length > 0 && (
+            {Array.isArray(provider.serviceAreas) && provider.serviceAreas.length > 0 && (
                 <div>
                 <h3 className="text-base font-semibold text-muted-foreground mb-1.5">{t.servesAreasTitle}:</h3>
                 <p className="text-sm text-foreground/90">{provider.serviceAreas.join(', ')}</p>
@@ -363,7 +363,7 @@ export default function ProviderDetailsPage() {
           <Separator className="my-4" />
 
           {/* Portfolio Section */}
-          {provider.portfolio && provider.portfolio.length > 0 && (
+          {Array.isArray(provider.portfolio) && provider.portfolio.length > 0 && (
             <div className="space-y-4 animate-fadeIn animation-delay-300">
                 <h2 className="text-xl font-semibold text-primary font-headline flex items-center gap-2">
                     <ImageIcon className="h-5 w-5" /> {t.portfolio}
