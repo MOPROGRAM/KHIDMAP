@@ -138,7 +138,9 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">{t.password}</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">{t.password}</Label>
+              </div>
               <div className="relative">
                 <Input
                   id="password"
@@ -161,6 +163,11 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </Button>
               </div>
+               <div className="text-right">
+                 <Link href="/auth/forgot-password" className="text-sm font-medium text-primary hover:underline">
+                  {t.forgotPassword}?
+                </Link>
+               </div>
             </div>
             <Button type="submit" className="w-full text-lg py-3" disabled={isLoading || !isAuthServiceAvailable}>
               {isLoading ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : t.login}

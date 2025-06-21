@@ -224,6 +224,16 @@ export type Translations = {
   locationNotSet?: string;
   locationUnavailable?: string;
   locationHelpText?: string;
+  
+  // Forgot Password
+  forgotPassword?: string;
+  forgotPasswordDescription?: string;
+  sendResetLink?: string;
+  resetLinkSentTitle?: string;
+  resetLinkSentDescription?: string; // "Check your email {email} for a link..."
+  resetPasswordErrorTitle?: string;
+  userNotFound?: string;
+  backToLogin?: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -448,6 +458,15 @@ export const translations: Record<'en' | 'ar', Translations> = {
     locationNotSet: "Location not set",
     locationUnavailable: "Location information is not available in this browser.",
     locationHelpText: "Set your location to appear in proximity searches.",
+    // Forgot Password
+    forgotPassword: "Forgot Password",
+    forgotPasswordDescription: "Enter your email address and we'll send you a link to reset your password.",
+    sendResetLink: "Send Reset Link",
+    resetLinkSentTitle: "Reset Link Sent",
+    resetLinkSentDescription: "Check your email at {email} for a link to reset your password. If it doesn't appear, check your spam folder.",
+    resetPasswordErrorTitle: "Error Sending Link",
+    userNotFound: "No user found with this email address.",
+    backToLogin: "Back to Login",
   },
   ar: {
     appName: "خدماب",
@@ -670,5 +689,14 @@ export const translations: Record<'en' | 'ar', Translations> = {
     locationNotSet: "الموقع غير محدد",
     locationUnavailable: "معلومات الموقع غير متوفرة في هذا المتصفح.",
     locationHelpText: "حدد موقعك للظهور في عمليات البحث القريبة.",
+    // Forgot Password
+    forgotPassword: "هل نسيت كلمة المرور",
+    forgotPasswordDescription: "أدخل عنوان بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور الخاصة بك.",
+    sendResetLink: "إرسال رابط إعادة التعيين",
+    resetLinkSentTitle: "تم إرسال رابط إعادة التعيين",
+    resetLinkSentDescription: "تحقق من بريدك الإلكتروني على {email} للحصول على رابط لإعادة تعيين كلمة المرور. إذا لم يظهر، تحقق من مجلد الرسائل غير المرغوب فيها.",
+    resetPasswordErrorTitle: "خطأ في إرسال الرابط",
+    userNotFound: "لم يتم العثور على مستخدم بهذا البريد الإلكتروني.",
+    backToLogin: "العودة إلى تسجيل الدخول",
   },
 };
