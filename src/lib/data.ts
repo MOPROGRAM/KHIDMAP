@@ -223,7 +223,7 @@ export const findOrCreateConversation = async (user1Id: string, user2Id: string)
                 [user1Id]: user1Profile.name,
                 [user2Id]: user2Profile.name,
             },
-            lastMessage: "Conversation started.",
+            lastMessage: "",
             lastMessageSenderId: '',
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),

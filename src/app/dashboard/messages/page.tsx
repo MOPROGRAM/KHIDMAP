@@ -10,7 +10,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import type { Conversation, Message } from '@/lib/data';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, updateDoc, type Timestamp, where } from 'firebase/firestore';
+import { collection, serverTimestamp, query, orderBy, onSnapshot, doc, type Timestamp, where, writeBatch } from 'firebase/firestore';
 import { Loader2, Send, MessageSquare, ArrowLeft, UserCircle } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -132,22 +132,29 @@ export default function MessagesPage() {
 
     setSendingMessage(true);
     const conversationId = selectedConversation.id;
+
+    // Use a batch for atomic writes
+    const batch = writeBatch(db);
+    
     const conversationRef = doc(db, 'conversations', conversationId);
-    const messagesColRef = collection(db, 'conversations', conversationId, 'messages');
+    const newMessageRef = doc(collection(db, 'conversations', conversationId, 'messages'));
+
+    // Operation 1: Create the new message
+    batch.set(newMessageRef, {
+      senderId: authUser.uid,
+      text: newMessage,
+      createdAt: serverTimestamp(),
+    });
+
+    // Operation 2: Update the conversation's last message details
+    batch.update(conversationRef, {
+      lastMessage: newMessage,
+      lastMessageSenderId: authUser.uid,
+      updatedAt: serverTimestamp(),
+    });
 
     try {
-      await addDoc(messagesColRef, {
-        senderId: authUser.uid,
-        text: newMessage,
-        createdAt: serverTimestamp(),
-      });
-
-      await updateDoc(conversationRef, {
-        lastMessage: newMessage,
-        lastMessageSenderId: authUser.uid,
-        updatedAt: serverTimestamp(),
-      });
-
+      await batch.commit();
       setNewMessage('');
     } catch (error) {
       console.error("Error sending message: ", error);
@@ -215,7 +222,8 @@ export default function MessagesPage() {
                   <div className="flex-1 overflow-hidden">
                     <p className="font-semibold truncate">{otherUser.name}</p>
                     <p className="text-sm text-muted-foreground truncate">
-                        {isLastMessageFromMe ? `${t.you}: ` : ''}{convo.lastMessage || ''}
+                        {convo.lastMessage && (isLastMessageFromMe ? `${t.you}: ` : '')}
+                        {convo.lastMessage || ''}
                     </p>
                   </div>
                 </div>
