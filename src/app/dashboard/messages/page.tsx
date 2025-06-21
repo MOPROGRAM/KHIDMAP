@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,21 @@ export default function MessagesPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const getOtherParticipant = useCallback((conversation?: Conversation | null) => {
+    if (!conversation || !Array.isArray(conversation.participants) || !authUser) {
+      return { id: null, name: 'Unknown', profilePictureUrl: '' };
+    }
+    const otherId = conversation.participants.find(p => p !== authUser.uid);
+    if (!otherId) {
+      return { id: null, name: 'Unknown User', profilePictureUrl: '' };
+    }
+    return {
+      id: otherId,
+      name: conversation.participantNames?.[otherId] || 'Unknown User',
+      profilePictureUrl: conversation.participantProfilePictures?.[otherId] || '',
+    };
+  }, [authUser]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -63,7 +78,6 @@ export default function MessagesPage() {
         const convos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
         setConversations(convos);
         
-        // If a conversationId is in the URL, select it
         const convoIdFromUrl = searchParams.get('conversationId');
         if (convoIdFromUrl) {
             const convoToSelect = convos.find(c => c.id === convoIdFromUrl);
@@ -136,15 +150,6 @@ export default function MessagesPage() {
     }
   };
 
-  const getOtherParticipant = (conversation: Conversation) => {
-    const otherId = conversation.participants.find(p => p !== authUser?.uid);
-    if (!otherId) return { name: 'Unknown', profilePictureUrl: '' };
-    return {
-      name: conversation.participantNames[otherId] || 'Unknown User',
-      profilePictureUrl: conversation.participantProfilePictures[otherId] || '',
-    };
-  };
-
   const formatMessageTimestamp = (timestamp: Timestamp | { seconds: number; nanoseconds: number; } | null): string => {
     if (!timestamp) {
         return '';
@@ -152,23 +157,22 @@ export default function MessagesPage() {
 
     let date: Date;
     if ('toDate' in timestamp && typeof timestamp.toDate === 'function') {
-        // It's a Firestore Timestamp object
         date = timestamp.toDate();
     } else if ('seconds' in timestamp && typeof timestamp.seconds === 'number') {
-        // It's a plain object from serialization
         date = new Date(timestamp.seconds * 1000);
     } else {
-        // Fallback for unexpected formats
         const d = new Date(timestamp as any);
         if (!isNaN(d.getTime())) {
             date = d;
         } else {
-            return ''; // Return empty string for invalid date
+            return ''; 
         }
     }
     
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
+
+  const otherParticipantInSelectedConvo = useMemo(() => getOtherParticipant(selectedConversation), [selectedConversation, getOtherParticipant]);
 
   return (
     <div className="h-[calc(100vh-8rem)] flex animate-fadeIn border rounded-lg shadow-lg bg-card">
@@ -184,6 +188,7 @@ export default function MessagesPage() {
             <div className="p-4 text-center text-muted-foreground">{t.noConversations}</div>
           ) : (
             conversations.map(convo => {
+              if (!convo || !convo.id) return null;
               const otherUser = getOtherParticipant(convo);
               const isSelected = selectedConversation?.id === convo.id;
               const isLastMessageFromMe = convo.lastMessageSenderId === authUser?.uid;
@@ -199,12 +204,12 @@ export default function MessagesPage() {
                 >
                   <Avatar>
                     <AvatarImage src={otherUser.profilePictureUrl} alt={otherUser.name} />
-                    <AvatarFallback>{otherUser.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{otherUser.name?.charAt(0) || 'U'}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 overflow-hidden">
                     <p className="font-semibold truncate">{otherUser.name}</p>
                     <p className="text-sm text-muted-foreground truncate">
-                        {isLastMessageFromMe && "You: "}{convo.lastMessage}
+                        {isLastMessageFromMe ? `${t.you}: ` : ''}{convo.lastMessage || ''}
                     </p>
                   </div>
                 </div>
@@ -229,12 +234,11 @@ export default function MessagesPage() {
                   <ArrowLeft className="h-5 w-5" />
               </Button>
               <Avatar>
-                  <AvatarImage src={getOtherParticipant(selectedConversation).profilePictureUrl} alt={getOtherParticipant(selectedConversation).name} />
-                  <AvatarFallback>{getOtherParticipant(selectedConversation).name.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={otherParticipantInSelectedConvo.profilePictureUrl} alt={otherParticipantInSelectedConvo.name} />
+                  <AvatarFallback>{otherParticipantInSelectedConvo.name?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-semibold">{getOtherParticipant(selectedConversation).name}</p>
-                {/* Optional: Add online status here */}
+                <p className="font-semibold">{otherParticipantInSelectedConvo.name}</p>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-secondary/30">
@@ -249,7 +253,7 @@ export default function MessagesPage() {
                       "p-3 rounded-lg max-w-xs md:max-w-md shadow-sm",
                       msg.senderId === authUser?.uid ? "bg-primary text-primary-foreground" : "bg-background border"
                     )}>
-                      <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                      <p className="text-sm whitespace-pre-wrap">{msg.text || ''}</p>
                       <p className={cn("text-xs mt-1", msg.senderId === authUser?.uid ? "text-primary-foreground/70 text-right" : "text-muted-foreground text-left")}>
                         {formatMessageTimestamp(msg.createdAt)}
                       </p>
@@ -279,5 +283,3 @@ export default function MessagesPage() {
     </div>
   );
 }
-
-    

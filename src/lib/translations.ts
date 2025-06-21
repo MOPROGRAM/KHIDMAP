@@ -202,6 +202,7 @@ export type Translations = {
   viewProfile?: string;
 
   // Messaging translations
+  you?: string;
   messages?: string;
   typeYourMessage?: string;
   send?: string;
@@ -476,6 +477,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     firestoreIndexError: "The database is being updated to support this query. Please try again in a few minutes.",
     of: "of",
     viewProfile: "View Profile",
+    you: "You",
     messages: "Messages",
     typeYourMessage: "Type your message...",
     send: "Send",
@@ -737,6 +739,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     firestoreIndexError: "قاعدة البيانات قيد التحديث لدعم هذا الاستعلام. يرجى المحاولة مرة أخرى في غضون دقائق قليلة.",
     of: "من",
     viewProfile: "عرض الملف الشخصي",
+    you: "أنت",
     messages: "الرسائل",
     typeYourMessage: "اكتب رسالتك...",
     send: "إرسال",
