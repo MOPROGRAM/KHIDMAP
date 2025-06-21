@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -47,11 +46,11 @@ export default function HomePage() {
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
-          <div className="relative inline-block">
-             <h1 className="relative z-10 bg-background px-2 text-5xl font-extrabold font-headline tracking-tighter text-foreground md:text-6xl">
+          <div className="inline-flex flex-col items-center">
+             <h1 className="px-2 text-5xl font-extrabold font-headline tracking-tighter text-foreground md:text-6xl">
                 {t.appName}
             </h1>
-            <div className="absolute bottom-2 left-0 right-0 z-0 h-[8px] w-full bg-primary md:bottom-4"></div>
+            <div className="h-[8px] w-full bg-primary"></div>
           </div>
         </div>
         <div 
