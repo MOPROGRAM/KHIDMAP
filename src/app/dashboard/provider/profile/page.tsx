@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,6 +20,7 @@ import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image
 import { z } from 'zod';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 const ProfileFormSchema = z.object({
   name: z.string().min(1, { message: "requiredField" }),
@@ -147,7 +148,7 @@ export default function ProviderProfilePage() {
         console.error("File upload error:", error);
         let description = t.fileUploadErrorDescription;
         if (error.code === 'storage/unauthorized') {
-            description = t.storageUnauthorizedError || "Permission Denied. Please check your Firebase Storage security rules to allow uploads.";
+            description = t.storageUnauthorizedError;
         }
         toast({ variant: "destructive", title: t.fileUploadErrorTitle, description });
     } finally {
@@ -177,7 +178,7 @@ export default function ProviderProfilePage() {
         console.error("File deletion error:", error);
         let description = t.fileDeleteErrorDescription;
         if (error.code === 'storage/unauthorized') {
-            description = t.storageUnauthorizedDeleteError || "Permission Denied. Please check your Firebase Storage security rules to allow file deletion.";
+            description = t.storageUnauthorizedDeleteError;
         }
         toast({ variant: "destructive", title: t.fileDeleteErrorTitle, description });
     }
@@ -444,16 +445,28 @@ export default function ProviderProfilePage() {
           </div>
 
           {media.length < 5 ? (
-            <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg">
-                <Label htmlFor="file-upload" className="w-full">
-                    <Button asChild variant="outline" className="w-full cursor-pointer" disabled={isUploading || !isCoreServicesAvailable}>
-                        <div>
-                            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
-                            {isUploading ? t.uploading : t.uploadMedia}
-                        </div>
-                    </Button>
+             <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg">
+                <Label
+                  htmlFor="file-upload"
+                  className={cn(
+                    buttonVariants({ variant: 'outline' }),
+                    'w-full cursor-pointer',
+                    (isUploading || !isCoreServicesAvailable) && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  <div className="flex items-center justify-center">
+                    {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
+                    <span>{isUploading ? t.uploading : t.uploadMedia}</span>
+                  </div>
                 </Label>
-                <Input id="file-upload" type="file" className="hidden" onChange={handleFileUpload} accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/x-matroska" disabled={isUploading || !isCoreServicesAvailable}/>
+                <Input
+                  id="file-upload"
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/x-matroska"
+                  disabled={isUploading || !isCoreServicesAvailable}
+                />
                 <p className="text-xs text-muted-foreground mt-2">{t.mediaUploadDescription}</p>
             </div>
           ) : (
@@ -466,3 +479,4 @@ export default function ProviderProfilePage() {
     </div>
   );
 }
+
