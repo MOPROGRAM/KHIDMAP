@@ -271,6 +271,18 @@ export type Translations = {
   confirmDeleteFileDescription: string;
   noPortfolioItems: string;
   fileNotFoundInStorage?: string;
+
+  // Messaging
+  messages?: string;
+  messageProvider?: string; // "Message {providerName}"
+  startConversationError?: string;
+  startConversation?: string;
+  messageSent?: string;
+  conversations?: string;
+  noConversations?: string;
+  selectConversation?: string;
+  typeYourMessage?: string;
+  loginToMessage?: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -534,6 +546,16 @@ export const translations: Record<'en' | 'ar', Translations> = {
     confirmDeleteFileDescription: "Are you sure you want to delete this file from your portfolio? This action cannot be undone.",
     noPortfolioItems: "No portfolio items have been uploaded yet.",
     fileNotFoundInStorage: "File not found. It may have already been deleted.",
+    messages: "Messages",
+    messageProvider: "Message {providerName}",
+    startConversationError: "Error starting conversation",
+    startConversation: "Start Conversation",
+    messageSent: "Message Sent",
+    conversations: "Conversations",
+    noConversations: "No conversations yet.",
+    selectConversation: "Select a conversation to start chatting.",
+    typeYourMessage: "Type your message...",
+    loginToMessage: "You must be logged in to send messages.",
   },
   ar: {
     appName: "خدماب",
@@ -795,5 +817,15 @@ export const translations: Record<'en' | 'ar', Translations> = {
     confirmDeleteFileDescription: "هل أنت متأكد من حذف هذا الملف من معرض أعمالك؟ لا يمكن التراجع عن هذا الإجراء.",
     noPortfolioItems: "لم يتم رفع أي عناصر في معرض الأعمال بعد.",
     fileNotFoundInStorage: "لم يتم العثور على الملف. ربما تم حذفه بالفعل.",
+    messages: "الرسائل",
+    messageProvider: "مراسلة {providerName}",
+    startConversationError: "خطأ في بدء المحادثة",
+    startConversation: "بدء محادثة",
+    messageSent: "تم إرسال الرسالة",
+    conversations: "المحادثات",
+    noConversations: "لا توجد محادثات بعد.",
+    selectConversation: "اختر محادثة لبدء الدردشة.",
+    typeYourMessage: "اكتب رسالتك...",
+    loginToMessage: "يجب عليك تسجيل الدخول لإرسال الرسائل.",
   },
 };

@@ -32,6 +32,23 @@ export interface Rating {
     createdAt: Timestamp;
 }
 
+export interface Conversation {
+    id: string;
+    participants: string[]; // Array of user UIDs
+    participantNames: { [key: string]: string };
+    lastMessage: string;
+    lastMessageAt: Timestamp;
+    lastMessageSenderId: string;
+}
+
+export interface Message {
+    id: string;
+    conversationId: string;
+    senderId: string;
+    text: string;
+    createdAt: Timestamp;
+}
+
 
 // --- UserProfile Firestore Functions ---
 export const getUserProfileById = async (uid: string): Promise<UserProfile | null> => {
@@ -120,7 +137,6 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
         return null;
     }
     try {
-        // Query without 'orderBy' to avoid needing a composite index. Sorting will be done in the app.
         const ratingsQuery = query(
             collection(db, "ratings"),
             where("ratedUserId", "==", userId)
@@ -131,11 +147,10 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
             ...docSnap.data(),
         } as Rating));
         
-        // Sort the ratings by date client-side
         ratings.sort((a, b) => {
             const dateA = a.createdAt?.toMillis() || 0;
             const dateB = b.createdAt?.toMillis() || 0;
-            return dateB - dateA; // Sort descending
+            return dateB - dateA;
         });
 
         return ratings;
@@ -146,4 +161,106 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
         }
         throw error;
     }
+};
+
+
+// --- Messaging Firestore Functions ---
+
+// Defensive function to start or get a conversation
+export const startOrGetConversation = async (providerId: string): Promise<string> => {
+    if (!db || !auth?.currentUser) {
+        throw new Error("User not authenticated or database is unavailable.");
+    }
+    const seekerId = auth.currentUser.uid;
+
+    if (providerId === seekerId) {
+        throw new Error("Cannot start a conversation with yourself.");
+    }
+
+    const participants = [seekerId, providerId].sort();
+    const conversationId = participants.join('_');
+
+    const conversationRef = doc(db, 'conversations', conversationId);
+    const conversationSnap = await getDoc(conversationRef);
+
+    if (conversationSnap.exists()) {
+        return conversationId;
+    }
+
+    // Defensive checks for user profiles before creating conversation
+    const [seekerProfile, providerProfile] = await Promise.all([
+        getUserProfileById(seekerId),
+        getUserProfileById(providerId)
+    ]);
+
+    if (!seekerProfile || !providerProfile) {
+        throw new Error("One or both user profiles could not be found.");
+    }
+
+    const newConversation: Omit<Conversation, 'id'> = {
+        participants,
+        participantNames: {
+            [seekerId]: seekerProfile.name,
+            [providerId]: providerProfile.name,
+        },
+        lastMessage: "Conversation started.",
+        lastMessageAt: serverTimestamp() as Timestamp,
+        lastMessageSenderId: seekerId,
+    };
+
+    await setDoc(conversationRef, newConversation);
+    return conversationId;
+};
+
+
+// Send a new message
+export const sendMessage = async (conversationId: string, text: string): Promise<void> => {
+    if (!db || !auth?.currentUser) {
+        throw new Error("User not authenticated or database is unavailable.");
+    }
+    const senderId = auth.currentUser.uid;
+    const conversationRef = doc(db, "conversations", conversationId);
+    const messagesCollectionRef = collection(conversationRef, "messages");
+
+    const batch = writeBatch(db);
+
+    const newMessageRef = doc(messagesCollectionRef);
+    batch.set(newMessageRef, {
+        senderId,
+        text,
+        createdAt: serverTimestamp(),
+    });
+
+    batch.update(conversationRef, {
+        lastMessage: text,
+        lastMessageAt: serverTimestamp(),
+        lastMessageSenderId: senderId,
+    });
+    
+    await batch.commit();
+};
+
+// Get all conversations for the current user
+export const getConversationsForUser = async (): Promise<Conversation[]> => {
+    if (!db || !auth?.currentUser) return [];
+
+    const q = query(
+        collection(db, 'conversations'),
+        where('participants', 'array-contains', auth.currentUser.uid),
+        orderBy('lastMessageAt', 'desc')
+    );
+
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
+};
+
+// Get messages for a specific conversation
+export const getMessagesForConversation = async (conversationId: string): Promise<Message[]> => {
+    if (!db) return [];
+
+    const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+    const q = query(messagesRef, orderBy('createdAt', 'asc'));
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
 };

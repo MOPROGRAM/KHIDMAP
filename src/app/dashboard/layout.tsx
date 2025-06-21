@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, User, Search, History, LogOut, Settings, PlusCircle, Loader2, ShieldCheck, AlertTriangle, ServerCrash } from 'lucide-react';
+import { Home, User, Search, History, LogOut, Settings, MessageSquare, Loader2, ShieldCheck, AlertTriangle, ServerCrash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -101,6 +101,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navItems: NavItem[] = [
     { href: '/dashboard', labelKey: 'dashboard', icon: <Home className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
     { href: '/dashboard/provider/profile', labelKey: 'profile', icon: <User className="h-5 w-5" />, roles: ['provider'] },
+    { href: '/dashboard/messages', labelKey: 'messages', icon: <MessageSquare className="h-5 w-5" />, roles: ['provider', 'seeker'] },
     { href: '/services/search', labelKey: 'search', icon: <Search className="h-5 w-5" />, roles: ['seeker', 'provider'] },
     { href: '/dashboard/seeker/history', labelKey: 'searchHistory', icon: <History className="h-5 w-5" />, roles: ['seeker'] },
     { href: '/admin/dashboard', labelKey: 'adminDashboard', icon: <ShieldCheck className="h-5 w-5" />, roles: ['admin'] },
@@ -135,7 +136,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex h-screen flex-col items-center justify-center text-center p-4">
         <ServerCrash className="h-16 w-16 text-destructive mb-4" />
         <h1 className="text-2xl font-bold mb-2">{t.serviceUnavailableTitle}</h1>
-        <p className="text-muted-foreground mb-6">{t.coreServicesUnavailableDashboard}</p>
+        <p className="text-muted-foreground">{t.coreServicesUnavailableDashboard}</p>
         <Button onClick={() => router.push('/')}>{t.goToHomepage}</Button>
       </div>
     );

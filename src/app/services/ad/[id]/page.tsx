@@ -4,12 +4,12 @@
 import React, { useEffect, useState, useCallback, FormEvent, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
-import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, Rating } from '@/lib/data';
+import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, Rating, startOrGetConversation } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft, MapPin, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, SprayCan,
-  GripVertical, HardHat, Layers, Star, Wrench, Zap, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall, Camera, Video as VideoIcon
+  GripVertical, HardHat, Layers, Star, Wrench, Zap, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall, Camera, Video as VideoIcon, MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import { Timestamp } from 'firebase/firestore';
@@ -125,6 +125,7 @@ export default function ProviderDetailsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [ratingInput, setRatingInput] = useState(0);
   const [commentInput, setCommentInput] = useState('');
+  const [isStartingConversation, setIsStartingConversation] = useState(false);
 
   const fetchProviderData = useCallback(async () => {
      if (!db) {
@@ -190,6 +191,25 @@ export default function ProviderDetailsPage() {
       unsubscribeAuth();
     };
   }, [fetchProviderData]);
+
+  const handleStartConversation = async () => {
+    if (!authUser) {
+        toast({ variant: 'destructive', title: t.authError, description: t.loginToMessage });
+        return;
+    }
+    if (!provider) return;
+    setIsStartingConversation(true);
+    try {
+        const conversationId = await startOrGetConversation(provider.uid);
+        router.push(`/dashboard/messages?conversationId=${conversationId}`);
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: t.startConversationError, description: error.message });
+        console.error("Error starting conversation:", error);
+    } finally {
+        setIsStartingConversation(false);
+    }
+  };
+
 
   const handleRatingSubmit = async (e: FormEvent) => {
       e.preventDefault();
@@ -335,7 +355,7 @@ export default function ProviderDetailsPage() {
         <Separator/>
 
         <CardContent className="p-4 md:p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-3 my-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 my-4">
                  {provider.phoneNumber && (
                     <Button asChild size="lg" className="w-full group">
                         <a href={`tel:${cleanPhoneNumber}`}>
@@ -348,6 +368,12 @@ export default function ProviderDetailsPage() {
                         <a href={`https://wa.me/${cleanPhoneNumber}?text=${whatsappMessage}`} target="_blank" rel="noopener noreferrer">
                           <BotMessageSquare className="ltr:mr-2 rtl:ml-2" /> {t.contactOnWhatsApp}
                         </a>
+                    </Button>
+                )}
+                {authUser && authUser.uid !== providerId && userRole === 'seeker' && (
+                    <Button onClick={handleStartConversation} disabled={isStartingConversation} size="lg" variant="secondary" className="w-full group">
+                        {isStartingConversation ? <Loader2 className="animate-spin" /> : <MessageSquare className="ltr:mr-2 rtl:ml-2"/>}
+                        {t.messageProvider?.replace('{providerName}', '')}
                     </Button>
                 )}
             </div>
