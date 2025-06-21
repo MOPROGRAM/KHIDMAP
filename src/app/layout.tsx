@@ -25,7 +25,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body flex flex-col min-h-screen bg-background">
+      <body className="font-body flex flex-col min-h-screen animate-background-pan bg-[length:200%_200%] bg-gradient-to-br from-background via-muted to-background">
         <SettingsProvider>
           <AppInitializer />
           <Header />
