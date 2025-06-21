@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import Link from 'next/link';
-import { Briefcase, User, Search, PlusCircle, History, UserCog, ArrowRight, Building } from 'lucide-react';
+import { Briefcase, User, Search, PlusCircle, History, UserCog, ArrowRight, Building, Settings } from 'lucide-react';
 import Image from 'next/image';
 
 export default function DashboardPage() {
@@ -47,6 +47,7 @@ export default function DashboardPage() {
   const seekerActions = [
     { titleKey: 'search', descriptionKey: 'searchDescriptionSeeker', href: '/services/search', icon: <Search className="h-6 w-6 text-primary" /> },
     { titleKey: 'searchHistory', descriptionKey: 'searchHistoryDescriptionSeeker', href: '/dashboard/seeker/history', icon: <History className="h-6 w-6 text-primary" /> },
+    { titleKey: 'settings', descriptionKey: 'manageAccountSettings', href: '/dashboard/settings', icon: <Settings className="h-6 w-6 text-primary" /> },
   ];
   
   const actions = userRole === 'provider' ? providerActions : seekerActions;
@@ -81,7 +82,7 @@ export default function DashboardPage() {
         </div>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {actions.map((action, index) => (
           <Link href={action.href} key={action.href} className="group">
           <Card 
