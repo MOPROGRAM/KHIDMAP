@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -47,10 +48,10 @@ export default function HomePage() {
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
           <div className="relative inline-block">
-             <h1 className="text-5xl md:text-6xl font-extrabold font-headline tracking-tighter text-foreground">
+             <h1 className="relative z-10 bg-background px-2 text-5xl font-extrabold font-headline tracking-tighter text-foreground md:text-6xl">
                 {t.appName}
             </h1>
-            <div className="absolute bottom-0 left-0 h-[6px] w-full bg-primary"></div>
+            <div className="absolute bottom-2 left-0 right-0 z-0 h-[8px] w-full bg-primary md:bottom-4"></div>
           </div>
         </div>
         <div 
