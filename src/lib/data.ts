@@ -116,10 +116,23 @@ export const addRating = async (ratingData: {
     }
 
     try {
-        await addDoc(collection(db, "ratings"), {
-            ...ratingData,
+        const batch = writeBatch(db);
+        const ratingRef = doc(collection(db, "ratings"));
+        batch.set(ratingRef, {
+             ...ratingData,
             createdAt: serverTimestamp(),
         });
+
+        // This part is commented out as it requires a separate aggregation setup.
+        // For now, we calculate average rating on the client-side.
+        // const userRef = doc(db, "users", ratingData.ratedUserId);
+        // batch.update(userRef, {
+        //     // averageRating: ...
+        //     // ratingCount: ...
+        // });
+        
+        await batch.commit();
+
     } catch (error) {
         console.error("Error adding rating to Firestore: ", error);
         throw error;
@@ -137,6 +150,7 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
         return null;
     }
     try {
+        // The query is now simpler: just filter by the user ID.
         const ratingsQuery = query(
             collection(db, "ratings"),
             where("ratedUserId", "==", userId)
@@ -147,17 +161,19 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
             ...docSnap.data(),
         } as Rating));
         
+        // Sorting is now handled in the application code, not in the database query.
         ratings.sort((a, b) => {
             const dateA = a.createdAt?.toMillis() || 0;
             const dateB = b.createdAt?.toMillis() || 0;
-            return dateB - dateA;
+            return dateB - dateA; // Sort by most recent first
         });
 
         return ratings;
     } catch (error: any) {
         console.error(`Error fetching ratings for user ${userId}. Code: ${error.code}. Message: ${error.message}`);
+        // Re-throw the error so the UI can catch it and display an appropriate message.
         if (error.code === 'failed-precondition') {
-             throw new Error("The database is being updated to support this query. Please try again in a few minutes.");
+             throw new Error("The database is being updated. Please try again in a few minutes.");
         }
         throw error;
     }
@@ -200,8 +216,8 @@ export const startOrGetConversation = async (providerId: string): Promise<string
     const newConversation: Omit<Conversation, 'id'> = {
         participants,
         participantNames: {
-            [seekerId]: seekerProfile.name,
-            [providerId]: providerProfile.name,
+            [seekerId]: seekerProfile.name || "User",
+            [providerId]: providerProfile.name || "Provider",
         },
         lastMessage: "Conversation started.",
         lastMessageAt: serverTimestamp() as Timestamp,
@@ -226,6 +242,7 @@ export const sendMessage = async (conversationId: string, text: string): Promise
 
     const newMessageRef = doc(messagesCollectionRef);
     batch.set(newMessageRef, {
+        conversationId,
         senderId,
         text,
         createdAt: serverTimestamp(),
@@ -259,7 +276,7 @@ export const getMessagesForConversation = async (conversationId: string): Promis
     if (!db) return [];
 
     const messagesRef = collection(db, 'conversations', conversationId, 'messages');
-    const q = query(messagesRef, orderBy('createdAt', 'asc'));
+    const q = query(messagesRef, orderBy('createdAt', 'asc'), limit(50));
     
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
