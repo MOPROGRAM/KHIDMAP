@@ -11,7 +11,7 @@ const Logo = () => {
         <h1 className="text-xl font-extrabold tracking-tighter text-foreground">
           {t.appName}
         </h1>
-        <div className="absolute bottom-1 left-0 h-[2px] w-full bg-primary"></div>
+        <div className="absolute bottom-1 left-0 h-[3px] w-full bg-primary"></div>
       </div>
     </Link>
   );
