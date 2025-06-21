@@ -105,14 +105,30 @@ export default function RegisterPage() {
       await updateProfile(firebaseUser, { displayName: validationResult.data.name });
       
       const userDocRef = doc(db, "users", firebaseUser.uid);
-      await setDoc(userDocRef, {
+      
+      const userDocData: any = {
         uid: firebaseUser.uid,
         name: validationResult.data.name,
         email: firebaseUser.email,
         role: validationResult.data.role,
         createdAt: Timestamp.now(), 
-        emailVerified: firebaseUser.emailVerified, 
-      });
+        emailVerified: firebaseUser.emailVerified,
+      };
+
+      // Proactively initialize provider-specific fields to prevent errors later
+      if (validationResult.data.role === 'provider') {
+        Object.assign(userDocData, {
+            phoneNumber: '',
+            qualifications: '',
+            serviceCategories: [],
+            serviceAreas: [],
+            profilePictureUrl: '',
+            location: null,
+            media: [], // Initialize media field as an empty array
+        });
+      }
+
+      await setDoc(userDocRef, userDocData);
 
       await sendEmailVerification(firebaseUser);
       setShowVerificationMessage(true);

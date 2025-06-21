@@ -13,7 +13,7 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, ServiceCategory, MediaItem } from '@/lib/data'; 
 import { auth, db, storage } from '@/lib/firebase';
-import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc } from 'firebase/firestore'; 
+import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'; 
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, Video } from 'lucide-react';
@@ -182,15 +182,11 @@ export default function ProviderProfilePage() {
         const fileType = ALLOWED_VIDEO_TYPES.includes(fileUpload.type.toLowerCase()) ? 'video' : 'image';
         const newMediaItem: MediaItem = { id: fileId, url: downloadURL, type: fileType };
 
-        const docSnap = await getDoc(userDocRef);
-        const currentMedia = (docSnap.exists() && Array.isArray(docSnap.data().media))
-          ? docSnap.data().media
-          : [];
-        
-        const newMedia = [...currentMedia, newMediaItem];
-        await updateDoc(userDocRef, { media: newMedia });
+        await updateDoc(userDocRef, {
+            media: arrayUnion(newMediaItem)
+        });
 
-        setMediaItems(newMedia);
+        setMediaItems(prevItems => [...prevItems, newMediaItem]);
         setFileUpload(null); // Clear the file input after successful upload
         toast({ title: t.mediaUploadedSuccess });
     } catch (error) {
@@ -206,20 +202,17 @@ export default function ProviderProfilePage() {
     if (!authUser || !db || !storage) return;
     
     const fileRef = ref(storage, `media/${authUser.uid}/${itemToDelete.id}`);
-    try {
-        const userDocRef = doc(db, "users", authUser.uid);
-        const docSnap = await getDoc(userDocRef);
+    const userDocRef = doc(db, "users", authUser.uid);
 
-        if (docSnap.exists()) {
-            const currentMedia = Array.isArray(docSnap.data().media) ? docSnap.data().media : [];
-            const newMedia = currentMedia.filter((item: MediaItem) => item && item.id !== itemToDelete.id);
-            
-            await updateDoc(userDocRef, { media: newMedia });
-            await deleteObject(fileRef);
-            
-            setMediaItems(newMedia);
-            toast({ title: t.mediaDeletedSuccess });
-        }
+    try {
+        await updateDoc(userDocRef, {
+            media: arrayRemove(itemToDelete)
+        });
+
+        await deleteObject(fileRef);
+        
+        setMediaItems(prevItems => prevItems.filter(item => item.id !== itemToDelete.id));
+        toast({ title: t.mediaDeletedSuccess });
     } catch (error) {
         console.error("Error deleting file:", error);
         toast({ variant: "destructive", title: t.errorOccurred, description: t.mediaDeleteError });
@@ -489,5 +482,3 @@ export default function ProviderProfilePage() {
     </div>
   );
 }
-
-    
