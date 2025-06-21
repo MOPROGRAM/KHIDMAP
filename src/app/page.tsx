@@ -37,7 +37,7 @@ export default function HomePage() {
   );
 
   return (
-    <div className="flex flex-col items-center overflow-x-hidden">
+    <div className="flex flex-col items-center">
       
       {/* Hero Section */}
       <section 
@@ -48,10 +48,10 @@ export default function HomePage() {
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
           <div className="relative inline-flex flex-col items-center group">
-             <h1 className="relative px-2 text-5xl font-extrabold font-headline tracking-tighter text-foreground md:text-6xl z-10">
+             <h1 className="relative px-2 text-xl font-extrabold tracking-tighter text-foreground z-10">
                 {t.appName}
             </h1>
-            <div className="absolute bottom-0 h-[8px] w-full bg-primary z-0"></div>
+             <div className="absolute bottom-0 h-[4px] w-full bg-primary z-0"></div>
           </div>
         </div>
         <div 
