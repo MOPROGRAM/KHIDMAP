@@ -154,14 +154,14 @@ export default function ProviderProfilePage() {
     const MAX_FILES = 5;
     const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
     const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-    const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/quicktime'];
+    const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/mov'];
     const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
 
     if (mediaItems.length >= MAX_FILES) {
         toast({ variant: "destructive", title: t.errorOccurred, description: t.mediaLimitReached });
         return;
     }
-    if (!ALLOWED_TYPES.includes(fileUpload.type)) {
+    if (!ALLOWED_TYPES.includes(fileUpload.type.toLowerCase())) {
         toast({ variant: "destructive", title: t.errorOccurred, description: t.invalidFileType });
         return;
     }
@@ -179,7 +179,7 @@ export default function ProviderProfilePage() {
         
         await uploadBytes(fileRef, fileUpload);
         const downloadURL = await getDownloadURL(fileRef);
-        const fileType = ALLOWED_VIDEO_TYPES.includes(fileUpload.type) ? 'video' : 'image';
+        const fileType = ALLOWED_VIDEO_TYPES.includes(fileUpload.type.toLowerCase()) ? 'video' : 'image';
         const newMediaItem: MediaItem = { id: fileId, url: downloadURL, type: fileType };
 
         const docSnap = await getDoc(userDocRef);
@@ -191,7 +191,7 @@ export default function ProviderProfilePage() {
         await updateDoc(userDocRef, { media: newMedia });
 
         setMediaItems(newMedia);
-        setFileUpload(null);
+        setFileUpload(null); // Clear the file input after successful upload
         toast({ title: t.mediaUploadedSuccess });
     } catch (error) {
         console.error("Error uploading file:", error);
@@ -442,7 +442,7 @@ export default function ProviderProfilePage() {
                     <Input 
                         id="file-upload"
                         type="file"
-                        accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
+                        accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/mov"
                         onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
                                 setFileUpload(e.target.files[0]);
@@ -465,7 +465,7 @@ export default function ProviderProfilePage() {
                         {mediaItems.map(item => (
                             <div key={item.id} className="relative group aspect-square">
                                 {item.type === 'video' ? (
-                                    <video src={item.url} className="rounded-md object-cover w-full h-full bg-black" />
+                                    <video controls src={item.url} className="rounded-md object-cover w-full h-full bg-black" />
                                 ) : (
                                     <NextImage src={item.url} alt={t.mediaItem || 'Media item'} layout="fill" className="rounded-md object-cover" />
                                 )}
@@ -489,3 +489,5 @@ export default function ProviderProfilePage() {
     </div>
   );
 }
+
+    
