@@ -15,7 +15,8 @@ export interface UserProfile {
   serviceCategories?: ServiceCategory[];
   serviceAreas?: string[]; 
   location?: GeoPoint | null;
-  media?: { url: string; type: 'image' | 'video' }[];
+  images?: string[];
+  videos?: string[];
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
   emailVerified?: boolean;
@@ -66,8 +67,6 @@ export const getUserProfileById = async (uid: string): Promise<UserProfile | nul
       return {
         uid: docSnap.id,
         ...data,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
       } as UserProfile;
     } else {
       console.log(`No user profile found for UID: ${uid}`);
@@ -75,7 +74,7 @@ export const getUserProfileById = async (uid: string): Promise<UserProfile | nul
     }
   } catch (error) {
     console.error(`Error fetching user profile for UID ${uid}: `, error);
-    return null;
+    throw error;
   }
 };
 
@@ -92,8 +91,6 @@ export const getAllProviders = async (): Promise<UserProfile[]> => {
             return {
                 uid: docSnap.id,
                 ...data,
-                createdAt: data.createdAt,
-                updatedAt: data.updatedAt,
             } as UserProfile;
         });
     } catch (error) {
@@ -141,24 +138,19 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
     try {
         const ratingsQuery = query(
             collection(db, "ratings"),
-            where("ratedUserId", "==", userId)
+            where("ratedUserId", "==", userId),
+            orderBy("createdAt", "desc")
         );
         const querySnapshot = await getDocs(ratingsQuery);
         const ratings = querySnapshot.docs.map(docSnap => ({
             id: docSnap.id,
             ...docSnap.data(),
         } as Rating));
-
-        ratings.sort((a, b) => {
-            const dateA = a.createdAt?.toMillis() || 0;
-            const dateB = b.createdAt?.toMillis() || 0;
-            return dateB - dateA;
-        });
-
+        
         return ratings;
     } catch (error) {
         console.error(`Error fetching ratings for user ${userId}:`, error);
-        return null;
+        throw error;
     }
 };
 

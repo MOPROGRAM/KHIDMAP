@@ -164,7 +164,13 @@ export default function ProviderDetailsPage() {
         }
     } catch (err: any) {
         console.error("Error fetching provider details:", err);
-        setError(t.failedLoadProviderDetails);
+        if (err.message?.includes('permission-denied') || err.message?.includes('insufficient permissions')) {
+            setError(t.permissionDeniedError);
+        } else if(err.message?.includes('needs an index')) {
+            setError(t.firestoreIndexError);
+        } else {
+            setError(t.failedLoadProviderDetails);
+        }
     } finally {
         setIsLoading(false);
     }
@@ -250,7 +256,8 @@ export default function ProviderDetailsPage() {
   
   const serviceCategories = useMemo(() => Array.isArray(provider?.serviceCategories) ? provider.serviceCategories.filter(Boolean) as ServiceCategory[] : [], [provider]);
   const serviceAreas = useMemo(() => Array.isArray(provider?.serviceAreas) ? provider.serviceAreas.filter(Boolean) : [], [provider]);
-  const media = useMemo(() => Array.isArray(provider?.media) ? provider.media : [], [provider]);
+  const images = useMemo(() => Array.isArray(provider?.images) ? provider.images : [], [provider]);
+  const videos = useMemo(() => Array.isArray(provider?.videos) ? provider.videos : [], [provider]);
   const cleanPhoneNumber = useMemo(() => provider?.phoneNumber?.replace(/[^0-9+]/g, '') || '', [provider?.phoneNumber]);
 
   if (isLoading) {
@@ -321,6 +328,7 @@ export default function ProviderDetailsPage() {
          <div className="bg-card-foreground/5 p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row items-center text-center sm:text-left gap-6">
                 <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-background shadow-lg">
+                    <AvatarImage src={images.length > 0 ? images[0] : undefined} alt={provider.name || 'Provider avatar'} />
                     <AvatarFallback className="bg-transparent text-6xl">
                        <UserCircle className="w-full h-full text-muted" />
                     </AvatarFallback>
@@ -410,18 +418,28 @@ export default function ProviderDetailsPage() {
                 )}
             </div>
             
-            {media.length > 0 && (
+            {images.length > 0 && (
                 <div className="mt-8 space-y-4">
                     <Separator/>
-                    <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Camera/> {t.portfolioTitle}</h2>
+                    <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Camera/> Image Portfolio</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {media.map((item, index) => (
+                        {images.map((url, index) => (
                         <div key={index} className="relative group aspect-square bg-muted rounded-lg overflow-hidden">
-                            {item.type === 'image' ? (
-                                <Image src={item.url} alt={`${t.portfolioTitle} ${index + 1}`} layout="fill" className="object-cover" />
-                            ) : (
-                                <video src={item.url} controls className="w-full h-full object-cover" />
-                            )}
+                            <Image src={url} alt={`Image portfolio ${index + 1}`} layout="fill" className="object-cover" />
+                        </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+            
+            {videos.length > 0 && (
+                <div className="mt-8 space-y-4">
+                    <Separator/>
+                    <h2 className="text-xl font-bold text-primary flex items-center gap-2"><VideoIcon/> Video Portfolio</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {videos.map((url, index) => (
+                        <div key={index} className="relative group aspect-square bg-muted rounded-lg overflow-hidden">
+                           <video src={url} controls className="w-full h-full object-cover" />
                         </div>
                         ))}
                     </div>

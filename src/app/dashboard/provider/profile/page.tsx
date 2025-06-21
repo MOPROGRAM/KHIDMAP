@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,10 +45,12 @@ export default function ProviderProfilePage() {
   const [serviceAreasString, setServiceAreasString] = useState('');
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
   const [location, setLocation] = useState<{ latitude: number, longitude: number } | null>(null);
-  const [media, setMedia] = useState<{ url: string; type: 'image' | 'video' }[]>([]);
+  const [images, setImages] = useState<string[]>([]);
+  const [videos, setVideos] = useState<string[]>([]);
   
   const [isLoading, setIsLoading] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -73,7 +75,8 @@ export default function ProviderProfilePage() {
                 setQualifications(firestoreProfile.qualifications || '');
                 setServiceAreasString((firestoreProfile.serviceAreas || []).join(', ')); 
                 setServiceCategories(firestoreProfile.serviceCategories || []);
-                setMedia(firestoreProfile.media || []);
+                setImages(firestoreProfile.images || []);
+                setVideos(firestoreProfile.videos || []);
                 
                 if (firestoreProfile.location) {
                   setLocation({
@@ -103,87 +106,111 @@ export default function ProviderProfilePage() {
     }
   }, [router, t, toast]);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    fileType: 'image' | 'video'
+  ) => {
     if (!authUser || !db || !storage) return;
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if ((media || []).length >= 5) {
-        toast({ variant: "destructive", title: t.portfolioLimitReachedTitle, description: t.portfolioLimitReachedDescription });
-        return;
+    const config = {
+      image: {
+        limit: 3,
+        state: images,
+        setState: setImages,
+        setLoading: setIsUploadingImage,
+        firestoreField: 'images',
+        storageFolder: 'images',
+        accept: 'image/*',
+        errorLimit: "Image portfolio limit reached (3 max).",
+        errorType: "Please upload a valid image file.",
+      },
+      video: {
+        limit: 2,
+        state: videos,
+        setState: setVideos,
+        setLoading: setIsUploadingVideo,
+        firestoreField: 'videos',
+        storageFolder: 'videos',
+        accept: 'video/*',
+        errorLimit: "Video portfolio limit reached (2 max).",
+        errorType: "Please upload a valid video file.",
+      },
+    }[fileType];
+
+    if (config.state.length >= config.limit) {
+      toast({ variant: "destructive", title: "Upload Limit Reached", description: config.errorLimit });
+      return;
     }
 
     const MAX_SIZE = 10 * 1024 * 1024; // 10MB
     if (file.size > MAX_SIZE) {
-        toast({ variant: "destructive", title: t.fileTooLargeTitle, description: t.fileTooLargeDescription });
-        return;
+      toast({ variant: "destructive", title: t.fileTooLargeTitle, description: t.fileTooLargeDescription });
+      return;
     }
 
-    const SUPPORTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime', 'video/x-matroska'];
-    if (!SUPPORTED_TYPES.includes(file.type)) {
-        toast({ variant: "destructive", title: t.unsupportedFileTypeTitle, description: t.unsupportedFileTypeDescription });
-        return;
+    if (!file.type.startsWith(`${fileType}/`)) {
+       toast({ variant: "destructive", title: t.unsupportedFileTypeTitle, description: config.errorType });
+       return;
     }
 
-    setIsUploading(true);
+    config.setLoading(true);
     const fileInput = event.target;
 
     try {
-        const fileType = file.type.startsWith('image') ? 'image' : 'video';
-        const filePath = `portfolios/${authUser.uid}/${Date.now()}_${file.name}`;
-        const fileRef = ref(storage, filePath);
-        
-        await uploadBytes(fileRef, file);
-        const downloadURL = await getDownloadURL(fileRef);
+      const filePath = `serviceAds/${authUser.uid}/${config.storageFolder}/${Date.now()}_${file.name}`;
+      const fileRef = ref(storage, filePath);
+      
+      await uploadBytes(fileRef, file);
+      const downloadURL = await getDownloadURL(fileRef);
 
-        const newMediaItem = { url: downloadURL, type: fileType };
+      const userDocRef = doc(db, "users", authUser.uid);
+      await updateDoc(userDocRef, {
+        [config.firestoreField]: arrayUnion(downloadURL)
+      });
 
-        const userDocRef = doc(db, "users", authUser.uid);
-        await updateDoc(userDocRef, {
-            media: arrayUnion(newMediaItem)
-        });
-
-        setMedia(prev => [...(prev || []), newMediaItem]);
-        toast({ title: t.fileUploadedSuccessTitle });
+      config.setState(prev => [...prev, downloadURL]);
+      toast({ title: t.fileUploadedSuccessTitle });
     } catch (error: any) {
-        console.error("File upload error:", error);
-        let description = t.fileUploadErrorDescription;
-        if (error.code === 'storage/unauthorized') {
-            description = t.storageUnauthorizedError;
-        } else if (error.code === 'storage/object-not-found') {
-             description = "Error updating database record after upload. Please refresh and try again.";
-        }
-        toast({ variant: "destructive", title: t.fileUploadErrorTitle, description });
+      console.error("File upload error:", error);
+      let description = t.fileUploadErrorDescription;
+      if (error.code === 'storage/unauthorized') {
+        description = t.storageUnauthorizedError;
+      }
+      toast({ variant: "destructive", title: t.fileUploadErrorTitle, description });
     } finally {
-        setIsUploading(false);
-        if (fileInput) {
-            fileInput.value = '';
-        }
+      config.setLoading(false);
+      if (fileInput) fileInput.value = '';
     }
   };
-
-  const handleFileDelete = async (fileToDelete: { url: string; type: 'image' | 'video' }) => {
+  
+  const handleFileDelete = async (urlToDelete: string, fileType: 'image' | 'video') => {
     if (!authUser || !db || !storage) return;
 
+    const config = {
+        image: { setState: setImages, firestoreField: 'images' },
+        video: { setState: setVideos, firestoreField: 'videos' },
+    }[fileType];
+
     try {
-        const userDocRef = doc(db, "users", authUser.uid);
-        await updateDoc(userDocRef, {
-            media: arrayRemove(fileToDelete)
-        });
+      const userDocRef = doc(db, "users", authUser.uid);
+      await updateDoc(userDocRef, {
+        [config.firestoreField]: arrayRemove(urlToDelete)
+      });
 
-        const fileRef = ref(storage, fileToDelete.url);
-        await deleteObject(fileRef);
+      const fileRef = ref(storage, urlToDelete);
+      await deleteObject(fileRef);
 
-        setMedia(prev => (prev || []).filter(item => item.url !== fileToDelete.url));
-        toast({ title: t.fileDeletedSuccessTitle });
-
+      config.setState(prev => prev.filter(url => url !== urlToDelete));
+      toast({ title: t.fileDeletedSuccessTitle });
     } catch (error: any) {
-        console.error("File deletion error:", error);
-        let description = t.fileDeleteErrorDescription;
-        if (error.code === 'storage/unauthorized') {
-            description = t.storageUnauthorizedDeleteError;
-        }
-        toast({ variant: "destructive", title: t.fileDeleteErrorTitle, description });
+      console.error("File deletion error:", error);
+      let description = t.fileDeleteErrorDescription;
+      if (error.code === 'storage/unauthorized') {
+        description = t.storageUnauthorizedDeleteError;
+      }
+      toast({ variant: "destructive", title: t.fileDeleteErrorTitle, description });
     }
   };
 
@@ -414,22 +441,15 @@ export default function ProviderProfilePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ImageIcon className="h-6 w-6 text-primary" />
-            {t.portfolioTitle}
+            {t.portfolioTitle} Images
           </CardTitle>
-          <CardDescription>{t.portfolioDescription}</CardDescription>
+          <CardDescription>Upload up to 3 images (max 10MB each).</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4">
-            {(media || []).map((item, index) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+            {images.map((url, index) => (
               <div key={index} className="relative group aspect-square">
-                {item.type === 'image' ? (
-                  <Image src={item.url} alt={`${t.portfolioTitle} ${index + 1}`} width={150} height={150} className="rounded-lg object-cover w-full h-full border"/>
-                ) : (
-                  <video src={item.url} controls={false} className="rounded-lg object-cover w-full h-full border" />
-                )}
-                <div className="absolute top-1 right-1 bg-black/50 text-white p-1 rounded-full">
-                  {item.type === 'image' ? <ImageIcon className="h-3 w-3"/> : <Video className="h-3 w-3"/>}
-                </div>
+                <Image src={url} alt={`Portfolio image ${index + 1}`} width={150} height={150} className="rounded-lg object-cover w-full h-full border"/>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="icon" className="absolute bottom-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -437,13 +457,10 @@ export default function ProviderProfilePage() {
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>{t.confirmDeleteFileTitle}</AlertDialogTitle>
-                      <AlertDialogDescription>{t.confirmDeleteFileDescription}</AlertDialogDescription>
-                    </AlertDialogHeader>
+                    <AlertDialogHeader><AlertDialogTitle>{t.confirmDeleteFileTitle}</AlertDialogTitle><AlertDialogDescription>{t.confirmDeleteFileDescription}</AlertDialogDescription></AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => handleFileDelete(item)} className="bg-destructive hover:bg-destructive/90">{t.delete}</AlertDialogAction>
+                      <AlertDialogAction onClick={() => handleFileDelete(url, 'image')} className="bg-destructive hover:bg-destructive/90">{t.delete}</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
@@ -451,34 +468,60 @@ export default function ProviderProfilePage() {
             ))}
           </div>
 
-          {(media || []).length < 5 ? (
+          {images.length < 3 && (
              <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg">
-                <Label
-                  htmlFor="file-upload"
-                  className={cn(
-                    buttonVariants({ variant: 'outline' }),
-                    'w-full cursor-pointer',
-                    (isUploading || !isCoreServicesAvailable) && 'opacity-50 cursor-not-allowed'
-                  )}
-                >
+                <Label htmlFor="image-upload" className={cn(buttonVariants({ variant: 'outline' }), 'w-full cursor-pointer', (isUploadingImage || !isCoreServicesAvailable) && 'opacity-50 cursor-not-allowed')}>
                   <div className="flex items-center justify-center">
-                    {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
-                    <span>{isUploading ? t.uploading : t.uploadMedia}</span>
+                    {isUploadingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
+                    <span>{isUploadingImage ? "Uploading Image..." : "Upload Image"}</span>
                   </div>
                 </Label>
-                <Input
-                  id="file-upload"
-                  type="file"
-                  className="hidden"
-                  onChange={handleFileUpload}
-                  accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/x-matroska"
-                  disabled={isUploading || !isCoreServicesAvailable}
-                />
-                <p className="text-xs text-muted-foreground mt-2">{t.mediaUploadDescription}</p>
+                <Input id="image-upload" type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'image')} accept="image/*" disabled={isUploadingImage || !isCoreServicesAvailable}/>
             </div>
-          ) : (
-             <div className="p-4 bg-muted text-center rounded-lg">
-                <p className="text-sm text-muted-foreground font-medium">{t.portfolioLimitReachedDescription}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Video className="h-6 w-6 text-primary" />
+            {t.portfolioTitle} Videos
+          </CardTitle>
+          <CardDescription>Upload up to 2 videos (max 10MB each).</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+            {videos.map((url, index) => (
+              <div key={index} className="relative group aspect-square">
+                <video src={url} controls={false} className="rounded-lg object-cover w-full h-full border" />
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="icon" className="absolute bottom-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Trash2 className="h-4 w-4"/>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader><AlertDialogTitle>{t.confirmDeleteFileTitle}</AlertDialogTitle><AlertDialogDescription>{t.confirmDeleteFileDescription}</AlertDialogDescription></AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleFileDelete(url, 'video')} className="bg-destructive hover:bg-destructive/90">{t.delete}</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            ))}
+          </div>
+
+          {videos.length < 2 && (
+             <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg">
+                <Label htmlFor="video-upload" className={cn(buttonVariants({ variant: 'outline' }),'w-full cursor-pointer',(isUploadingVideo || !isCoreServicesAvailable) && 'opacity-50 cursor-not-allowed')}>
+                  <div className="flex items-center justify-center">
+                    {isUploadingVideo ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
+                    <span>{isUploadingVideo ? "Uploading Video..." : "Upload Video"}</span>
+                  </div>
+                </Label>
+                <Input id="video-upload" type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'video')} accept="video/*" disabled={isUploadingVideo || !isCoreServicesAvailable}/>
             </div>
           )}
         </CardContent>
