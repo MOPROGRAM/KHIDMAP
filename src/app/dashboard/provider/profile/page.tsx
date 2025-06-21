@@ -16,7 +16,7 @@ import { auth, db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'; 
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, PlayCircle } from 'lucide-react';
 import NextImage from 'next/image'; 
 import { z } from 'zod';
 
@@ -46,7 +46,7 @@ export default function ProviderProfilePage() {
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined>(undefined);
   const [location, setLocation] = useState<{ latitude: number, longitude: number } | null>(null);
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
-  const [imageUpload, setImageUpload] = useState<File | null>(null);
+  const [fileUpload, setFileUpload] = useState<File | null>(null);
 
   const [isLoading, setIsLoading] =useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -139,42 +139,48 @@ export default function ProviderProfilePage() {
     );
   };
 
-  const handleImageUpload = async () => {
-    if (!imageUpload || !authUser || !db || !storage) {
+  const handleFileUpload = async () => {
+    if (!fileUpload || !authUser || !db || !storage) {
         toast({ variant: "destructive", title: t.errorOccurred, description: t.selectImageError });
         return;
     }
+    if (portfolioItems.length >= 5) {
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.portfolioLimitReached });
+        return;
+    }
     setIsUploading(true);
-    const imageId = `${Date.now()}-${imageUpload.name}`;
-    const imageRef = ref(storage, `portfolios/${authUser.uid}/${imageId}`);
+    const fileId = `${Date.now()}-${fileUpload.name}`;
+    const fileRef = ref(storage, `portfolios/${authUser.uid}/${fileId}`);
 
     try {
-        await uploadBytes(imageRef, imageUpload);
-        const downloadURL = await getDownloadURL(imageRef);
-        const newPortfolioItem: PortfolioItem = { id: imageId, url: downloadURL };
+        await uploadBytes(fileRef, fileUpload);
+        const downloadURL = await getDownloadURL(fileRef);
+        const fileType = fileUpload.type.startsWith('video/') ? 'video' : 'image';
+        const newPortfolioItem: PortfolioItem = { id: fileId, url: downloadURL, type: fileType };
         
         const userDocRef = doc(db, "users", authUser.uid);
-        await updateDoc(userDocRef, {
+        // Use setDoc with merge to prevent errors if the portfolio field doesn't exist
+        await setDoc(userDocRef, {
             portfolio: arrayUnion(newPortfolioItem)
-        });
+        }, { merge: true });
 
         setPortfolioItems(prev => [...prev, newPortfolioItem]);
-        setImageUpload(null); // Clear the file input
+        setFileUpload(null);
         toast({ title: t.imageUploadedSuccess });
     } catch (error) {
-        console.error("Error uploading image:", error);
+        console.error("Error uploading file:", error);
         toast({ variant: "destructive", title: t.errorOccurred, description: t.imageUploadError });
     } finally {
         setIsUploading(false);
     }
   };
 
-  const handleImageDelete = async (itemToDelete: PortfolioItem) => {
+  const handleFileDelete = async (itemToDelete: PortfolioItem) => {
     if (!authUser || !db || !storage) return;
     
-    const imageRef = ref(storage, `portfolios/${authUser.uid}/${itemToDelete.id}`);
+    const fileRef = ref(storage, `portfolios/${authUser.uid}/${itemToDelete.id}`);
     try {
-        await deleteObject(imageRef);
+        await deleteObject(fileRef);
         
         const userDocRef = doc(db, "users", authUser.uid);
         await updateDoc(userDocRef, {
@@ -184,7 +190,7 @@ export default function ProviderProfilePage() {
         setPortfolioItems(prev => prev.filter(item => item.id !== itemToDelete.id));
         toast({ title: t.imageDeletedSuccess });
     } catch (error) {
-        console.error("Error deleting image:", error);
+        console.error("Error deleting file:", error);
         toast({ variant: "destructive", title: t.errorOccurred, description: t.imageDeleteError });
     }
   };
@@ -269,6 +275,8 @@ export default function ProviderProfilePage() {
     { value: 'Plastering', labelKey: 'plastering'},
     { value: 'Other', labelKey: 'other' },
   ];
+
+  const canUploadMore = portfolioItems.length < 5;
 
   return (
     <div className="max-w-3xl mx-auto py-2 space-y-6">
@@ -401,30 +409,38 @@ export default function ProviderProfilePage() {
             <div className="space-y-4">
                 <div className="flex items-center gap-2">
                     <Input 
-                        id="image-upload"
+                        id="file-upload"
                         type="file"
-                        accept="image/*"
+                        accept="image/*,video/*"
                         onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
-                                setImageUpload(e.target.files[0]);
+                                setFileUpload(e.target.files[0]);
                             }
                         }}
-                        disabled={isUploading || !isCoreServicesAvailable}
+                        disabled={!canUploadMore || isUploading || !isCoreServicesAvailable}
                         className="flex-1"
                     />
-                    <Button onClick={handleImageUpload} disabled={!imageUpload || isUploading || !isCoreServicesAvailable}>
+                    <Button onClick={handleFileUpload} disabled={!fileUpload || !canUploadMore || isUploading || !isCoreServicesAvailable}>
                         {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4" />}
-                        {t.uploadImage}
+                        {t.uploadFile}
                     </Button>
                 </div>
+                 {!canUploadMore && (
+                    <p className="text-sm text-destructive text-center">{t.portfolioLimitReached}</p>
+                 )}
                 
                 {portfolioItems.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {portfolioItems.map(item => (
-                            <div key={item.id} className="relative group">
-                                <NextImage src={item.url} alt="Portfolio item" width={200} height={200} className="rounded-md object-cover aspect-square w-full" />
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <Button variant="destructive" size="icon" onClick={() => handleImageDelete(item)}>
+                            <div key={item.id} className="relative group aspect-square">
+                                {item.type === 'video' ? (
+                                    <video src={item.url} className="rounded-md object-cover w-full h-full bg-black" />
+                                ) : (
+                                    <NextImage src={item.url} alt="Portfolio item" layout="fill" className="rounded-md object-cover" />
+                                )}
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
+                                    {item.type === 'video' && <PlayCircle className="h-8 w-8 text-white absolute" />}
+                                    <Button variant="destructive" size="icon" className="absolute z-10" onClick={() => handleFileDelete(item)}>
                                         <Trash2 className="h-4 w-4"/>
                                     </Button>
                                 </div>

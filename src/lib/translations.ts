@@ -262,6 +262,9 @@ export type Translations = {
   imageDeletedSuccess: string;
   imageDeleteError: string;
   portfolioItem: string;
+  uploadFile: string;
+  portfolioLimitReached: string;
+  videoNotSupported: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -507,15 +510,18 @@ export const translations: Record<'en' | 'ar', Translations> = {
     accountDeletionError: "An error occurred while deleting your account. Please try again.",
     requiresRecentLoginError: "This is a sensitive operation and requires recent authentication. Please log out and log back in before trying again.",
     portfolio: "Work Portfolio",
-    portfolioDescription: "Showcase your best work by uploading images.",
+    portfolioDescription: "Showcase your best work by uploading up to 5 images or videos.",
     uploadImage: "Upload Image",
     noPortfolioItems: "You haven't uploaded any portfolio items yet.",
-    selectImageError: "Please select an image file to upload.",
-    imageUploadedSuccess: "Image uploaded successfully!",
-    imageUploadError: "Failed to upload image.",
-    imageDeletedSuccess: "Image deleted successfully!",
-    imageDeleteError: "Failed to delete image.",
-    portfolioItem: "Portfolio Item"
+    selectImageError: "Please select a file to upload.",
+    imageUploadedSuccess: "File uploaded successfully!",
+    imageUploadError: "Failed to upload file.",
+    imageDeletedSuccess: "File deleted successfully!",
+    imageDeleteError: "Failed to delete file.",
+    portfolioItem: "Portfolio Item",
+    uploadFile: "Upload File",
+    portfolioLimitReached: "You have reached the portfolio limit (5 files).",
+    videoNotSupported: "Your browser does not support the video tag."
   },
   ar: {
     appName: "خدماب",
@@ -759,14 +765,17 @@ export const translations: Record<'en' | 'ar', Translations> = {
     accountDeletionError: "حدث خطأ أثناء حذف حسابك. يرجى المحاولة مرة أخرى.",
     requiresRecentLoginError: "هذه عملية حساسة وتتطلب مصادقة حديثة. يرجى تسجيل الخروج ثم تسجيل الدخول مرة أخرى قبل المحاولة مرة أخرى.",
     portfolio: "معرض الأعمال",
-    portfolioDescription: "اعرض أفضل أعمالك عن طريق تحميل الصور.",
+    portfolioDescription: "اعرض أفضل أعمالك عن طريق تحميل ما يصل إلى 5 صور أو مقاطع فيديو.",
     uploadImage: "تحميل صورة",
     noPortfolioItems: "لم تقم بتحميل أي عناصر في معرض أعمالك بعد.",
-    selectImageError: "يرجى تحديد ملف صورة لتحميله.",
-    imageUploadedSuccess: "تم تحميل الصورة بنجاح!",
-    imageUploadError: "فشل تحميل الصورة.",
-    imageDeletedSuccess: "تم حذف الصورة بنجاح!",
-    imageDeleteError: "فشل حذف الصورة.",
-    portfolioItem: "عنصر من معرض الأعمال"
+    selectImageError: "يرجى تحديد ملف لتحميله.",
+    imageUploadedSuccess: "تم تحميل الملف بنجاح!",
+    imageUploadError: "فشل تحميل الملف.",
+    imageDeletedSuccess: "تم حذف الملف بنجاح!",
+    imageDeleteError: "فشل حذف الملف.",
+    portfolioItem: "عنصر من معرض الأعمال",
+    uploadFile: "تحميل ملف",
+    portfolioLimitReached: "لقد وصلت إلى الحد الأقصى لمعرض الأعمال (5 ملفات).",
+    videoNotSupported: "متصفحك لا يدعم وسم الفيديو."
   },
 };

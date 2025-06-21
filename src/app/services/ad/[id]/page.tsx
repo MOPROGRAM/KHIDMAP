@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import NextImage from 'next/image';
 import {
   ArrowLeft, MapPin, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, SprayCan,
-  GripVertical, HardHat, Layers, Star, Wrench, Zap, MessageSquare, Image as ImageIcon
+  GripVertical, HardHat, Layers, Star, Wrench, Zap, MessageSquare, Image as ImageIcon, Film
 } from 'lucide-react';
 import Link from 'next/link';
 import { Timestamp } from 'firebase/firestore';
@@ -370,17 +370,25 @@ export default function ProviderDetailsPage() {
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {provider.portfolio.map(item => (
-                        <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" className="block group">
-                           <div className="aspect-square relative overflow-hidden rounded-lg">
-                             <NextImage 
-                                src={item.url} 
-                                alt={t.portfolioItem || 'Portfolio Item'} 
-                                layout="fill" 
-                                objectFit="cover"
-                                className="group-hover:scale-110 transition-transform duration-300"
-                             />
-                           </div>
-                        </a>
+                       <div key={item.id} className="group aspect-square relative overflow-hidden rounded-lg shadow-md bg-muted">
+                           {item.type === 'video' ? (
+                               <video
+                                   src={item.url}
+                                   controls
+                                   className="w-full h-full object-cover"
+                               >
+                                   {t.videoNotSupported}
+                               </video>
+                           ) : (
+                               <NextImage 
+                                   src={item.url} 
+                                   alt={t.portfolioItem || 'Portfolio Item'} 
+                                   layout="fill" 
+                                   objectFit="cover"
+                                   className="group-hover:scale-105 transition-transform duration-300"
+                               />
+                           )}
+                       </div>
                     ))}
                 </div>
                 <Separator className="my-4" />

@@ -8,6 +8,7 @@ export type UserRole = 'provider' | 'seeker' | 'admin';
 export interface PortfolioItem {
   id: string; // Unique ID for the item, e.g., the filename in storage
   url: string; // The public URL of the image/video
+  type: 'image' | 'video';
   description?: string; // Optional description
 }
 
