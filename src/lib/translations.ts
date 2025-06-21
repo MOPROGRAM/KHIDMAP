@@ -197,6 +197,7 @@ export type Translations = {
   providerIdMissing?: string;
   failedLoadProviderDetails?: string;
   firestoreIndexError?: string;
+  permissionDeniedError?: string;
   of?: string; // e.g. 4.5 of 5 stars
   viewProfile?: string;
 
@@ -284,7 +285,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     email: "Email",
     password: "Password",
     name: "Full Name",
-    qualifications: "Qualifications/Skills",
+    qualifications: "About Me / Bio",
     phoneNumber: "Phone Number",
     address: "Address / Service Location",
     serviceAreas: "Service Areas",
@@ -456,6 +457,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     providerIdMissing: "Provider ID is missing from the request.",
     failedLoadProviderDetails: "Failed to load provider details.",
     firestoreIndexError: "The database is being updated to support this query. Please try again in a few minutes.",
+    permissionDeniedError: "Access Denied. You do not have permission to view this information. This may be due to a misconfiguration of database security rules.",
     of: "of",
     viewProfile: "View Profile",
     you: "You",
@@ -531,7 +533,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     email: "البريد الإلكتروني",
     password: "كلمة المرور",
     name: "الاسم الكامل",
-    qualifications: "المؤهلات/المهارات",
+    qualifications: "عني / نبذة تعريفية",
     phoneNumber: "رقم الهاتف",
     address: "العنوان / موقع الخدمة",
     serviceAreas: "مناطق الخدمة",
@@ -703,6 +705,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     providerIdMissing: "معرف مقدم الخدمة مفقود من الطلب.",
     failedLoadProviderDetails: "فشل تحميل تفاصيل مقدم الخدمة.",
     firestoreIndexError: "قاعدة البيانات قيد التحديث لدعم هذا الاستعلام. يرجى المحاولة مرة أخرى في غضون دقائق قليلة.",
+    permissionDeniedError: "تم رفض الوصول. ليس لديك إذن لعرض هذه المعلومات. قد يكون هذا بسبب خطأ في تكوين قواعد أمان قاعدة البيانات.",
     of: "من",
     viewProfile: "عرض الملف الشخصي",
     you: "أنت",
@@ -755,3 +758,5 @@ export const translations: Record<'en' | 'ar', Translations> = {
     specialties: "التخصصات",
   },
 };
+
+    

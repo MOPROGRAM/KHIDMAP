@@ -156,7 +156,9 @@ export default function ProviderDetailsPage() {
       }
     }).catch((err: any) => {
       console.error("Error fetching provider details:", err);
-      if (String(err.message).includes("requires an index")) {
+      if (err.code === 'permission-denied') {
+        setError(t.permissionDeniedError);
+      } else if (String(err.message).includes("requires an index")) {
         setError(t.firestoreIndexError);
       } else {
         setError(String(err.message) || t.failedLoadProviderDetails);
@@ -273,7 +275,9 @@ export default function ProviderDetailsPage() {
           <CardContent>
             <p className="text-muted-foreground mb-6">{String(error)}</p>
             <Button asChild variant="outline" onClick={() => router.back()} className="hover:bg-destructive/10 hover:border-destructive transition-colors duration-200 group">
-                <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:translate-x-[-2px] transition-transform" /> {t.backButton}
+                <>
+                  <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:translate-x-[-2px] transition-transform" /> {t.backButton}
+                </>
             </Button>
           </CardContent>
         </Card>
@@ -294,7 +298,9 @@ export default function ProviderDetailsPage() {
           <CardContent>
             <p className="text-muted-foreground mb-6">{t.providerDetailsNotAvailable}</p>
              <Button asChild variant="outline" onClick={() => router.back()} className="hover:bg-accent/10 hover:border-primary transition-colors duration-200 group">
-                <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:translate-x-[-2px] transition-transform" /> {t.backButton}
+                <>
+                  <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:translate-x-[-2px] transition-transform" /> {t.backButton}
+                </>
             </Button>
           </CardContent>
         </Card>
@@ -312,10 +318,12 @@ export default function ProviderDetailsPage() {
       </Button>
 
       <Card className="overflow-hidden shadow-2xl border-none">
-        <div className="bg-muted p-6 sm:p-8">
+         <div className="bg-card-foreground/5 p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row items-center text-center sm:text-left gap-6">
-                <Avatar className="w-32 h-32 border-4 border-background shadow-lg">
-                    <AvatarFallback className="text-5xl"><UserCircle/></AvatarFallback>
+                <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-background shadow-lg">
+                    <AvatarFallback className="bg-transparent">
+                       <UserCircle className="w-full h-full text-muted" />
+                    </AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
                     <h1 className="text-3xl md:text-4xl font-bold font-headline text-foreground">{provider.name}</h1>
@@ -339,14 +347,14 @@ export default function ProviderDetailsPage() {
         <CardContent className="p-4 md:p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 my-4">
                  {provider.phoneNumber && (
-                    <Button asChild size="lg" className="w-full">
+                    <Button asChild size="lg" className="w-full group">
                         <a href={`tel:${cleanPhoneNumber}`}>
                           <PhoneCall className="ltr:mr-2 rtl:ml-2"/> {t.callNow}
                         </a>
                     </Button>
                 )}
                  {provider.phoneNumber && (
-                    <Button asChild size="lg" variant="outline" className="w-full">
+                    <Button asChild size="lg" variant="outline" className="w-full group">
                         <a href={`https://wa.me/${cleanPhoneNumber}?text=${whatsappMessage}`} target="_blank" rel="noopener noreferrer">
                           <BotMessageSquare className="ltr:mr-2 rtl:ml-2" /> {t.contactOnWhatsApp}
                         </a>
@@ -356,7 +364,7 @@ export default function ProviderDetailsPage() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="w-full"
+                      className="w-full group"
                       onClick={handleStartConversation}
                       disabled={isCreatingConversation}
                     >
@@ -368,6 +376,7 @@ export default function ProviderDetailsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div className="space-y-6">
+                     {(provider.qualifications || serviceAreas.length > 0) && <Separator/>}
                      {provider.qualifications && (
                         <div className="space-y-2">
                            <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Sparkles/> {t.aboutProvider.replace('{name}', provider.name)}</h2>
@@ -382,7 +391,8 @@ export default function ProviderDetailsPage() {
                      )}
                 </div>
                  {serviceCategories.length > 0 && (
-                    <div className="space-y-2">
+                    <div className="space-y-4">
+                       <Separator/>
                        <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Briefcase/> {t.specialties}</h2>
                        <div className="flex flex-col gap-2">
                             {serviceCategories.map(cat => {
