@@ -72,9 +72,17 @@ export default function MessagesPage() {
 
     setLoadingConversations(true);
     const unsubscribeConversations = onSnapshot(
-      query(collection(db, 'conversations'), where('participants', 'array-contains', authUser.uid), orderBy('updatedAt', 'desc')),
+      query(collection(db, 'conversations'), where('participants', 'array-contains', authUser.uid)),
       (snapshot) => {
-        const convos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
+        let convos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
+        
+        // Sort conversations by last update time on the client-side
+        convos.sort((a, b) => {
+            const dateA = a.updatedAt?.toMillis() || 0;
+            const dateB = b.updatedAt?.toMillis() || 0;
+            return dateB - dateA; // Sort descending
+        });
+
         setConversations(convos);
         
         const convoIdFromUrl = searchParams.get('conversationId');

@@ -1,6 +1,6 @@
 
 import { db, auth } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch, GeoPoint } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch, GeoPoint, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 // ServiceCategory is still relevant for provider profiles
 export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
@@ -15,7 +15,7 @@ export interface UserProfile {
   qualifications?: string;
   serviceCategories?: ServiceCategory[];
   serviceAreas?: string[]; 
-  location?: GeoPoint;
+  location?: GeoPoint | null;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
   emailVerified?: boolean;
@@ -133,14 +133,22 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[]> => {
     try {
         const ratingsQuery = query(
             collection(db, "ratings"),
-            where("ratedUserId", "==", userId),
-            orderBy("createdAt", "desc")
+            where("ratedUserId", "==", userId)
         );
         const querySnapshot = await getDocs(ratingsQuery);
-        return querySnapshot.docs.map(docSnap => ({
+        const ratings = querySnapshot.docs.map(docSnap => ({
             id: docSnap.id,
             ...docSnap.data(),
         } as Rating));
+
+        // Sort ratings by date on the client-side to avoid complex indexes
+        ratings.sort((a, b) => {
+            const dateA = a.createdAt?.toMillis() || 0;
+            const dateB = b.createdAt?.toMillis() || 0;
+            return dateB - dateA; // Sort descending (newest first)
+        });
+
+        return ratings;
     } catch (error) {
         console.error("Error fetching ratings from Firestore: ", error);
         throw error;
@@ -153,11 +161,19 @@ export const getConversationsForUser = async (userId: string): Promise<Conversat
     if (!db) throw new Error("Database service is not available.");
     const q = query(
         collection(db, "conversations"),
-        where("participants", "array-contains", userId),
-        orderBy("updatedAt", "desc")
+        where("participants", "array-contains", userId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
+    const conversations = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
+    
+    // Sort conversations by last update time on the client-side
+    conversations.sort((a, b) => {
+        const dateA = a.updatedAt?.toMillis() || 0;
+        const dateB = b.updatedAt?.toMillis() || 0;
+        return dateB - dateA; // Sort descending (newest first)
+    });
+    
+    return conversations;
 };
 
 export const findOrCreateConversation = async (user1Id: string, user2Id: string): Promise<string> => {
