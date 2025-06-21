@@ -106,8 +106,13 @@ export default function ProviderDetailsPage() {
   const t = useTranslation();
   const router = useRouter();
   const params = useParams();
-  const providerId = params.id as string;
   const { toast } = useToast();
+
+  const providerId = useMemo(() => {
+    const id = params.id;
+    return Array.isArray(id) ? id[0] : id;
+  }, [params.id]);
+
 
   const [provider, setProvider] = useState<UserProfile | null>(null);
   const [ratings, setRatings] = useState<Rating[]>([]);
@@ -122,7 +127,7 @@ export default function ProviderDetailsPage() {
   const [ratingInput, setRatingInput] = useState(0);
   const [commentInput, setCommentInput] = useState('');
 
-  const fetchProviderData = useCallback(() => {
+  const fetchProviderData = useCallback(async () => {
      if (!db) {
         setError(t.serviceUnavailableMessage);
         setIsLoading(false);
@@ -137,42 +142,35 @@ export default function ProviderDetailsPage() {
     setIsLoading(true);
     setError(null);
     
-    Promise.all([
-        getUserProfileById(providerId),
-        getRatingsForUser(providerId),
-    ]).then(([foundProvider, foundRatings]) => {
-      if (foundProvider) {
-        setProvider(foundProvider);
-        if (Array.isArray(foundRatings)) {
-            setRatings(foundRatings);
-            if (foundRatings.length > 0) {
-              const totalRating = foundRatings.reduce((acc, r) => acc + r.rating, 0);
-              setAverageRating(totalRating / foundRatings.length);
-            } else {
-              setAverageRating(0);
+    try {
+        const [foundProvider, foundRatings] = await Promise.all([
+            getUserProfileById(providerId),
+            getRatingsForUser(providerId),
+        ]);
+
+        if (foundProvider) {
+            setProvider(foundProvider);
+            if (foundRatings) {
+                setRatings(foundRatings);
+                if (foundRatings.length > 0) {
+                    const totalRating = foundRatings.reduce((acc, r) => acc + (r.rating || 0), 0);
+                    setAverageRating(totalRating / foundRatings.length);
+                } else {
+                    setAverageRating(0);
+                }
             }
+        } else {
+            setError(t.providerNotFound);
         }
-      } else {
-        setError(t.providerNotFound);
-      }
-    }).catch((err: any) => {
-      console.error("Error fetching provider details:", err);
-      if (err.code === 'permission-denied') {
-        setError(t.permissionDeniedError);
-      } else if (String(err.message).includes("requires an index")) {
-        setError(t.firestoreIndexError);
-      } else {
-        setError(String(err.message) || t.failedLoadProviderDetails);
-      }
-    }).finally(() => {
-      setIsLoading(false);
-    });
+    } catch (err: any) {
+        console.error("Error fetching provider details:", err);
+        setError(t.failedLoadProviderDetails);
+    } finally {
+        setIsLoading(false);
+    }
   }, [providerId, t]);
 
   useEffect(() => {
-    if (!auth) {
-      return;
-    }
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setAuthUser(user);
       setUserRole(user ? localStorage.getItem('userRole') : null);
@@ -328,8 +326,8 @@ export default function ProviderDetailsPage() {
                     </AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
-                    <h1 className="text-3xl md:text-4xl font-bold font-headline text-foreground">{provider.name}</h1>
-                    {serviceCategories.length > 0 && serviceCategories[0] && (
+                    <h1 className="text-3xl md:text-4xl font-bold font-headline text-foreground">{provider.name || ''}</h1>
+                    {serviceCategories?.[0] && (
                         <p className="text-lg text-primary font-semibold">
                             {t[(serviceCategories[0]).toLowerCase() as keyof Translations] || serviceCategories[0]}
                         </p>
@@ -381,7 +379,7 @@ export default function ProviderDetailsPage() {
                      {(provider.qualifications || serviceAreas.length > 0) && <Separator/>}
                      {provider.qualifications && (
                         <div className="space-y-2">
-                           <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Sparkles/> {t.aboutProvider.replace('{name}', provider.name)}</h2>
+                           <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Sparkles/> {t.aboutProvider.replace('{name}', provider.name || 'الماهر')}</h2>
                            <p className="text-muted-foreground whitespace-pre-wrap">{provider.qualifications}</p>
                         </div>
                      )}
@@ -488,3 +486,5 @@ export default function ProviderDetailsPage() {
     </div>
   );
 }
+
+    

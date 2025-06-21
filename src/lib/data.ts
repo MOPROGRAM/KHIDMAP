@@ -2,7 +2,6 @@
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch, GeoPoint, arrayUnion, arrayRemove } from 'firebase/firestore';
 
-// ServiceCategory is still relevant for provider profiles
 export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
 export type UserRole = 'provider' | 'seeker' | 'admin';
 
@@ -53,9 +52,12 @@ export interface Message {
 export const getUserProfileById = async (uid: string): Promise<UserProfile | null> => {
   if (!db) {
     console.error("Firestore (db) is not initialized in getUserProfileById.");
-    throw new Error("Database service is not available.");
+    return null;
   }
-  if (!uid) return null;
+  if (!uid) {
+      console.error("getUserProfileById called with no UID.");
+      return null;
+  }
   try {
     const userDocRef = doc(db, "users", uid);
     const docSnap = await getDoc(userDocRef);
@@ -72,15 +74,15 @@ export const getUserProfileById = async (uid: string): Promise<UserProfile | nul
       return null;
     }
   } catch (error) {
-    console.error("Error fetching user profile from Firestore: ", error);
-    throw error;
+    console.error(`Error fetching user profile for UID ${uid}: `, error);
+    return null;
   }
 };
 
 export const getAllProviders = async (): Promise<UserProfile[]> => {
     if (!db) {
         console.error("Firestore (db) is not initialized in getAllProviders.");
-        throw new Error("Database service is not available to fetch providers.");
+        return [];
     }
     try {
         const providersQuery = query(collection(db, "users"), where("role", "==", "provider"));
@@ -96,7 +98,7 @@ export const getAllProviders = async (): Promise<UserProfile[]> => {
         });
     } catch (error) {
         console.error("Error fetching all providers from Firestore: ", error);
-        throw error;
+        return [];
     }
 };
 
@@ -127,9 +129,14 @@ export const addRating = async (ratingData: {
 };
 
 
-export const getRatingsForUser = async (userId: string): Promise<Rating[]> => {
+export const getRatingsForUser = async (userId: string): Promise<Rating[] | null> => {
     if (!db) {
-        throw new Error("Database service is not available.");
+        console.error("Firestore (db) is not initialized in getRatingsForUser.");
+        return null;
+    }
+    if (!userId) {
+        console.error("getRatingsForUser called with no userId.");
+        return null;
     }
     try {
         const ratingsQuery = query(
@@ -142,82 +149,93 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[]> => {
             ...docSnap.data(),
         } as Rating));
 
-        // Sort ratings by date on the client-side to avoid complex indexes
         ratings.sort((a, b) => {
             const dateA = a.createdAt?.toMillis() || 0;
             const dateB = b.createdAt?.toMillis() || 0;
-            return dateB - dateA; // Sort descending (newest first)
+            return dateB - dateA;
         });
 
         return ratings;
     } catch (error) {
-        console.error("Error fetching ratings from Firestore: ", error);
-        throw error;
+        console.error(`Error fetching ratings for user ${userId}:`, error);
+        return null;
     }
 };
 
 // --- Messaging Functions ---
 
-export const getConversationsForUser = async (userId: string): Promise<Conversation[]> => {
-    if (!db) throw new Error("Database service is not available.");
-    const q = query(
-        collection(db, "conversations"),
-        where("participants", "array-contains", userId)
-    );
-    const querySnapshot = await getDocs(q);
-    const conversations = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
-    
-    // Sort conversations by last update time on the client-side
-    conversations.sort((a, b) => {
-        const dateA = a.updatedAt?.toMillis() || 0;
-        const dateB = b.updatedAt?.toMillis() || 0;
-        return dateB - dateA; // Sort descending (newest first)
-    });
-    
-    return conversations;
+export const getConversationsForUser = async (userId: string): Promise<Conversation[] | null> => {
+    if (!db) {
+        console.error("Firestore (db) is not initialized in getConversationsForUser.");
+        return null;
+    }
+    try {
+        const q = query(
+            collection(db, "conversations"),
+            where("participants", "array-contains", userId)
+        );
+        const querySnapshot = await getDocs(q);
+        const conversations = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
+        
+        conversations.sort((a, b) => {
+            const dateA = a.updatedAt?.toMillis() || 0;
+            const dateB = b.updatedAt?.toMillis() || 0;
+            return dateB - dateA;
+        });
+        
+        return conversations;
+    } catch (error) {
+        console.error(`Error fetching conversations for user ${userId}:`, error);
+        return null;
+    }
 };
 
-export const findOrCreateConversation = async (user1Id: string, user2Id: string): Promise<string> => {
-    if (!db) throw new Error("Database service is not available.");
-    
-    // Sort IDs to create a consistent, predictable query and document structure
-    const participants = [user1Id, user2Id].sort();
-    
-    // Query for an existing conversation with the exact sorted participants array
-    const conversationsRef = collection(db, "conversations");
-    const q = query(conversationsRef, where("participants", "==", participants), limit(1));
-
-    const querySnapshot = await getDocs(q);
-    
-    if (!querySnapshot.empty) {
-        // Conversation already exists
-        return querySnapshot.docs[0].id;
+export const findOrCreateConversation = async (user1Id: string, user2Id: string): Promise<string | null> => {
+    if (!db) {
+        console.error("Firestore (db) is not initialized in findOrCreateConversation.");
+        return null;
     }
+    try {
+        const participants = [user1Id, user2Id].sort();
+        
+        const conversationsRef = collection(db, "conversations");
+        const q = query(conversationsRef, where("participants", "==", participants), limit(1));
 
-    // If no conversation exists, create a new one
-    const [user1Profile, user2Profile] = await Promise.all([
-        getUserProfileById(user1Id),
-        getUserProfileById(user2Id)
-    ]);
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+            return querySnapshot.docs[0].id;
+        }
 
-    if (!user1Profile || !user2Profile) {
-        throw new Error("Could not find user profiles to start conversation.");
+        const [user1Profile, user2Profile] = await Promise.all([
+            getUserProfileById(user1Id),
+            getUserProfileById(user2Id)
+        ]);
+
+        if (!user1Profile || !user2Profile) {
+            throw new Error("Could not find user profiles to start conversation.");
+        }
+
+        const newConversationRef = doc(collection(db, 'conversations'));
+        const newConversationData = {
+            participants: participants,
+            participantNames: {
+                [user1Id]: user1Profile.name,
+                [user2Id]: user2Profile.name,
+            },
+            lastMessage: "Conversation started.",
+            lastMessageSenderId: '',
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        };
+
+        await setDoc(newConversationRef, newConversationData);
+        
+        return newConversationRef.id;
+    } catch (error) {
+        console.error(`Error finding or creating conversation between ${user1Id} and ${user2Id}:`, error);
+        return null;
     }
-
-    const newConversationRef = doc(collection(db, 'conversations'));
-    const newConversationData = {
-        participants: participants, // Use the sorted array
-        participantNames: {
-            [user1Id]: user1Profile.name,
-            [user2Id]: user2Profile.name,
-        },
-        lastMessage: "Conversation started.",
-        lastMessageSenderId: '', // System message
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-    };
-
-    await setDoc(newConversationRef, newConversationData);
-    
-    return newConversationRef.id;
 };
+
+    

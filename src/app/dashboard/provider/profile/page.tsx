@@ -58,41 +58,42 @@ export default function ProviderProfilePage() {
     if (auth && db && storage) {
       setIsCoreServicesAvailable(true);
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          setAuthUser(user);
-          setEmail(user.email || ''); 
-          setName(user.displayName || ''); 
+        try {
+            if (user) {
+              setAuthUser(user);
+              setEmail(user.email || ''); 
+              setName(user.displayName || ''); 
 
-          const userDocRef = doc(db, "users", user.uid);
-          try {
-            const docSnap = await getDoc(userDocRef);
-            if (docSnap.exists()) {
-              const firestoreProfile = docSnap.data() as UserProfile;
-              setName(firestoreProfile.name || user.displayName || ''); 
-              setPhoneNumber(firestoreProfile.phoneNumber || '');
-              setQualifications(firestoreProfile.qualifications || '');
-              setServiceAreasString((firestoreProfile.serviceAreas || []).join(', ')); 
-              setServiceCategories(firestoreProfile.serviceCategories || []);
-              setMedia(firestoreProfile.media || []);
-              
-              if (firestoreProfile.location) {
-                setLocation({
-                  latitude: firestoreProfile.location.latitude,
-                  longitude: firestoreProfile.location.longitude,
-                });
+              const userDocRef = doc(db, "users", user.uid);
+              const docSnap = await getDoc(userDocRef);
+              if (docSnap.exists()) {
+                const firestoreProfile = docSnap.data() as UserProfile;
+                setName(firestoreProfile.name || user.displayName || ''); 
+                setPhoneNumber(firestoreProfile.phoneNumber || '');
+                setQualifications(firestoreProfile.qualifications || '');
+                setServiceAreasString((firestoreProfile.serviceAreas || []).join(', ')); 
+                setServiceCategories(firestoreProfile.serviceCategories || []);
+                setMedia(firestoreProfile.media || []);
+                
+                if (firestoreProfile.location) {
+                  setLocation({
+                    latitude: firestoreProfile.location.latitude,
+                    longitude: firestoreProfile.location.longitude,
+                  });
+                }
+              } else {
+                toast({ variant: "default", title: t.welcome, description: t.completeYourProfile });
               }
             } else {
-              toast({ variant: "default", title: t.welcome, description: t.completeYourProfile });
+              toast({ variant: "destructive", title: t.authError, description: t.userNotIdentified });
+              router.push('/auth/login');
             }
-          } catch (error) {
-            console.error("Error fetching profile:", error);
+        } catch(error){
+            console.error("Error in auth/profile fetch useEffect:", error);
             toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotFetchProfile });
-          }
-        } else {
-          toast({ variant: "destructive", title: t.authError, description: t.userNotIdentified });
-          router.push('/auth/login');
+        } finally {
+            setIsFetching(false);
         }
-        setIsFetching(false);
       });
       return () => unsubscribe();
     } else {
@@ -107,7 +108,7 @@ export default function ProviderProfilePage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (media.length >= 5) {
+    if ((media || []).length >= 5) {
         toast({ variant: "destructive", title: t.portfolioLimitReachedTitle, description: t.portfolioLimitReachedDescription });
         return;
     }
@@ -142,13 +143,15 @@ export default function ProviderProfilePage() {
             media: arrayUnion(newMediaItem)
         });
 
-        setMedia(prev => [...prev, newMediaItem]);
+        setMedia(prev => [...(prev || []), newMediaItem]);
         toast({ title: t.fileUploadedSuccessTitle });
     } catch (error: any) {
         console.error("File upload error:", error);
         let description = t.fileUploadErrorDescription;
         if (error.code === 'storage/unauthorized') {
             description = t.storageUnauthorizedError;
+        } else if (error.code === 'storage/object-not-found') {
+             description = "Error updating database record after upload. Please refresh and try again.";
         }
         toast({ variant: "destructive", title: t.fileUploadErrorTitle, description });
     } finally {
@@ -171,7 +174,7 @@ export default function ProviderProfilePage() {
         const fileRef = ref(storage, fileToDelete.url);
         await deleteObject(fileRef);
 
-        setMedia(prev => prev.filter(item => item.url !== fileToDelete.url));
+        setMedia(prev => (prev || []).filter(item => item.url !== fileToDelete.url));
         toast({ title: t.fileDeletedSuccessTitle });
 
     } catch (error: any) {
@@ -277,9 +280,13 @@ export default function ProviderProfilePage() {
       localStorage.setItem('userName', data.name);
 
       toast({ title: t.profileUpdatedSuccessfully, description: t.profileChangesSaved });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
-      toast({ variant: "destructive", title: t.errorOccurred, description: t.failedUpdateProfile });
+      let description = t.failedUpdateProfile;
+      if (error.code === 'permission-denied') {
+          description = t.permissionDeniedError;
+      }
+      toast({ variant: "destructive", title: t.errorOccurred, description });
     } finally {
       setIsLoading(false);
     }
@@ -413,7 +420,7 @@ export default function ProviderProfilePage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4">
-            {media.map((item, index) => (
+            {(media || []).map((item, index) => (
               <div key={index} className="relative group aspect-square">
                 {item.type === 'image' ? (
                   <Image src={item.url} alt={`${t.portfolioTitle} ${index + 1}`} width={150} height={150} className="rounded-lg object-cover w-full h-full border"/>
@@ -444,7 +451,7 @@ export default function ProviderProfilePage() {
             ))}
           </div>
 
-          {media.length < 5 ? (
+          {(media || []).length < 5 ? (
              <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg">
                 <Label
                   htmlFor="file-upload"
@@ -480,3 +487,4 @@ export default function ProviderProfilePage() {
   );
 }
 
+    
