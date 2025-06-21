@@ -41,24 +41,24 @@ export default function HomePage() {
       
       {/* Hero Section */}
       <section 
-        className="w-full flex flex-col items-center text-center pt-12 pb-16 space-y-4"
+        className="w-full flex flex-col items-center text-center pt-12 pb-16 space-y-6"
       >
         <div 
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
           <div className="relative inline-flex flex-col items-center group">
-             <h1 className="relative px-2 text-xl font-extrabold tracking-tighter text-foreground z-10">
+             <h1 className="relative px-2 text-6xl font-extrabold tracking-tight text-foreground z-10">
                 {t.appName}
             </h1>
-             <div className="absolute bottom-0 h-[4px] w-full bg-primary z-0"></div>
+             <div className="absolute bottom-0 h-[8px] w-full bg-primary z-0"></div>
           </div>
         </div>
         <div 
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}
         >
-            <p className="text-base text-muted-foreground max-w-xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                 {t.findSkilledArtisans} {t.orPostYourServices}
             </p>
         </div>
@@ -85,7 +85,7 @@ export default function HomePage() {
                   {t.services}
               </h2>
           </div>
-          <div className="w-full overflow-x-auto hide-scrollbar" style={{ scrollSnapType: 'x mandatory' }}>
+          <div className="relative w-full overflow-x-auto hide-scrollbar" style={{ scrollSnapType: 'x mandatory' }}>
             <ul className="flex flex-nowrap items-stretch justify-start gap-4 px-4 md:px-8 py-2">
                 {serviceCards.map((service, index) => renderServiceCard(service, index))}
             </ul>
