@@ -159,10 +159,11 @@ export default function ProviderProfilePage() {
         const newPortfolioItem: PortfolioItem = { id: fileId, url: downloadURL, type: fileType };
         
         const userDocRef = doc(db, "users", authUser.uid);
-        // Use setDoc with merge to prevent errors if the portfolio field doesn't exist
-        await setDoc(userDocRef, {
+        // Switched to updateDoc, which is the standard way to modify an existing document's fields.
+        // This should be more robust.
+        await updateDoc(userDocRef, {
             portfolio: arrayUnion(newPortfolioItem)
-        }, { merge: true });
+        });
 
         setPortfolioItems(prev => [...prev, newPortfolioItem]);
         setFileUpload(null);
