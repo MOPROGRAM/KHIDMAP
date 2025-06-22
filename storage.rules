@@ -1,0 +1,23 @@
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Match all files related to service ads
+    match /serviceAds/{userId}/{allPaths=**} {
+      // Public read access is allowed for profile images and videos
+      allow read;
+
+      // Write (create, update) is allowed only if the user is authenticated
+      // and their UID matches the {userId} in the path.
+      // This also enforces a 10MB file size limit and checks the content type.
+      allow write: if request.auth != null && request.auth.uid == userId
+                    && request.resource.size < 10 * 1024 * 1024
+                    && (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'));
+
+      // Delete is allowed only if the user is authenticated and their UID
+      // matches the {userId} in the path. This rule fixes the permission issue.
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
