@@ -70,7 +70,7 @@ export default function HomePage() {
                 </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-                <Link href="/auth/register">
+                <Link href="/register">
                   {t.register}
                 </Link>
             </Button>
@@ -102,7 +102,7 @@ export default function HomePage() {
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
                 <p className="text-base text-muted-foreground max-w-2xl mx-auto">{t.orPostYourServices}</p>
                 <Button asChild size="lg">
-                  <Link href="/auth/register?role=provider">
+                  <Link href="/register?role=provider">
                       {t.register}
                       <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4" />
                   </Link>
