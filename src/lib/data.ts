@@ -32,7 +32,7 @@ export interface Rating {
     createdAt: Timestamp;
 }
 
-export interface Conversation {
+export interface Chat {
     id: string;
     participants: string[]; // Array of user UIDs
     participantNames: { [key: string]: string };
@@ -45,9 +45,9 @@ export interface Conversation {
 
 export interface Message {
     id: string;
-    conversationId: string;
+    chatId: string;
     senderId: string;
-    text: string;
+    content: string;
     createdAt: Timestamp;
 }
 
@@ -154,6 +154,7 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
             ...docSnap.data(),
         } as Rating));
 
+        // Sort client-side to avoid needing a composite index
         ratings.sort((a, b) => {
             const dateA = a.createdAt?.toDate()?.getTime() || 0;
             const dateB = b.createdAt?.toDate()?.getTime() || 0;
@@ -173,24 +174,24 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
 
 // --- Messaging Firestore Functions ---
 
-export const startOrGetConversation = async (providerId: string): Promise<string> => {
+export const startOrGetChat = async (providerId: string): Promise<string> => {
     if (!db || !auth?.currentUser) {
         throw new Error("User not authenticated or database is unavailable.");
     }
     const seekerId = auth.currentUser.uid;
 
     if (providerId === seekerId) {
-        throw new Error("Cannot start a conversation with yourself.");
+        throw new Error("Cannot start a chat with yourself.");
     }
 
     const participants = [seekerId, providerId].sort();
-    const conversationId = participants.join('_');
+    const chatId = participants.join('_');
 
-    const conversationRef = doc(db, 'conversations', conversationId);
-    const conversationSnap = await getDoc(conversationRef);
+    const chatRef = doc(db, 'chats', chatId);
+    const chatSnap = await getDoc(chatRef);
 
-    if (conversationSnap.exists()) {
-        return conversationId;
+    if (chatSnap.exists()) {
+        return chatId;
     }
 
     const [seekerProfile, providerProfile] = await Promise.all([
@@ -202,7 +203,7 @@ export const startOrGetConversation = async (providerId: string): Promise<string
         throw new Error("Could not find user profiles for one or both participants.");
     }
 
-    const newConversationData: Omit<Conversation, 'id'> = {
+    const newChatData: Omit<Chat, 'id'> = {
         participants,
         participantNames: {
             [seekerId]: seekerProfile.name || "User",
@@ -218,59 +219,36 @@ export const startOrGetConversation = async (providerId: string): Promise<string
         createdAt: serverTimestamp() as Timestamp,
     };
 
-    await setDoc(conversationRef, newConversationData);
-    return conversationId;
+    await setDoc(chatRef, newChatData);
+    return chatId;
 };
 
-export const sendMessage = async (conversationId: string, text: string): Promise<void> => {
+export const sendMessage = async (chatId: string, content: string): Promise<void> => {
     if (!db || !auth?.currentUser) {
         throw new Error("User not authenticated or database is unavailable.");
     }
     const senderId = auth.currentUser.uid;
-    const cleanText = text.trim();
-    if (!cleanText) return;
+    const cleanContent = content.trim();
+    if (!cleanContent) return;
 
-    const conversationRef = doc(db, "conversations", conversationId);
-    const messagesCollectionRef = collection(conversationRef, "messages");
+    const chatRef = doc(db, "chats", chatId);
+    const messagesCollectionRef = collection(chatRef, "messages");
 
     const batch = writeBatch(db);
 
     const newMessageRef = doc(messagesCollectionRef);
     batch.set(newMessageRef, {
-        conversationId,
+        chatId,
         senderId,
-        text: cleanText,
+        content: cleanContent,
         createdAt: serverTimestamp(),
     });
 
-    batch.update(conversationRef, {
-        lastMessage: cleanText,
+    batch.update(chatRef, {
+        lastMessage: cleanContent,
         lastMessageAt: serverTimestamp(),
         lastMessageSenderId: senderId,
     });
     
     await batch.commit();
-};
-
-export const getConversationsForUser = async (): Promise<Conversation[]> => {
-    if (!db || !auth?.currentUser) return [];
-
-    const q = query(
-        collection(db, 'conversations'),
-        where('participants', 'array-contains', auth.currentUser.uid),
-        orderBy('lastMessageAt', 'desc')
-    );
-
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
-};
-
-export const getMessagesForConversation = async (conversationId: string): Promise<Message[]> => {
-    if (!db) return [];
-
-    const messagesRef = collection(db, 'conversations', conversationId, 'messages');
-    const q = query(messagesRef, orderBy('createdAt', 'asc'), limit(50));
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
 };

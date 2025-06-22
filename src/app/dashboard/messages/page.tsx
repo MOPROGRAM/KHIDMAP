@@ -6,14 +6,14 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useTranslation } from '@/hooks/useTranslation';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { Conversation, Message, sendMessage } from '@/lib/data';
+import { Chat, Message, sendMessage } from '@/lib/data';
 import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Send, MessageSquare, UserCircle, Frown, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
 
 const formatDate = (date: Timestamp | undefined): string => {
@@ -41,12 +41,12 @@ export default function MessagesPage() {
   const { toast } = useToast();
   
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   
-  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
+  const [isLoadingChats, setIsLoadingChats] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,9 +65,10 @@ export default function MessagesPage() {
   }, [router]);
 
   useEffect(() => {
-    const conversationIdFromUrl = searchParams.get('conversationId');
-    if (conversationIdFromUrl) {
-      setSelectedConversationId(conversationIdFromUrl);
+    const chatIdFromUrl = searchParams.get('chatId');
+    if (chatIdFromUrl) {
+      setSelectedChatId(chatIdFromUrl);
+      // Clean the URL param after reading it
       router.replace(pathname, {scroll: false});
     }
   }, [searchParams, router, pathname]);
@@ -75,35 +76,35 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!authUser || !db) return;
 
-    setIsLoadingConversations(true);
+    setIsLoadingChats(true);
     const q = query(
-      collection(db, 'conversations'),
+      collection(db, 'chats'),
       where('participants', 'array-contains', authUser.uid),
       orderBy('lastMessageAt', 'desc')
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const convos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
-      setConversations(convos);
-      setIsLoadingConversations(false);
+      const convos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
+      setChats(convos);
+      setIsLoadingChats(false);
     }, (err) => {
-      console.error("Error fetching conversations:", err);
+      console.error("Error fetching chats:", err);
       toast({ variant: "destructive", title: t.errorOccurred, description: "Could not load conversations." });
       setError("Could not load conversations.");
-      setIsLoadingConversations(false);
+      setIsLoadingChats(false);
     });
 
     return () => unsubscribe();
   }, [authUser, t, toast]);
 
   useEffect(() => {
-    if (!selectedConversationId || !db) {
+    if (!selectedChatId || !db) {
       setMessages([]);
       return;
     }
 
     setIsLoadingMessages(true);
-    const messagesRef = collection(db, 'conversations', selectedConversationId, 'messages');
+    const messagesRef = collection(db, 'chats', selectedChatId, 'messages');
     const q = query(messagesRef, orderBy('createdAt', 'asc'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -112,13 +113,13 @@ export default function MessagesPage() {
       setIsLoadingMessages(false);
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, (err) => {
-      console.error(`Error fetching messages for ${selectedConversationId}:`, err);
+      console.error(`Error fetching messages for ${selectedChatId}:`, err);
       toast({ variant: "destructive", title: t.errorOccurred, description: "Could not load messages." });
       setIsLoadingMessages(false);
     });
 
     return () => unsubscribe();
-  }, [selectedConversationId, t, toast]);
+  }, [selectedChatId, t, toast]);
   
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -127,11 +128,11 @@ export default function MessagesPage() {
 
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedConversationId || !authUser) return;
+    if (!newMessage.trim() || !selectedChatId || !authUser) return;
 
     setIsSending(true);
     try {
-      await sendMessage(selectedConversationId, newMessage);
+      await sendMessage(selectedChatId, newMessage);
       setNewMessage('');
     } catch (err: any) {
       console.error("Error sending message:", err);
@@ -141,37 +142,37 @@ export default function MessagesPage() {
     }
   };
 
-  const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+  const selectedChat = chats.find(c => c.id === selectedChatId);
 
-  const getOtherParticipant = (convo: Conversation) => {
-    const otherId = convo.participants.find(p => p !== authUser?.uid);
+  const getOtherParticipant = (chat: Chat) => {
+    const otherId = chat.participants.find(p => p !== authUser?.uid);
     return {
       id: otherId || '',
-      name: convo.participantNames[otherId || ''] || 'Unknown User',
-      avatar: convo.participantAvatars?.[otherId || ''] || undefined
+      name: chat.participantNames[otherId || ''] || 'Unknown User',
+      avatar: chat.participantAvatars?.[otherId || ''] || undefined
     };
   };
 
   return (
     <div className="h-[calc(100vh-8rem)] flex border rounded-lg shadow-xl bg-card animate-fadeIn">
-      <aside className={cn("w-full md:w-1/3 lg:w-1/4 border-r flex flex-col", selectedConversationId && "hidden md:flex")}>
+      <aside className={cn("w-full md:w-1/3 lg:w-1/4 border-r flex flex-col", selectedChatId && "hidden md:flex")}>
         <div className="p-4 border-b">
           <h2 className="text-xl font-bold font-headline">{t.conversations}</h2>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {isLoadingConversations ? (
+          {isLoadingChats ? (
             <div className="p-4 text-center"><Loader2 className="mx-auto h-8 w-8 animate-spin" /></div>
-          ) : conversations.length > 0 ? (
+          ) : chats.length > 0 ? (
             <ul>
-              {conversations.map(convo => {
-                const otherParticipant = getOtherParticipant(convo);
+              {chats.map(chat => {
+                const otherParticipant = getOtherParticipant(chat);
                 return (
-                  <li key={convo.id}>
+                  <li key={chat.id}>
                     <button
-                      onClick={() => setSelectedConversationId(convo.id)}
+                      onClick={() => setSelectedChatId(chat.id)}
                       className={cn(
                         "w-full text-left p-3 hover:bg-muted/50 transition-colors flex items-center gap-3",
-                        selectedConversationId === convo.id && "bg-muted"
+                        selectedChatId === chat.id && "bg-muted"
                       )}
                     >
                       <Avatar className="h-12 w-12 border">
@@ -181,9 +182,9 @@ export default function MessagesPage() {
                       <div className="flex-1 overflow-hidden">
                         <div className="flex justify-between items-center">
                           <h3 className="font-semibold truncate">{otherParticipant.name}</h3>
-                          <span className="text-xs text-muted-foreground">{formatDate(convo.lastMessageAt)}</span>
+                          <span className="text-xs text-muted-foreground">{formatDate(chat.lastMessageAt)}</span>
                         </div>
-                        <p className="text-sm text-muted-foreground truncate">{convo.lastMessageSenderId === authUser?.uid ? "You: " : ""}{convo.lastMessage}</p>
+                        <p className="text-sm text-muted-foreground truncate">{chat.lastMessageSenderId === authUser?.uid ? "You: " : ""}{chat.lastMessage}</p>
                       </div>
                     </button>
                   </li>
@@ -199,18 +200,18 @@ export default function MessagesPage() {
         </div>
       </aside>
 
-      <main className={cn("flex-1 flex flex-col", !selectedConversationId && "hidden md:flex")}>
-        {selectedConversation ? (
+      <main className={cn("flex-1 flex flex-col", !selectedChatId && "hidden md:flex")}>
+        {selectedChat ? (
           <>
             <header className="p-3 border-b flex items-center gap-3">
-               <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSelectedConversationId(null)}>
+               <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSelectedChatId(null)}>
                   <ArrowLeft className="h-5 w-5" />
                </Button>
               <Avatar>
-                <AvatarImage src={getOtherParticipant(selectedConversation).avatar} />
+                <AvatarImage src={getOtherParticipant(selectedChat).avatar} />
                 <AvatarFallback><UserCircle className="h-5 w-5" /></AvatarFallback>
               </Avatar>
-              <h3 className="font-semibold">{getOtherParticipant(selectedConversation).name}</h3>
+              <h3 className="font-semibold">{getOtherParticipant(selectedChat).name}</h3>
             </header>
             
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
@@ -225,7 +226,7 @@ export default function MessagesPage() {
                       "p-3 rounded-lg max-w-xs lg:max-w-md",
                       msg.senderId === authUser?.uid ? "bg-primary text-primary-foreground" : "bg-muted"
                     )}>
-                      <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                       <p className={cn("text-xs mt-1 text-right", msg.senderId === authUser?.uid ? "text-primary-foreground/70" : "text-muted-foreground")}>
                         {formatDate(msg.createdAt)}
                       </p>
@@ -253,13 +254,13 @@ export default function MessagesPage() {
           </>
         ) : (
           <div className="flex flex-col justify-center items-center h-full text-center p-4">
-             {conversations.length > 0 && !isLoadingConversations ? (
+             {chats.length > 0 && !isLoadingChats ? (
                 <>
                   <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />
                   <h2 className="text-xl font-semibold">{t.selectConversation}</h2>
                   <p className="text-muted-foreground">Choose a conversation from the list to see messages.</p>
                 </>
-             ) : !isLoadingConversations && (
+             ) : !isLoadingChats && (
                     <>
                       <Frown className="h-16 w-16 text-muted-foreground mb-4" />
                       <h2 className="text-xl font-semibold">{t.noConversations}</h2>
@@ -269,7 +270,7 @@ export default function MessagesPage() {
                        </Button>
                     </>
              )}
-              {isLoadingConversations && <Loader2 className="h-12 w-12 animate-spin text-primary" />}
+              {isLoadingChats && <Loader2 className="h-12 w-12 animate-spin text-primary" />}
           </div>
         )}
       </main>

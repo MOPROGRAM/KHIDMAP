@@ -283,7 +283,7 @@ export type Translations = {
   // Messaging
   messages: string;
   messageProvider: string; // "Message {providerName}"
-  startConversationError: string;
+  startChatError: string;
   startConversation: string;
   messageSent: string;
   conversations: string;
@@ -564,7 +564,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     analyzingVideoDescription: "Please wait while we check the video for safety.",
     messages: "Messages",
     messageProvider: "Message {providerName}",
-    startConversationError: "Error starting conversation",
+    startChatError: "Error starting chat",
     startConversation: "Start Conversation",
     messageSent: "Message Sent",
     conversations: "Conversations",
@@ -843,7 +843,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     analyzingVideoDescription: "يرجى الانتظار بينما نتحقق من سلامة الفيديو.",
     messages: "الرسائل",
     messageProvider: "مراسلة {providerName}",
-    startConversationError: "خطأ في بدء المحادثة",
+    startChatError: "خطأ في بدء المحادثة",
     startConversation: "بدء محادثة",
     messageSent: "تم إرسال الرسالة",
     conversations: "المحادثات",
