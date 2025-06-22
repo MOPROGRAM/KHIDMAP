@@ -298,6 +298,12 @@ export type Translations = {
   sendResetEmail?: string;
   resetEmailSent?: string;
   resetEmailSentDescription?: string;
+
+  // User Profile Validation
+  roleMissingTitle?: string;
+  roleMissingDescription?: string;
+  profileNotFoundTitle?: string;
+  profileNotFoundDescription?: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -584,6 +590,10 @@ export const translations: Record<'en' | 'ar', Translations> = {
     sendResetEmail: "Send Password Reset Email",
     resetEmailSent: "Password Reset Email Sent",
     resetEmailSentDescription: "A password reset link has been sent to {email}.",
+    roleMissingTitle: "User Role Missing",
+    roleMissingDescription: "Your user profile is incomplete. Please contact support or try registering again.",
+    profileNotFoundTitle: "Profile Not Found",
+    profileNotFoundDescription: "Your user profile could not be found. Logging you out for security.",
   },
   ar: {
     appName: "خدماب",
@@ -868,5 +878,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     sendResetEmail: "إرسال بريد إعادة تعيين كلمة المرور",
     resetEmailSent: "تم إرسال بريد إعادة تعيين كلمة المرور",
     resetEmailSentDescription: "تم إرسال رابط إعادة تعيين كلمة المرور إلى {email}.",
+    roleMissingTitle: "دور المستخدم مفقود",
+    roleMissingDescription: "ملفك الشخصي غير مكتمل. يرجى الاتصال بالدعم أو محاولة التسجيل مرة أخرى.",
+    profileNotFoundTitle: "لم يتم العثور على الملف الشخصي",
+    profileNotFoundDescription: "لم يتم العثور على ملفك الشخصي. جاري تسجيل خروجك للأمان.",
   },
 };

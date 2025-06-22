@@ -58,14 +58,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               const userData = userDocSnap.data();
               const roleFromFirestore = user.email === ADMIN_EMAIL ? 'admin' : (userData.role as UserRole);
               
-              setUserRole(roleFromFirestore); 
-              localStorage.setItem('userRole', roleFromFirestore);
-              localStorage.setItem('userName', userData.name || user.displayName || '');
-              localStorage.setItem('userEmail', userData.email || user.email || '');
+              if (!['provider', 'seeker', 'admin'].includes(roleFromFirestore)) {
+                console.error("User has no valid role. Logging out.", user.uid);
+                toast({ variant: "destructive", title: t.roleMissingTitle, description: t.roleMissingDescription });
+                if(auth) await signOut(auth);
+                // No need to return, state change will trigger re-render and redirect
+              } else {
+                setUserRole(roleFromFirestore); 
+                localStorage.setItem('userRole', roleFromFirestore);
+                localStorage.setItem('userName', userData.name || user.displayName || '');
+                localStorage.setItem('userEmail', userData.email || user.email || '');
+              }
             } else {
               console.warn("User profile not found in Firestore for UID:", user.uid, ". Logging out user.");
+              toast({ variant: "destructive", title: t.profileNotFoundTitle, description: t.profileNotFoundDescription });
               if(auth) await signOut(auth); 
-              return; 
             }
           } catch (error) {
             console.error("Error fetching user role from Firestore:", error);
@@ -92,12 +99,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navItems: NavItem[] = [
     { href: '/dashboard', labelKey: 'dashboard', icon: <Home className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
-    { href: '/dashboard/provider/profile', labelKey: 'profile', icon: <User className="h-5 w-5" />, roles: ['provider'] },
     { href: '/dashboard/messages', labelKey: 'messages', icon: <MessageSquare className="h-5 w-5" />, roles: ['provider', 'seeker'] },
+    { href: '/dashboard/provider/profile', labelKey: 'profile', icon: <User className="h-5 w-5" />, roles: ['provider'] },
     { href: '/services/search', labelKey: 'search', icon: <Search className="h-5 w-5" />, roles: ['seeker', 'provider'] },
     { href: '/dashboard/seeker/history', labelKey: 'searchHistory', icon: <History className="h-5 w-5" />, roles: ['seeker'] },
-    { href: '/admin/dashboard', labelKey: 'adminDashboard', icon: <ShieldCheck className="h-5 w-5" />, roles: ['admin'] },
     { href: '/dashboard/settings', labelKey: 'settings', icon: <Settings className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
+    { href: '/admin/dashboard', labelKey: 'adminDashboard', icon: <ShieldCheck className="h-5 w-5" />, roles: ['admin'] },
   ];
   
   const handleLogout = async () => {
