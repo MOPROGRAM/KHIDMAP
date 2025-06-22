@@ -184,7 +184,6 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
         throw new Error("Cannot start a chat with yourself.");
     }
 
-    // Query for an existing chat between the two users
     const chatsRef = collection(db, 'chats');
     const q = query(chatsRef, where('participants', 'array-contains', seekerId));
     
@@ -202,7 +201,6 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
         return existingChatId;
     }
 
-    // If no chat exists, create a new one.
     const [seekerProfile, providerProfile] = await Promise.all([
         getUserProfileById(seekerId),
         getUserProfileById(providerId)

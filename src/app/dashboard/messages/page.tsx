@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, FormEvent } from 'react';
+import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useTranslation } from '@/hooks/useTranslation';
 import { auth, db } from '@/lib/firebase';
@@ -68,8 +68,8 @@ export default function MessagesPage() {
     const chatIdFromUrl = searchParams.get('chatId');
     if (chatIdFromUrl) {
       setSelectedChatId(chatIdFromUrl);
-      // Clean the URL param after reading it
-      router.replace(pathname, {scroll: false});
+      const newUrl = pathname;
+      router.replace(newUrl, {scroll: false});
     }
   }, [searchParams, router, pathname]);
 
