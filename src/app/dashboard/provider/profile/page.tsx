@@ -181,6 +181,7 @@ export default function ProviderProfilePage() {
             variant: "destructive",
             title: t.imageRejectedTitle,
             description: t.imageRejectedDescription,
+            duration: 8000,
           });
           config.setLoading(false);
           if (fileInput) fileInput.value = '';
@@ -195,6 +196,7 @@ export default function ProviderProfilePage() {
             variant: "destructive",
             title: t.videoRejectedTitle,
             description: t.videoRejectedDescription,
+            duration: 8000,
           });
           config.setLoading(false);
           if (fileInput) fileInput.value = '';
@@ -538,7 +540,7 @@ export default function ProviderProfilePage() {
                 <Label htmlFor="image-upload" className={cn(buttonVariants({ variant: 'outline' }), 'w-full cursor-pointer', (isUploadingImage || !isCoreServicesAvailable) && 'opacity-50 cursor-not-allowed')}>
                   <div className="flex items-center justify-center">
                     {isUploadingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
-                    <span>{isUploadingImage ? "Uploading Image..." : "Upload Image"}</span>
+                    <span>{isUploadingImage ? t.uploading : t.uploadMedia}</span>
                   </div>
                 </Label>
                 <Input id="image-upload" type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'image')} accept="image/*" disabled={isUploadingImage || !isCoreServicesAvailable}/>
@@ -589,7 +591,7 @@ export default function ProviderProfilePage() {
                 <Label htmlFor="video-upload" className={cn(buttonVariants({ variant: 'outline' }),'w-full cursor-pointer',(isUploadingVideo || !isCoreServicesAvailable) && 'opacity-50 cursor-not-allowed')}>
                   <div className="flex items-center justify-center">
                     {isUploadingVideo ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
-                    <span>{isUploadingVideo ? "Uploading Video..." : "Upload Video"}</span>
+                    <span>{isUploadingVideo ? t.uploading : t.uploadMedia}</span>
                   </div>
                 </Label>
                 <Input id="video-upload" type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'video')} accept="video/*" disabled={isUploadingVideo || !isCoreServicesAvailable}/>

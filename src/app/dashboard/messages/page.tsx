@@ -97,9 +97,9 @@ export default function MessagesPage() {
       setIsLoadingChats(false);
     }, (err) => {
       console.error("Error fetching chats:", err);
-      let errorMessage = "Could not load conversations.";
-      if (err.message.includes("indexes")) {
-        errorMessage = "The database is being set up. Chat will be available in a moment.";
+      let errorMessage = t.errorOccurred;
+      if (err.message.includes("indexes") || err.message.includes("permission-denied")) {
+        errorMessage = t.firestoreIndexError || "The database is being set up or rules are incorrect. Chat will be available in a moment.";
       }
       toast({ variant: "destructive", title: t.errorOccurred, description: errorMessage });
       setError(errorMessage);
@@ -167,7 +167,7 @@ export default function MessagesPage() {
     
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const recorder = new MediaRecorder(stream);
+        const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
         mediaRecorderRef.current = recorder;
         audioChunksRef.current = [];
         
@@ -179,12 +179,19 @@ export default function MessagesPage() {
             const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
             const reader = new FileReader();
             reader.readAsDataURL(audioBlob);
-            reader.onloadend = () => {
+            reader.onloadend = async () => {
                 const base64String = reader.result as string;
                 if (selectedChatId && base64String) {
-                    sendMessage(selectedChatId, base64String, 'audio');
+                    setIsSending(true);
+                    try {
+                        await sendMessage(selectedChatId, base64String, 'audio');
+                    } catch (err: any) {
+                         console.error("Error sending audio message:", err);
+                         toast({ variant: "destructive", title: t.errorOccurred, description: err.message });
+                    } finally {
+                        setIsSending(false);
+                    }
                 }
-                setNewMessage('');
             };
             stream.getTracks().forEach(track => track.stop());
         };
@@ -323,7 +330,7 @@ export default function MessagesPage() {
                       "p-3 rounded-lg max-w-xs lg:max-w-md",
                       msg.senderId === authUser?.uid ? "bg-primary text-primary-foreground" : "bg-muted"
                     )}>
-                       {msg.type === 'audio' ? (
+                       {msg.type === 'audio' && msg.content.startsWith('data:audio') ? (
                             <audio src={msg.content} controls className="w-full" />
                         ) : (
                             <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
@@ -366,7 +373,7 @@ export default function MessagesPage() {
                               {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                           </Button>
                       ) : (
-                          <Button type="button" size="icon" onClick={handleStartRecording}>
+                          <Button type="button" size="icon" onClick={handleStartRecording} disabled={isSending}>
                               <Mic className="h-4 w-4" />
                           </Button>
                       )}

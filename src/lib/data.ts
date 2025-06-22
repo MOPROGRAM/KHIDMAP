@@ -187,22 +187,15 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
 
     const chatsRef = collection(db, 'chats');
     // A more efficient query to find a chat between two specific users
-    const q = query(chatsRef, 
-        where('participants', 'array-contains', seekerId)
-    );
+    // We sort the UIDs to create a canonical participants array for querying.
+    const participants = [seekerId, providerId].sort();
+    const q = query(chatsRef, where('participants', '==', participants));
     
     const querySnapshot = await getDocs(q);
-    let existingChatId: string | null = null;
 
-    querySnapshot.forEach(doc => {
-        const chat = doc.data() as Chat;
-        if (chat.participants.includes(providerId)) {
-            existingChatId = doc.id;
-        }
-    });
-
-    if (existingChatId) {
-        return existingChatId;
+    if (!querySnapshot.empty) {
+        // Chat already exists
+        return querySnapshot.docs[0].id;
     }
 
     // If chat doesn't exist, create it
@@ -216,7 +209,7 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
     }
 
     const newChatData: Omit<Chat, 'id'> = {
-        participants: [seekerId, providerId].sort(), // Sort UIDs to create a canonical chat ID if needed later
+        participants,
         participantNames: {
             [seekerId]: seekerProfile.name || "User",
             [providerId]: providerProfile.name || "Provider",
@@ -258,7 +251,7 @@ export const sendMessage = async (
         chatId,
         senderId,
         content: cleanContent,
-        type: type,
+        type,
         createdAt: serverTimestamp(),
     });
 
