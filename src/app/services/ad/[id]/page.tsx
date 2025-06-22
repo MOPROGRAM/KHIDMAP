@@ -346,7 +346,7 @@ export default function ProviderDetailsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 my-4">
                 {authUser && userRole === 'seeker' && authUser.uid !== providerId && (
                   <Button onClick={handleStartChat} disabled={isStartingChat} size="lg" className="w-full group">
-                      {isStartingChat ? <Loader2 className="animate-spin" /> : <MessageSquare />}
+                      {isStartingChat ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : <MessageSquare className="ltr:mr-2 rtl:ml-2"/>}
                       {t.messageProvider?.replace('{providerName}', provider.name.split(' ')[0])}
                   </Button>
                 )}
@@ -512,3 +512,5 @@ export default function ProviderDetailsPage() {
     </div>
   );
 }
+
+    

@@ -58,7 +58,7 @@ export default function MessagesPage() {
       if (user) {
         setAuthUser(user);
       } else {
-        router.push('/auth/login');
+        router.push('/login');
       }
     });
     return () => unsubscribe();
@@ -68,6 +68,7 @@ export default function MessagesPage() {
     const chatIdFromUrl = searchParams.get('chatId');
     if (chatIdFromUrl) {
       setSelectedChatId(chatIdFromUrl);
+      // Clean the URL
       const newUrl = pathname;
       router.replace(newUrl, {scroll: false});
     }
@@ -77,6 +78,7 @@ export default function MessagesPage() {
     if (!authUser || !db) return;
 
     setIsLoadingChats(true);
+    setError(null);
     const q = query(
       collection(db, 'chats'),
       where('participants', 'array-contains', authUser.uid),
@@ -89,8 +91,12 @@ export default function MessagesPage() {
       setIsLoadingChats(false);
     }, (err) => {
       console.error("Error fetching chats:", err);
-      toast({ variant: "destructive", title: t.errorOccurred, description: "Could not load conversations." });
-      setError("Could not load conversations.");
+      let errorMessage = "Could not load conversations.";
+      if (err.message.includes("indexes")) {
+        errorMessage = "The database is being set up. Chat will be available in a moment.";
+      }
+      toast({ variant: "destructive", title: t.errorOccurred, description: errorMessage });
+      setError(errorMessage);
       setIsLoadingChats(false);
     });
 
@@ -145,10 +151,11 @@ export default function MessagesPage() {
   const selectedChat = chats.find(c => c.id === selectedChatId);
 
   const getOtherParticipant = (chat: Chat) => {
-    const otherId = chat.participants.find(p => p !== authUser?.uid);
+    if (!authUser) return { id: '', name: 'Unknown User', avatar: undefined };
+    const otherId = chat.participants.find(p => p !== authUser.uid);
     return {
       id: otherId || '',
-      name: chat.participantNames[otherId || ''] || 'Unknown User',
+      name: chat.participantNames?.[otherId || ''] || 'Unknown User',
       avatar: chat.participantAvatars?.[otherId || ''] || undefined
     };
   };
@@ -162,6 +169,11 @@ export default function MessagesPage() {
         <div className="flex-1 overflow-y-auto">
           {isLoadingChats ? (
             <div className="p-4 text-center"><Loader2 className="mx-auto h-8 w-8 animate-spin" /></div>
+          ) : error ? (
+             <div className="p-6 text-center text-destructive">
+               <MessageSquare className="mx-auto h-12 w-12 mb-2" />
+               <p>{error}</p>
+             </div>
           ) : chats.length > 0 ? (
             <ul>
               {chats.map(chat => {
@@ -260,7 +272,7 @@ export default function MessagesPage() {
                   <h2 className="text-xl font-semibold">{t.selectConversation}</h2>
                   <p className="text-muted-foreground">Choose a conversation from the list to see messages.</p>
                 </>
-             ) : !isLoadingChats && (
+             ) : !isLoadingChats && !error && (
                     <>
                       <Frown className="h-16 w-16 text-muted-foreground mb-4" />
                       <h2 className="text-xl font-semibold">{t.noConversations}</h2>
@@ -270,10 +282,17 @@ export default function MessagesPage() {
                        </Button>
                     </>
              )}
-              {isLoadingChats && <Loader2 className="h-12 w-12 animate-spin text-primary" />}
+              {(isLoadingChats || error) && (
+                <div>
+                   {isLoadingChats && <Loader2 className="h-12 w-12 animate-spin text-primary" />}
+                   {error && <p className="text-destructive">{error}</p>}
+                </div>
+              )}
           </div>
         )}
       </main>
     </div>
   );
 }
+
+    
