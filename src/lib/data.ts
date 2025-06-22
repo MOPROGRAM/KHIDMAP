@@ -210,7 +210,7 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
         throw new Error("Could not find user profiles for one or both participants.");
     }
 
-    const newChatData = {
+    const newChatData: Omit<Chat, 'id'> = {
         participants: [seekerId, providerId],
         participantNames: {
             [seekerId]: seekerProfile.name || "User",
@@ -220,10 +220,10 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
              [seekerId]: seekerProfile.images?.[0] || null,
              [providerId]: providerProfile.images?.[0] || null,
         },
-        lastMessage: "",
-        lastMessageAt: serverTimestamp(),
-        lastMessageSenderId: "",
-        createdAt: serverTimestamp(),
+        lastMessage: "Conversation started.",
+        lastMessageAt: serverTimestamp() as Timestamp,
+        lastMessageSenderId: "", // System message, no sender
+        createdAt: serverTimestamp() as Timestamp,
     };
 
     const newChatDocRef = await addDoc(collection(db, "chats"), newChatData);

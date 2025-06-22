@@ -23,7 +23,7 @@ import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Plumbing: Wrench,
@@ -419,6 +419,7 @@ export default function ProviderDetailsPage() {
                             </DialogTrigger>
                             <DialogContent className="max-w-4xl p-2 bg-transparent border-0 shadow-none">
                                 <DialogTitle className="sr-only">{`Portfolio Image ${index + 1}`}</DialogTitle>
+                                <DialogDescription className="sr-only">{`Full screen view of portfolio image ${index + 1}`}</DialogDescription>
                                 <Image src={url} alt={`Image portfolio ${index + 1}`} width={1920} height={1080} className="rounded-lg object-contain max-h-[90vh] w-full" />
                             </DialogContent>
                         </Dialog>
@@ -444,6 +445,7 @@ export default function ProviderDetailsPage() {
                             </DialogTrigger>
                             <DialogContent className="max-w-4xl p-2 bg-transparent border-0 shadow-none">
                                 <DialogTitle className="sr-only">{`Portfolio Video ${index + 1}`}</DialogTitle>
+                                 <DialogDescription className="sr-only">{`Full screen view of portfolio video ${index + 1}`}</DialogDescription>
                                 <video src={url} controls autoPlay className="w-full max-h-[90vh] rounded-lg" />
                             </DialogContent>
                         </Dialog>
