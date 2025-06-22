@@ -21,6 +21,7 @@ import { z } from 'zod';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { moderateImage } from '@/ai/flows/moderate-image-flow';
 
 const ProfileFormSchema = z.object({
   name: z.string().min(1, { message: "requiredField" }),
@@ -106,6 +107,15 @@ export default function ProviderProfilePage() {
       console.warn("Firebase Auth, DB, or Storage not initialized in ProviderProfilePage.");
     }
   }, [router, t, toast]);
+  
+  const fileToDataUri = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    };
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -160,6 +170,25 @@ export default function ProviderProfilePage() {
     const fileInput = event.target;
 
     try {
+       // ** MODERATION STEP FOR IMAGES **
+      if (fileType === 'image') {
+        const dataUri = await fileToDataUri(file);
+        toast({ title: "Analyzing image...", description: "Please wait while we check the image for safety."});
+        const moderationResult = await moderateImage({ photoDataUri: dataUri });
+        if (!moderationResult.isSafe) {
+          toast({
+            variant: "destructive",
+            title: t.imageRejectedTitle,
+            description: t.imageRejectedDescription,
+          });
+          // Early exit if unsafe
+          config.setLoading(false);
+          if (fileInput) fileInput.value = '';
+          return;
+        }
+      }
+      // ** END MODERATION STEP **
+
       const filePath = `serviceAds/${authUser.uid}/${config.storageFolder}/${Date.now()}_${file.name}`;
       const fileRef = ref(storage, filePath);
       

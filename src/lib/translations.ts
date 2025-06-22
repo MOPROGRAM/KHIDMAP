@@ -271,6 +271,8 @@ export type Translations = {
   confirmDeleteFileDescription: string;
   noPortfolioItems: string;
   fileNotFoundInStorage?: string;
+  imageRejectedTitle?: string;
+  imageRejectedDescription?: string;
 
   // Messaging
   messages: string;
@@ -546,6 +548,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     confirmDeleteFileDescription: "Are you sure you want to delete this file from your portfolio? This action cannot be undone.",
     noPortfolioItems: "No portfolio items have been uploaded yet.",
     fileNotFoundInStorage: "File not found. It may have already been deleted.",
+    imageRejectedTitle: "Image Rejected",
+    imageRejectedDescription: "This image was rejected for violating our content safety policy. Please upload a different image.",
     messages: "Messages",
     messageProvider: "Message {providerName}",
     startConversationError: "Error starting conversation",
@@ -817,6 +821,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     confirmDeleteFileDescription: "هل أنت متأكد من حذف هذا الملف من معرض أعمالك؟ لا يمكن التراجع عن هذا الإجراء.",
     noPortfolioItems: "لم يتم رفع أي عناصر في معرض الأعمال بعد.",
     fileNotFoundInStorage: "لم يتم العثور على الملف. ربما تم حذفه بالفعل.",
+    imageRejectedTitle: "تم رفض الصورة",
+    imageRejectedDescription: "تم رفض هذه الصورة لمخالفتها سياسة المحتوى الآمن. يرجى رفع صورة مختلفة.",
     messages: "الرسائل",
     messageProvider: "مراسلة {providerName}",
     startConversationError: "خطأ في بدء المحادثة",
