@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -17,10 +16,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
+import { AlertTriangle, Loader2, Trash2, KeyRound, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { auth, db } from '@/lib/firebase';
-import { deleteUser } from 'firebase/auth';
+import { deleteUser, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, deleteDoc } from 'firebase/firestore';
 
 export default function SettingsPage() {
@@ -28,6 +27,39 @@ export default function SettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
+
+  const handlePasswordReset = async () => {
+    setIsSendingReset(true);
+    const user = auth?.currentUser;
+
+    if (!user || !user.email) {
+      toast({
+        variant: "destructive",
+        title: t.errorOccurred,
+        description: t.userNotAuthOrServiceUnavailable,
+      });
+      setIsSendingReset(false);
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, user.email);
+      toast({
+        title: t.resetEmailSent,
+        description: t.resetEmailSentDescription?.replace('{email}', user.email),
+      });
+    } catch (error) {
+      console.error("Error sending password reset email from settings:", error);
+      toast({
+        variant: "destructive",
+        title: t.resetPasswordErrorTitle,
+        description: t.errorOccurred,
+      });
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
 
   const handleDeleteAccount = async () => {
     setIsLoading(true);
@@ -80,6 +112,24 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-bold font-headline tracking-tight">{t.settings}</h1>
         <p className="text-muted-foreground">{t.manageAccountSettings}</p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-2">
+             <KeyRound className="h-5 w-5 text-primary" />
+             {t.changePassword}
+          </CardTitle>
+          <CardDescription>
+             {t.changePasswordDescription}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+           <Button onClick={handlePasswordReset} disabled={isSendingReset}>
+              {isSendingReset ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+              {t.sendResetEmail}
+           </Button>
+        </CardContent>
+      </Card>
       
       <Card className="border-destructive bg-destructive/5 shadow-lg">
         <CardHeader>

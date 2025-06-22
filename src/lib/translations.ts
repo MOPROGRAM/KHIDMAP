@@ -291,6 +291,13 @@ export type Translations = {
   selectConversation: string;
   typeYourMessage: string;
   loginToMessage: string;
+  
+  // Settings page > password
+  changePassword?: string;
+  changePasswordDescription?: string;
+  sendResetEmail?: string;
+  resetEmailSent?: string;
+  resetEmailSentDescription?: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -572,6 +579,11 @@ export const translations: Record<'en' | 'ar', Translations> = {
     selectConversation: "Select a conversation to start chatting.",
     typeYourMessage: "Type your message...",
     loginToMessage: "You must be logged in to send messages.",
+    changePassword: "Password Management",
+    changePasswordDescription: "To change your password, we will send a secure reset link to your email address.",
+    sendResetEmail: "Send Password Reset Email",
+    resetEmailSent: "Password Reset Email Sent",
+    resetEmailSentDescription: "A password reset link has been sent to {email}.",
   },
   ar: {
     appName: "خدماب",
@@ -851,5 +863,10 @@ export const translations: Record<'en' | 'ar', Translations> = {
     selectConversation: "اختر محادثة لبدء الدردشة.",
     typeYourMessage: "اكتب رسالتك...",
     loginToMessage: "يجب عليك تسجيل الدخول لإرسال الرسائل.",
+    changePassword: "إدارة كلمة المرور",
+    changePasswordDescription: "لتغيير كلمة المرور الخاصة بك، سنرسل رابط إعادة تعيين آمن إلى عنوان بريدك الإلكتروني.",
+    sendResetEmail: "إرسال بريد إعادة تعيين كلمة المرور",
+    resetEmailSent: "تم إرسال بريد إعادة تعيين كلمة المرور",
+    resetEmailSentDescription: "تم إرسال رابط إعادة تعيين كلمة المرور إلى {email}.",
   },
 };
