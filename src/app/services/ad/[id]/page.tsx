@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useCallback, FormEvent, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
-import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, Rating, startOrGetConversation } from '@/lib/data';
+import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, Rating } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,7 +23,7 @@ import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
 
 const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Plumbing: Wrench,
@@ -180,24 +180,6 @@ export default function ProviderDetailsPage() {
       unsubscribeAuth();
     };
   }, [fetchProviderData]);
-
-  const handleStartConversation = async () => {
-    if (!authUser) {
-        toast({ variant: 'destructive', title: t.authError, description: t.loginToMessage });
-        return;
-    }
-    if (!provider) return;
-    setIsStartingConversation(true);
-    try {
-        const conversationId = await startOrGetConversation(provider.uid);
-        router.push(`/dashboard/messages?conversationId=${conversationId}`);
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: t.startConversationError, description: error.message });
-        console.error("Error starting conversation:", error);
-    } finally {
-        setIsStartingConversation(false);
-    }
-  };
 
 
   const handleRatingSubmit = async (e: FormEvent) => {
@@ -359,12 +341,6 @@ export default function ProviderDetailsPage() {
                         </a>
                     </Button>
                 )}
-                {authUser && authUser.uid !== providerId && userRole === 'seeker' && (
-                    <Button onClick={handleStartConversation} disabled={isStartingConversation} size="lg" variant="secondary" className="w-full group">
-                        {isStartingConversation ? <Loader2 className="animate-spin" /> : <MessageSquare className="ltr:mr-2 rtl:ml-2"/>}
-                        {t.messageProvider?.replace('{providerName}', '')}
-                    </Button>
-                )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
@@ -419,6 +395,7 @@ export default function ProviderDetailsPage() {
                                 </div>
                             </DialogTrigger>
                             <DialogContent className="max-w-4xl p-2 bg-transparent border-0 shadow-none">
+                                <DialogTitle className="sr-only">{`Portfolio Image ${index + 1}`}</DialogTitle>
                                 <Image src={url} alt={`Image portfolio ${index + 1}`} width={1920} height={1080} className="rounded-lg object-contain max-h-[90vh] w-full" />
                             </DialogContent>
                         </Dialog>
@@ -443,6 +420,7 @@ export default function ProviderDetailsPage() {
                                 </div>
                             </DialogTrigger>
                             <DialogContent className="max-w-4xl p-2 bg-transparent border-0 shadow-none">
+                                <DialogTitle className="sr-only">{`Portfolio Video ${index + 1}`}</DialogTitle>
                                 <video src={url} controls autoPlay className="w-full max-h-[90vh] rounded-lg" />
                             </DialogContent>
                         </Dialog>
