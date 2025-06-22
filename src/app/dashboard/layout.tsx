@@ -78,6 +78,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             console.error("Error fetching user role from Firestore:", error);
             setUserRole(null);
             toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotFetchProfile });
+          } finally {
+            setIsLoading(false);
           }
         } else {
           setAuthUser(null);
@@ -85,8 +87,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setIsEmailVerified(false);
           localStorage.clear();
           router.replace('/login');
+          setIsLoading(false);
         }
-        setIsLoading(false);
       });
       return () => unsubscribe();
     } else {
