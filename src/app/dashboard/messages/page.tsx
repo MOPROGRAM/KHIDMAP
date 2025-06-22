@@ -11,7 +11,7 @@ import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'fireba
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Send, MessageSquare, UserCircle, Frown, ArrowLeft } from 'lucide-react';
+import { Loader2, Send, MessageSquare, UserCircle, Frown, ArrowLeft, Mic, StopCircle, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
@@ -50,6 +50,12 @@ export default function MessagesPage() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -138,7 +144,7 @@ export default function MessagesPage() {
 
     setIsSending(true);
     try {
-      await sendMessage(selectedChatId, newMessage);
+      await sendMessage(selectedChatId, newMessage, 'text');
       setNewMessage('');
     } catch (err: any) {
       console.error("Error sending message:", err);
@@ -146,6 +152,85 @@ export default function MessagesPage() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleStartRecording = async () => {
+    if (isRecording) {
+        handleStopRecording();
+        return;
+    }
+    
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast({ variant: "destructive", title: "Audio Recording Not Supported", description: "Your browser does not support audio recording." });
+        return;
+    }
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = recorder;
+        audioChunksRef.current = [];
+        
+        recorder.ondataavailable = (event) => {
+            audioChunksRef.current.push(event.data);
+        };
+        
+        recorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                if (selectedChatId && base64String) {
+                    sendMessage(selectedChatId, base64String, 'audio');
+                }
+                setNewMessage('');
+            };
+            stream.getTracks().forEach(track => track.stop());
+        };
+        
+        recorder.start();
+        setIsRecording(true);
+        setRecordingTime(0);
+        recordingIntervalRef.current = setInterval(() => {
+            setRecordingTime(prevTime => prevTime + 1);
+        }, 1000);
+
+    } catch (err) {
+        console.error("Error starting recording:", err);
+        toast({ variant: "destructive", title: "Microphone Access Denied", description: "Please enable microphone access in your browser settings." });
+    }
+  };
+
+  const handleStopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stop();
+        setIsRecording(false);
+        if (recordingIntervalRef.current) {
+            clearInterval(recordingIntervalRef.current);
+            recordingIntervalRef.current = null;
+        }
+    }
+  };
+
+  const handleCancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        mediaRecorderRef.current.onondataavailable = null;
+        mediaRecorderRef.current.stop();
+        setIsRecording(false);
+        if (recordingIntervalRef.current) {
+            clearInterval(recordingIntervalRef.current);
+            recordingIntervalRef.current = null;
+        }
+        audioChunksRef.current = [];
+    }
+  };
+  
+  const formatRecordingTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   const selectedChat = chats.find(c => c.id === selectedChatId);
@@ -238,7 +323,11 @@ export default function MessagesPage() {
                       "p-3 rounded-lg max-w-xs lg:max-w-md",
                       msg.senderId === authUser?.uid ? "bg-primary text-primary-foreground" : "bg-muted"
                     )}>
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                       {msg.type === 'audio' ? (
+                            <audio src={msg.content} controls className="w-full" />
+                        ) : (
+                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        )}
                       <p className={cn("text-xs mt-1 text-right", msg.senderId === authUser?.uid ? "text-primary-foreground/70" : "text-muted-foreground")}>
                         {formatDate(msg.createdAt)}
                       </p>
@@ -250,18 +339,39 @@ export default function MessagesPage() {
             </div>
 
             <footer className="p-3 border-t">
-              <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                <Input
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder={t.typeYourMessage}
-                  autoComplete="off"
-                  disabled={isSending}
-                />
-                <Button type="submit" size="icon" disabled={isSending || !newMessage.trim()}>
-                  {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                </Button>
-              </form>
+              {isRecording ? (
+                  <div className="flex items-center justify-between gap-2">
+                      <Button variant="ghost" size="icon" onClick={handleCancelRecording} className="text-destructive">
+                          <Trash2 className="h-5 w-5" />
+                      </Button>
+                      <div className="flex items-center gap-2 text-sm text-destructive font-mono">
+                          <div className="w-3 h-3 rounded-full bg-destructive animate-pulse"></div>
+                          <span>{formatRecordingTime(recordingTime)}</span>
+                      </div>
+                      <Button size="icon" onClick={handleStopRecording} className="bg-destructive hover:bg-destructive/90">
+                          <StopCircle className="h-5 w-5" />
+                      </Button>
+                  </div>
+              ) : (
+                  <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                      <Input
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          placeholder={t.typeYourMessage}
+                          autoComplete="off"
+                          disabled={isSending}
+                      />
+                      {newMessage.trim() ? (
+                          <Button type="submit" size="icon" disabled={isSending}>
+                              {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                          </Button>
+                      ) : (
+                          <Button type="button" size="icon" onClick={handleStartRecording}>
+                              <Mic className="h-4 w-4" />
+                          </Button>
+                      )}
+                  </form>
+              )}
             </footer>
           </>
         ) : (

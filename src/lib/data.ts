@@ -47,7 +47,8 @@ export interface Message {
     id: string;
     chatId: string;
     senderId: string;
-    content: string;
+    content: string; // For text, this is the message. For audio, it's the data URI.
+    type: 'text' | 'audio';
     createdAt: Timestamp;
 }
 
@@ -185,14 +186,19 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
     }
 
     const chatsRef = collection(db, 'chats');
-    const q = query(chatsRef, where('participants', 'array-contains', seekerId));
+    // A more efficient query to find a chat between two specific users
+    const q = query(chatsRef, 
+        where('participants', 'array-contains', seekerId)
+    );
     
     const querySnapshot = await getDocs(q);
+    let existingChat: Chat | null = null;
     let existingChatId: string | null = null;
 
     querySnapshot.forEach(doc => {
         const chat = doc.data() as Chat;
         if (chat.participants.includes(providerId)) {
+            existingChat = chat;
             existingChatId = doc.id;
         }
     });
@@ -201,6 +207,7 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
         return existingChatId;
     }
 
+    // If chat doesn't exist, create it
     const [seekerProfile, providerProfile] = await Promise.all([
         getUserProfileById(seekerId),
         getUserProfileById(providerId)
@@ -211,7 +218,7 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
     }
 
     const newChatData: Omit<Chat, 'id'> = {
-        participants: [seekerId, providerId],
+        participants: [seekerId, providerId].sort(), // Sort UIDs to create a canonical chat ID if needed later
         participantNames: {
             [seekerId]: seekerProfile.name || "User",
             [providerId]: providerProfile.name || "Provider",
@@ -231,7 +238,11 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
 };
 
 
-export const sendMessage = async (chatId: string, content: string): Promise<void> => {
+export const sendMessage = async (
+    chatId: string, 
+    content: string,
+    type: 'text' | 'audio'
+): Promise<void> => {
     if (!db || !auth?.currentUser) {
         throw new Error("User not authenticated or database is unavailable.");
     }
@@ -249,11 +260,12 @@ export const sendMessage = async (chatId: string, content: string): Promise<void
         chatId,
         senderId,
         content: cleanContent,
+        type: type,
         createdAt: serverTimestamp(),
     });
 
     batch.update(chatRef, {
-        lastMessage: cleanContent,
+        lastMessage: type === 'audio' ? "🎤 Audio Message" : cleanContent,
         lastMessageAt: serverTimestamp(),
         lastMessageSenderId: senderId,
     });
