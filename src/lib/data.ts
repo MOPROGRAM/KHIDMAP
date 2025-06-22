@@ -150,21 +150,29 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
         return null;
     }
     try {
+        // Query without ordering to avoid needing a composite index
         const ratingsQuery = query(
             collection(db, "ratings"),
-            where("ratedUserId", "==", userId),
-            orderBy("createdAt", "desc")
+            where("ratedUserId", "==", userId)
         );
         const querySnapshot = await getDocs(ratingsQuery);
         const ratings = querySnapshot.docs.map(docSnap => ({
             id: docSnap.id,
             ...docSnap.data(),
         } as Rating));
+
+        // Sort the ratings by date in the application code (most recent first)
+        ratings.sort((a, b) => {
+            const dateA = a.createdAt?.toDate()?.getTime() || 0;
+            const dateB = b.createdAt?.toDate()?.getTime() || 0;
+            return dateB - dateA;
+        });
+
         return ratings;
     } catch (error: any) {
         console.error(`Error fetching ratings for user ${userId}. Code: ${error.code}. Message: ${error.message}`);
         // Re-throw the error so the UI can catch it and display an appropriate message.
-        if (error.code === 'failed-precondition') {
+        if (error.code === 'failed-precondition' || String(error.message).includes("index")) {
              throw new Error("The database is being updated. Please try again in a few minutes.");
         }
         throw error;
