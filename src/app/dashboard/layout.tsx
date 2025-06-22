@@ -77,7 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setUserRole(null);
           setIsEmailVerified(false);
           localStorage.clear();
-          router.replace('/auth/login');
+          router.replace('/login');
         }
         setIsLoading(false);
       });

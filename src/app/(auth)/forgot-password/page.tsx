@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
               <h3 className="text-xl font-semibold text-green-700 dark:text-green-300 mb-2">{t.resetLinkSentTitle}</h3>
               <p className="text-muted-foreground">{t.resetLinkSentDescription?.replace('{email}', email)}</p>
               <Button asChild className="mt-6">
-                <Link href="/auth/login">{t.backToLogin}</Link>
+                <Link href="/login">{t.backToLogin}</Link>
               </Button>
             </div>
           ) : (
@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
               </Button>
             </form>
              <p className="mt-6 text-center text-sm text-muted-foreground">
-              <Link href="/auth/login" className="font-medium text-primary hover:underline inline-flex items-center gap-1">
+              <Link href="/login" className="font-medium text-primary hover:underline inline-flex items-center gap-1">
                  <ArrowLeft className="h-4 w-4" /> {t.backToLogin}
               </Link>
             </p>

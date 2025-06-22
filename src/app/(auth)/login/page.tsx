@@ -139,7 +139,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">{t.password}</Label>
-                <Link href="/auth/forgot-password" className="text-sm font-medium text-primary hover:underline">
+                <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
                   {t.forgotPassword}?
                 </Link>
               </div>
@@ -172,7 +172,7 @@ export default function LoginPage() {
           </form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
             {t.dontHaveAccount}{' '}
-            <Link href="/auth/register" className="font-medium text-primary hover:underline">
+            <Link href="/register" className="font-medium text-primary hover:underline">
               {t.register}
             </Link>
           </p>

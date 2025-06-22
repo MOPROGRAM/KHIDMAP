@@ -56,7 +56,7 @@ export default function Header() {
     }
     try {
       await signOut(auth);
-      router.push('/auth/login');
+      router.push('/login');
     } catch (error) {
       console.error("Error signing out: ", error);
       toast({ variant: "destructive", title: "Logout Failed", description: (error as Error).message });
@@ -89,12 +89,12 @@ export default function Header() {
       ) : (
         <>
           <Button variant="ghost" asChild className={mobile ? "w-full justify-start" : ""}>
-            <Link href="/auth/login" onClick={() => mobile && setIsMobileMenuOpen(false)}>
+            <Link href="/login" onClick={() => mobile && setIsMobileMenuOpen(false)}>
               <LogIn className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t.login}
             </Link>
           </Button>
           <Button variant="default" asChild className={mobile ? "w-full" : ""}>
-            <Link href="/auth/register" onClick={() => mobile && setIsMobileMenuOpen(false)}>
+            <Link href="/register" onClick={() => mobile && setIsMobileMenuOpen(false)}>
               <UserPlus className="h-4 w-4 ltr:mr-2 rtl:ml-2" />{t.register}
             </Link>
           </Button>

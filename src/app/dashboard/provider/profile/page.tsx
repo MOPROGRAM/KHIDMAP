@@ -91,7 +91,7 @@ export default function ProviderProfilePage() {
               }
             } else {
               toast({ variant: "destructive", title: t.authError, description: t.userNotIdentified });
-              router.push('/auth/login');
+              router.push('/login');
             }
         } catch(error){
             console.error("Error in auth/profile fetch useEffect:", error);

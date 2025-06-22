@@ -181,7 +181,7 @@ export default function RegisterPage() {
               <h3 className="text-xl font-semibold text-green-700 dark:text-green-300 mb-2">{t.emailVerificationSent}</h3>
               <p className="text-muted-foreground">{t.checkYourEmailForVerification}</p>
               <Button asChild className="mt-6">
-                <Link href="/auth/login">{t.login}</Link>
+                <Link href="/login">{t.login}</Link>
               </Button>
             </div>
           ) : (
@@ -238,7 +238,7 @@ export default function RegisterPage() {
           {!showVerificationMessage && (
             <p className="mt-6 text-center text-sm text-muted-foreground">
               {t.alreadyHaveAccount}{' '}
-              <Link href="/auth/login" className="font-medium text-primary hover:underline">
+              <Link href="/login" className="font-medium text-primary hover:underline">
                 {t.login}
               </Link>
             </p>

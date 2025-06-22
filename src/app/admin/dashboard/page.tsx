@@ -24,7 +24,7 @@ export default function AdminDashboardPage() {
       const unsubscribe = auth.onAuthStateChanged(user => {
         setIsCheckingAuth(false);
         if (!user) {
-          router.replace('/auth/login');
+          router.replace('/login');
           toast({ variant: "destructive", title: t.unauthorized, description: t.loginAsAdmin });
         } else if (user.email !== ADMIN_EMAIL) {
           router.replace('/dashboard');
