@@ -192,13 +192,11 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
     );
     
     const querySnapshot = await getDocs(q);
-    let existingChat: Chat | null = null;
     let existingChatId: string | null = null;
 
     querySnapshot.forEach(doc => {
         const chat = doc.data() as Chat;
         if (chat.participants.includes(providerId)) {
-            existingChat = chat;
             existingChatId = doc.id;
         }
     });
@@ -247,7 +245,7 @@ export const sendMessage = async (
         throw new Error("User not authenticated or database is unavailable.");
     }
     const senderId = auth.currentUser.uid;
-    const cleanContent = content.trim();
+    const cleanContent = type === 'text' ? content.trim() : content;
     if (!cleanContent) return;
 
     const chatRef = doc(db, "chats", chatId);
