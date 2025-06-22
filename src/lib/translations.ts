@@ -1,4 +1,3 @@
-
 export type Translations = {
   appName: string;
   tagline: string;
@@ -273,6 +272,12 @@ export type Translations = {
   fileNotFoundInStorage?: string;
   imageRejectedTitle?: string;
   imageRejectedDescription?: string;
+  videoRejectedTitle?: string;
+  videoRejectedDescription?: string;
+  analyzingImageTitle?: string;
+  analyzingImageDescription?: string;
+  analyzingVideoTitle?: string;
+  analyzingVideoDescription?: string;
 
   // Messaging
   messages: string;
@@ -550,6 +555,12 @@ export const translations: Record<'en' | 'ar', Translations> = {
     fileNotFoundInStorage: "File not found. It may have already been deleted.",
     imageRejectedTitle: "Image Rejected",
     imageRejectedDescription: "This image was rejected for violating our content safety policy. Please upload a different image.",
+    videoRejectedTitle: "Video Rejected",
+    videoRejectedDescription: "This video was rejected for violating our content safety policy. Please upload a different video.",
+    analyzingImageTitle: "Analyzing Image...",
+    analyzingImageDescription: "Please wait while we check the image for safety.",
+    analyzingVideoTitle: "Analyzing Video...",
+    analyzingVideoDescription: "Please wait while we check the video for safety.",
     messages: "Messages",
     messageProvider: "Message {providerName}",
     startConversationError: "Error starting conversation",
@@ -823,6 +834,12 @@ export const translations: Record<'en' | 'ar', Translations> = {
     fileNotFoundInStorage: "لم يتم العثور على الملف. ربما تم حذفه بالفعل.",
     imageRejectedTitle: "تم رفض الصورة",
     imageRejectedDescription: "تم رفض هذه الصورة لمخالفتها سياسة المحتوى الآمن. يرجى رفع صورة مختلفة.",
+    videoRejectedTitle: "تم رفض الفيديو",
+    videoRejectedDescription: "تم رفض هذا الفيديو لمخالفته سياسة المحتوى الآمن. يرجى رفع فيديو مختلف.",
+    analyzingImageTitle: "جاري تحليل الصورة...",
+    analyzingImageDescription: "يرجى الانتظار بينما نتحقق من سلامة الصورة.",
+    analyzingVideoTitle: "جاري تحليل الفيديو...",
+    analyzingVideoDescription: "يرجى الانتظار بينما نتحقق من سلامة الفيديو.",
     messages: "الرسائل",
     messageProvider: "مراسلة {providerName}",
     startConversationError: "خطأ في بدء المحادثة",

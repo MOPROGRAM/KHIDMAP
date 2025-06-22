@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -22,6 +21,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { moderateImage } from '@/ai/flows/moderate-image-flow';
+import { moderateVideo } from '@/ai/flows/moderate-video-flow';
 
 const ProfileFormSchema = z.object({
   name: z.string().min(1, { message: "requiredField" }),
@@ -170,10 +170,10 @@ export default function ProviderProfilePage() {
     const fileInput = event.target;
 
     try {
-       // ** MODERATION STEP FOR IMAGES **
+      // ** MODERATION STEP **
       if (fileType === 'image') {
         const dataUri = await fileToDataUri(file);
-        toast({ title: "Analyzing image...", description: "Please wait while we check the image for safety."});
+        toast({ title: t.analyzingImageTitle, description: t.analyzingImageDescription});
         const moderationResult = await moderateImage({ photoDataUri: dataUri });
         if (!moderationResult.isSafe) {
           toast({
@@ -181,7 +181,20 @@ export default function ProviderProfilePage() {
             title: t.imageRejectedTitle,
             description: t.imageRejectedDescription,
           });
-          // Early exit if unsafe
+          config.setLoading(false);
+          if (fileInput) fileInput.value = '';
+          return;
+        }
+      } else if (fileType === 'video') {
+        const dataUri = await fileToDataUri(file);
+        toast({ title: t.analyzingVideoTitle, description: t.analyzingVideoDescription});
+        const moderationResult = await moderateVideo({ videoDataUri: dataUri });
+        if (!moderationResult.isSafe) {
+          toast({
+            variant: "destructive",
+            title: t.videoRejectedTitle,
+            description: t.videoRejectedDescription,
+          });
           config.setLoading(false);
           if (fileInput) fileInput.value = '';
           return;
