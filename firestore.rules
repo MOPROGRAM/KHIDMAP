@@ -1,31 +1,32 @@
 
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
     match /users/{userId} {
-      allow read;
-      allow write: if request.auth.uid == userId;
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
 
     match /ratings/{ratingId} {
-      allow read;
-      allow create: if request.auth.uid != null;
+        allow read: if true;
+        allow create: if request.auth != null;
     }
-
-    // Rules for the 'chats' collection
+    
     match /chats/{chatId} {
-      // Allow a user to read/write a chat document if they are a participant
-      allow read, write: if request.auth.uid in resource.data.participants;
+      // Allow read/update access only if the requesting user is a participant in the chat.
+      allow read, update: if request.auth.uid in resource.data.participants;
+      
+      // Allow creation if the user is one of the participants being added.
+      allow create: if request.auth.uid in request.resource.data.participants;
 
-      // Allow any authenticated user to create a chat.
-      // This is simplified for debugging. The client-side logic still ensures
-      // the creator is a participant.
-      allow create: if request.auth.uid != null;
-
-      // Rules for the 'messages' subcollection
       match /messages/{messageId} {
-        // Allow a user to read/write messages if they are a participant of the parent chat
-        allow read, write: if request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        // A user can read messages if they are a participant in the parent chat.
+        allow read: if request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        
+        // A user can create a message if they are a participant and the sender.
+        allow create: (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants) && (request.auth.uid == request.resource.data.senderId);
       }
     }
   }

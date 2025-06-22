@@ -184,16 +184,25 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
         throw new Error("Cannot start a chat with yourself.");
     }
 
-    const participants = [seekerId, providerId].sort();
-    const chatId = participants.join('_');
+    // Query for an existing chat between the two users
+    const chatsRef = collection(db, 'chats');
+    const q = query(chatsRef, where('participants', 'array-contains', seekerId));
+    
+    const querySnapshot = await getDocs(q);
+    let existingChatId: string | null = null;
 
-    const chatRef = doc(db, 'chats', chatId);
-    const chatSnap = await getDoc(chatRef);
+    querySnapshot.forEach(doc => {
+        const chat = doc.data() as Chat;
+        if (chat.participants.includes(providerId)) {
+            existingChatId = doc.id;
+        }
+    });
 
-    if (chatSnap.exists()) {
-        return chatId;
+    if (existingChatId) {
+        return existingChatId;
     }
 
+    // If no chat exists, create a new one.
     const [seekerProfile, providerProfile] = await Promise.all([
         getUserProfileById(seekerId),
         getUserProfileById(providerId)
@@ -203,8 +212,8 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
         throw new Error("Could not find user profiles for one or both participants.");
     }
 
-    const newChatData: Omit<Chat, 'id'> = {
-        participants,
+    const newChatData = {
+        participants: [seekerId, providerId],
         participantNames: {
             [seekerId]: seekerProfile.name || "User",
             [providerId]: providerProfile.name || "Provider",
@@ -214,14 +223,15 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
              [providerId]: providerProfile.images?.[0] || null,
         },
         lastMessage: "",
-        lastMessageAt: serverTimestamp() as Timestamp,
+        lastMessageAt: serverTimestamp(),
         lastMessageSenderId: "",
-        createdAt: serverTimestamp() as Timestamp,
+        createdAt: serverTimestamp(),
     };
 
-    await setDoc(chatRef, newChatData);
-    return chatId;
+    const newChatDocRef = await addDoc(collection(db, "chats"), newChatData);
+    return newChatDocRef.id;
 };
+
 
 export const sendMessage = async (chatId: string, content: string): Promise<void> => {
     if (!db || !auth?.currentUser) {
