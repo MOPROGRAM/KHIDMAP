@@ -46,13 +46,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setAuthUser(user);
           setIsEmailVerified(user.emailVerified); 
 
-          // Try to get role from localStorage first for faster UI update
           const roleFromStorage = localStorage.getItem('userRole') as UserRole | null;
           if (roleFromStorage) {
               setUserRole(roleFromStorage);
           }
 
-          // Then verify/update with Firestore
           try {
             const userDocRef = doc(db, "users", user.uid);
             const userDocSnap = await getDoc(userDocRef);
@@ -60,30 +58,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               const userData = userDocSnap.data();
               const roleFromFirestore = user.email === ADMIN_EMAIL ? 'admin' : (userData.role as UserRole);
               
-              setUserRole(roleFromFirestore); // Update with definitive source
+              setUserRole(roleFromFirestore); 
               localStorage.setItem('userRole', roleFromFirestore);
               localStorage.setItem('userName', userData.name || user.displayName || '');
               localStorage.setItem('userEmail', userData.email || user.email || '');
             } else {
               console.warn("User profile not found in Firestore for UID:", user.uid, ". Logging out user.");
               if(auth) await signOut(auth); 
-              // router.replace('/auth/login'); // Handled by the else block below
               return; 
             }
           } catch (error) {
             console.error("Error fetching user role from Firestore:", error);
-            setUserRole(null); // Role couldn't be determined, safer to clear
+            setUserRole(null);
             toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotFetchProfile });
           }
         } else {
           setAuthUser(null);
           setUserRole(null);
           setIsEmailVerified(false);
-          localStorage.removeItem('isLoggedIn');
-          localStorage.removeItem('userId');
-          localStorage.removeItem('userName');
-          localStorage.removeItem('userEmail');
-          localStorage.removeItem('userRole');
+          localStorage.clear();
           router.replace('/auth/login');
         }
         setIsLoading(false);
@@ -93,7 +86,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       console.warn("Firebase Auth or DB is not initialized. Dashboard layout cannot function.");
       setIsCoreServicesAvailable(false);
       setIsLoading(false);
-      // No redirection here, let the conditional rendering below handle it.
     }
   }, [router, toast, t]);
 
@@ -115,7 +107,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     try {
       await signOut(auth);
-      // onAuthStateChanged will handle redirection
     } catch (error) {
       console.error("Error signing out from dashboard: ", error);
       toast({ variant: "destructive", title: t.logoutFailed, description: (error as Error).message });
@@ -143,8 +134,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   if (!authUser && !isLoading) { 
-     // This case should ideally be handled by the onAuthStateChanged redirect,
-     // but as a fallback:
     return (
       <div className="flex h-screen items-center justify-center">
         <p>{t.redirectingToLogin}</p>
@@ -155,7 +144,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const filteredNavItems = userRole ? navItems.filter(item => item.roles.includes(userRole)) : navItems.filter(item => item.href === '/dashboard');
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)]"> {/* Adjusted for header height */}
+    <div className="flex min-h-[calc(100vh-4rem)]">
       <aside className="w-64 border-r bg-background p-4 space-y-2 hidden md:flex flex-col sticky top-16 h-[calc(100vh-4rem)]">
         <div className="px-2 py-1">
           <Logo />
@@ -165,7 +154,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {filteredNavItems.map((item) => (
             <Button
               key={item.href}
-              variant={pathname.startsWith(item.href) && item.href !== '/dashboard' || pathname === item.href ? 'secondary' : 'ghost'}
+              variant={pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard') ? 'secondary' : 'ghost'}
               className="w-full justify-start"
               asChild
             >

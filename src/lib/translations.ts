@@ -1,3 +1,4 @@
+
 export type Translations = {
   appName: string;
   tagline: string;

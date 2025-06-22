@@ -144,7 +144,6 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
         return null;
     }
     try {
-        // Query without ordering to avoid needing a composite index
         const ratingsQuery = query(
             collection(db, "ratings"),
             where("ratedUserId", "==", userId)
@@ -155,7 +154,6 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
             ...docSnap.data(),
         } as Rating));
 
-        // Sort the ratings by date in the application code (most recent first)
         ratings.sort((a, b) => {
             const dateA = a.createdAt?.toDate()?.getTime() || 0;
             const dateB = b.createdAt?.toDate()?.getTime() || 0;
@@ -165,8 +163,7 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
         return ratings;
     } catch (error: any) {
         console.error(`Error fetching ratings for user ${userId}. Code: ${error.code}. Message: ${error.message}`);
-        // Re-throw the error so the UI can catch it and display an appropriate message.
-        if (error.code === 'failed-precondition' || String(error.message).includes("index")) {
+        if (String(error.message).includes("index")) {
              throw new Error("The database is being updated. Please try again in a few minutes.");
         }
         throw error;
@@ -187,16 +184,15 @@ export const startOrGetConversation = async (providerId: string): Promise<string
     }
 
     const participants = [seekerId, providerId].sort();
-    const conversationId = participants.join('_'); // Deterministic ID
+    const conversationId = participants.join('_');
 
     const conversationRef = doc(db, 'conversations', conversationId);
     const conversationSnap = await getDoc(conversationRef);
 
     if (conversationSnap.exists()) {
-        return conversationId; // Conversation already exists
+        return conversationId;
     }
 
-    // Conversation doesn't exist, create it.
     const [seekerProfile, providerProfile] = await Promise.all([
         getUserProfileById(seekerId),
         getUserProfileById(providerId)
@@ -226,7 +222,6 @@ export const startOrGetConversation = async (providerId: string): Promise<string
     return conversationId;
 };
 
-// Send a new message
 export const sendMessage = async (conversationId: string, text: string): Promise<void> => {
     if (!db || !auth?.currentUser) {
         throw new Error("User not authenticated or database is unavailable.");
@@ -257,7 +252,6 @@ export const sendMessage = async (conversationId: string, text: string): Promise
     await batch.commit();
 };
 
-// Get all conversations for the current user
 export const getConversationsForUser = async (): Promise<Conversation[]> => {
     if (!db || !auth?.currentUser) return [];
 
@@ -271,7 +265,6 @@ export const getConversationsForUser = async (): Promise<Conversation[]> => {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
 };
 
-// Get messages for a specific conversation
 export const getMessagesForConversation = async (conversationId: string): Promise<Message[]> => {
     if (!db) return [];
 
