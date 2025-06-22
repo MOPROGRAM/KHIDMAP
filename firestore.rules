@@ -1,45 +1,43 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Users:
-    // - Anyone can create their own user document (on registration).
-    // - Logged-in users can read anyone's profile (to view provider details).
-    // - A user can only update or delete their own profile.
+    // Allow public read access to user profiles, but only the owner can write.
     match /users/{userId} {
-      allow read;
-      allow create: if request.auth.uid == userId;
-      allow update, delete: if request.auth.uid == userId;
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Ratings:
-    // - A logged-in user can create a rating.
-    // - Anyone can read ratings.
+    // Allow public read access to ratings.
+    // Only authenticated users can create ratings.
+    // Users cannot edit or delete ratings.
     match /ratings/{ratingId} {
-        allow read;
-        allow create: if request.auth != null;
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if false;
     }
-    
-    // Chats & Messages:
-    // This structure ensures complete privacy for conversations.
-    match /chats/{chatId} {
-      // Allow read/update only if the requesting user is a participant in the chat.
-      allow read, update: if request.auth.uid in resource.data.participants;
-      
-      // Allow creation only if the requesting user is one of the participants being added.
-      allow create: if request.auth.uid in request.resource.data.participants;
-      
-      // Messages subcollection
-      match /messages/{messageId} {
-         // Allow read only if the user is a participant of the parent chat.
-        allow read: if request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
 
-        // Allow message creation if:
-        // 1. The user is a participant of the parent chat.
-        // 2. The senderId in the new message is their own UID.
-        allow create: if request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
-                      && request.resource.data.senderId == request.auth.uid;
+    // --- CHAT RULES ---
+    // A chat document can only be read or updated by its participants.
+    match /chats/{chatId} {
+      allow read, update: if request.auth != null && request.auth.uid in resource.data.participants;
+      
+      // A chat can only be created if the requesting user is one of the participants.
+      // And the participants array must contain exactly 2 users.
+      allow create: if request.auth != null && request.auth.uid in request.resource.data.participants && request.resource.data.participants.size() == 2;
+      
+      // Messages Subcollection Rules
+      // A message can only be read by participants of the parent chat.
+      match /messages/{messageId} {
+        allow read: if request.auth != null && get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]);
+        
+        // A message can only be created by a participant of the parent chat.
+        // The senderId of the new message must be the UID of the authenticated user.
+        allow create: if request.auth != null && get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]) && request.resource.data.senderId == request.auth.uid;
+        
+        // Nobody can update or delete messages to maintain chat integrity.
+        allow update, delete: if false;
       }
     }
   }
