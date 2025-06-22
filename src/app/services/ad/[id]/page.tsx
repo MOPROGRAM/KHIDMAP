@@ -23,6 +23,7 @@ import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Plumbing: Wrench,
@@ -405,12 +406,22 @@ export default function ProviderDetailsPage() {
             {images.length > 0 && (
                 <div className="mt-8 space-y-4">
                     <Separator/>
-                    <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Camera/> Image Portfolio</h2>
+                    <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Camera/> {t.portfolioTitle} Images</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {images.map((url, index) => (
-                        <div key={index} className="relative group aspect-square bg-muted rounded-lg overflow-hidden">
-                            <Image src={url} alt={`Image portfolio ${index + 1}`} layout="fill" className="object-cover" />
-                        </div>
+                        <Dialog key={index}>
+                            <DialogTrigger asChild>
+                                <div className="relative group aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer">
+                                    <Image src={url} alt={`Image portfolio ${index + 1}`} layout="fill" className="object-cover transition-transform group-hover:scale-105" />
+                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Camera className="w-10 h-10 text-white" />
+                                    </div>
+                                </div>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl p-2 bg-transparent border-0 shadow-none">
+                                <Image src={url} alt={`Image portfolio ${index + 1}`} width={1920} height={1080} className="rounded-lg object-contain max-h-[90vh] w-full" />
+                            </DialogContent>
+                        </Dialog>
                         ))}
                     </div>
                 </div>
@@ -419,12 +430,22 @@ export default function ProviderDetailsPage() {
             {videos.length > 0 && (
                 <div className="mt-8 space-y-4">
                     <Separator/>
-                    <h2 className="text-xl font-bold text-primary flex items-center gap-2"><VideoIcon/> Video Portfolio</h2>
+                    <h2 className="text-xl font-bold text-primary flex items-center gap-2"><VideoIcon/> {t.portfolioTitle} Videos</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {videos.map((url, index) => (
-                        <div key={index} className="relative group aspect-square bg-muted rounded-lg overflow-hidden">
-                           <video src={url} controls className="w-full h-full object-cover" />
-                        </div>
+                        <Dialog key={index}>
+                             <DialogTrigger asChild>
+                                <div className="relative group aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer">
+                                   <video src={url} className="w-full h-full object-cover" />
+                                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <VideoIcon className="w-10 h-10 text-white" />
+                                    </div>
+                                </div>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl p-2 bg-transparent border-0 shadow-none">
+                                <video src={url} controls autoPlay className="w-full max-h-[90vh] rounded-lg" />
+                            </DialogContent>
+                        </Dialog>
                         ))}
                     </div>
                 </div>
