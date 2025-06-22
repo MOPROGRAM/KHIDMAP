@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useCallback, FormEvent, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
-import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, Rating } from '@/lib/data';
+import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, Rating, startOrGetConversation } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -212,6 +212,23 @@ export default function ProviderDetailsPage() {
       }
   }
 
+  const handleStartConversation = async () => {
+    if (!authUser || !provider) {
+        toast({ variant: "destructive", title: t.authError, description: t.loginToMessage });
+        return;
+    }
+    setIsStartingConversation(true);
+    try {
+        const conversationId = await startOrGetConversation(provider.uid);
+        router.push(`/dashboard/messages?conversationId=${conversationId}`);
+    } catch (error: any) {
+        console.error("Error starting conversation:", error);
+        toast({ variant: "destructive", title: t.startConversationError, description: error.message });
+    } finally {
+        setIsStartingConversation(false);
+    }
+  };
+
   
   const formatDate = (dateValue: Timestamp | { seconds: number; nanoseconds: number; } | undefined): string => {
     if (!dateValue) return 'N/A';
@@ -327,6 +344,12 @@ export default function ProviderDetailsPage() {
 
         <CardContent className="p-4 md:p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 my-4">
+                {authUser && userRole === 'seeker' && authUser.uid !== providerId && (
+                  <Button onClick={handleStartConversation} disabled={isStartingConversation} size="lg" className="w-full group">
+                      {isStartingConversation ? <Loader2 className="animate-spin" /> : <MessageSquare />}
+                      {t.messageProvider?.replace('{providerName}', provider.name.split(' ')[0])}
+                  </Button>
+                )}
                  {provider.phoneNumber && (
                     <Button asChild size="lg" className="w-full group">
                         <a href={`tel:${cleanPhoneNumber}`}>

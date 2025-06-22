@@ -273,16 +273,16 @@ export type Translations = {
   fileNotFoundInStorage?: string;
 
   // Messaging
-  messages?: string;
-  messageProvider?: string; // "Message {providerName}"
-  startConversationError?: string;
-  startConversation?: string;
-  messageSent?: string;
-  conversations?: string;
-  noConversations?: string;
-  selectConversation?: string;
-  typeYourMessage?: string;
-  loginToMessage?: string;
+  messages: string;
+  messageProvider: string; // "Message {providerName}"
+  startConversationError: string;
+  startConversation: string;
+  messageSent: string;
+  conversations: string;
+  noConversations: string;
+  selectConversation: string;
+  typeYourMessage: string;
+  loginToMessage: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {

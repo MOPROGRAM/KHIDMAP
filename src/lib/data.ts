@@ -36,9 +36,11 @@ export interface Conversation {
     id: string;
     participants: string[]; // Array of user UIDs
     participantNames: { [key: string]: string };
+    participantAvatars: { [key: string]: string | null };
     lastMessage: string;
     lastMessageAt: Timestamp;
     lastMessageSenderId: string;
+    createdAt: Timestamp;
 }
 
 export interface Message {
@@ -122,14 +124,6 @@ export const addRating = async (ratingData: {
              ...ratingData,
             createdAt: serverTimestamp(),
         });
-
-        // This part is commented out as it requires a separate aggregation setup.
-        // For now, we calculate average rating on the client-side.
-        // const userRef = doc(db, "users", ratingData.ratedUserId);
-        // batch.update(userRef, {
-        //     // averageRating: ...
-        //     // ratingCount: ...
-        // });
         
         await batch.commit();
 
@@ -182,7 +176,6 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
 
 // --- Messaging Firestore Functions ---
 
-// Defensive function to start or get a conversation
 export const startOrGetConversation = async (providerId: string): Promise<string> => {
     if (!db || !auth?.currentUser) {
         throw new Error("User not authenticated or database is unavailable.");
@@ -194,40 +187,44 @@ export const startOrGetConversation = async (providerId: string): Promise<string
     }
 
     const participants = [seekerId, providerId].sort();
-    const conversationId = participants.join('_');
+    const conversationId = participants.join('_'); // Deterministic ID
 
     const conversationRef = doc(db, 'conversations', conversationId);
     const conversationSnap = await getDoc(conversationRef);
 
     if (conversationSnap.exists()) {
-        return conversationId;
+        return conversationId; // Conversation already exists
     }
 
-    // Defensive checks for user profiles before creating conversation
+    // Conversation doesn't exist, create it.
     const [seekerProfile, providerProfile] = await Promise.all([
         getUserProfileById(seekerId),
         getUserProfileById(providerId)
     ]);
 
     if (!seekerProfile || !providerProfile) {
-        throw new Error("One or both user profiles could not be found.");
+        throw new Error("Could not find user profiles for one or both participants.");
     }
 
-    const newConversation: Omit<Conversation, 'id'> = {
+    const newConversationData: Omit<Conversation, 'id'> = {
         participants,
         participantNames: {
             [seekerId]: seekerProfile.name || "User",
             [providerId]: providerProfile.name || "Provider",
         },
-        lastMessage: "Conversation started.",
+        participantAvatars: {
+             [seekerId]: seekerProfile.images?.[0] || null,
+             [providerId]: providerProfile.images?.[0] || null,
+        },
+        lastMessage: "",
         lastMessageAt: serverTimestamp() as Timestamp,
-        lastMessageSenderId: seekerId,
+        lastMessageSenderId: "",
+        createdAt: serverTimestamp() as Timestamp,
     };
 
-    await setDoc(conversationRef, newConversation);
+    await setDoc(conversationRef, newConversationData);
     return conversationId;
 };
-
 
 // Send a new message
 export const sendMessage = async (conversationId: string, text: string): Promise<void> => {
@@ -235,6 +232,9 @@ export const sendMessage = async (conversationId: string, text: string): Promise
         throw new Error("User not authenticated or database is unavailable.");
     }
     const senderId = auth.currentUser.uid;
+    const cleanText = text.trim();
+    if (!cleanText) return;
+
     const conversationRef = doc(db, "conversations", conversationId);
     const messagesCollectionRef = collection(conversationRef, "messages");
 
@@ -244,12 +244,12 @@ export const sendMessage = async (conversationId: string, text: string): Promise
     batch.set(newMessageRef, {
         conversationId,
         senderId,
-        text,
+        text: cleanText,
         createdAt: serverTimestamp(),
     });
 
     batch.update(conversationRef, {
-        lastMessage: text,
+        lastMessage: cleanText,
         lastMessageAt: serverTimestamp(),
         lastMessageSenderId: senderId,
     });
