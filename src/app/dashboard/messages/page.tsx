@@ -58,6 +58,7 @@ export default function MessagesPage() {
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const initialSelectionDone = useRef(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -70,16 +71,19 @@ export default function MessagesPage() {
     return () => unsubscribe();
   }, [router]);
 
+  // This effect handles chat selection from a URL parameter.
   useEffect(() => {
     const chatIdFromUrl = searchParams.get('chatId');
     if (chatIdFromUrl) {
       setSelectedChatId(chatIdFromUrl);
+      initialSelectionDone.current = true; // Mark that selection happened
       // Clean the URL
       const newUrl = pathname;
       router.replace(newUrl, {scroll: false});
     }
   }, [searchParams, router, pathname]);
 
+  // This effect loads all chats and handles default selection.
   useEffect(() => {
     if (!authUser || !db) return;
 
@@ -101,6 +105,12 @@ export default function MessagesPage() {
 
       setChats(convos);
       setIsLoadingChats(false);
+      
+      // If no selection has been made yet (e.g., from the URL) and there are chats, select the most recent one.
+      if (!initialSelectionDone.current && convos.length > 0) {
+        setSelectedChatId(convos[0].id);
+        initialSelectionDone.current = true;
+      }
     }, (err) => {
       console.error("Error fetching chats:", err);
       let errorMessage = t.errorOccurred;
