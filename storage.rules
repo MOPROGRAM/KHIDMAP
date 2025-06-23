@@ -1,16 +1,8 @@
 rules_version = '2';
-
 service firebase.storage {
   match /b/{bucket}/o {
-    // This rule specifically targets the file structure you are using.
-    match /serviceAds/{userId}/{folder}/{fileName} {
-      
-      // Allow anyone to read files. This is necessary for others to see portfolio images.
+    match /serviceAds/{userId}/{allPaths=**} {
       allow read;
-      
-      // Allow the user to create, update, and DELETE their own files.
-      // The condition `request.auth.uid == userId` ensures that only the file owner
-      // can perform these actions.
       allow write: if request.auth != null && request.auth.uid == userId;
     }
   }
