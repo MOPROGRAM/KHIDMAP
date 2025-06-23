@@ -133,10 +133,19 @@ export default function MessagesPage() {
 
     setIsLoadingMessages(true);
     const messagesRef = collection(db, 'messages', selectedChatId, 'messages');
-    const q = query(messagesRef, where('participants', 'array-contains', authUser.uid), orderBy('createdAt', 'asc'));
+    // Query without ordering to avoid composite index requirement. We will sort on the client.
+    const q = query(messagesRef, where('participants', 'array-contains', authUser.uid));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const msgs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+      
+      // Sort messages on the client-side
+      msgs.sort((a, b) => {
+          const timeA = a.createdAt?.toMillis() || 0;
+          const timeB = b.createdAt?.toMillis() || 0;
+          return timeA - timeB;
+      });
+
       setMessages(msgs);
       setIsLoadingMessages(false);
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
