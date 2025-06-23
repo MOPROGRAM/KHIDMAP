@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -18,46 +17,30 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.raterUserId;
     }
     
-    // Messages Collection
+    // Chat Documents
     match /messages/{chatId} {
-      // HELPER FUNCTION: Check if the user is a participant in a chat based on existing data.
-      function isParticipant() {
-        return request.auth != null && resource.data.participantIds[request.auth.uid] == true;
-      }
+      // Allow reading or updating a chat document (e.g. last message) IF the user is a participant.
+      allow read, update: if request.auth != null && request.auth.uid in resource.data.participantIds;
       
-      // HELPER FUNCTION: Check if the user is a participant based on incoming data for a create operation.
-      function isParticipantInNewData() {
-        return request.auth != null && request.resource.data.participantIds[request.auth.uid] == true;
-      }
+      // Allow creating a new chat IF the requesting user is included in the new document's participant list.
+      // This is the key fix for starting new conversations.
+      allow create: if request.auth != null && request.auth.uid in request.resource.data.participantIds;
       
-      // A user can read or update a chat document (e.g. lastMessage) if they are a participant.
-      allow read, update: if isParticipant();
-      
-      // A user can create a chat document if:
-      // 1. They are authenticated.
-      // 2. They are one of the participants in the new document data.
-      // 3. The chat is being created with exactly two participants.
-      allow create: if isParticipantInNewData() && request.resource.data.participantIds.size() == 2;
-      
-      // Do not allow deleting entire chat threads from the client.
+      // Prevent chats from being deleted.
       allow delete: if false;
 
-      // Messages Subcollection
+      // Individual Messages Subcollection
       match /messages/{messageId} {
-        // HELPER FUNCTION: Securely check the parent chat document to see if user is a participant.
-        function isParticipantInParentChat() {
-          return request.auth != null && get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[request.auth.uid] == true;
-        }
-
-        // A user can read any message in a chat they are a part of.
-        allow read: if isParticipantInParentChat();
-
-        // A user can create a new message if:
-        // 1. They are a participant in the parent chat.
-        // 2. Their UID matches the senderId of the new message.
-        allow create: if isParticipantInParentChat() && request.auth.uid == request.resource.data.senderId;
+        // Allow reading a message IF the user is a participant in the parent chat document.
+        // The get() method is a secure way to check the parent document's data.
+        allow read: if request.auth != null && get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[request.auth.uid] == true;
                          
-        // Disallow updating or deleting messages for integrity.
+        // Allow creating a message IF the user is the sender AND a participant of the parent chat.
+        allow create: if request.auth != null &&
+                         request.auth.uid == request.resource.data.senderId &&
+                         get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[request.auth.uid] == true;
+                         
+        // Prevent individual messages from being changed or deleted to maintain chat integrity.
         allow update, delete: if false;
       }
     }
