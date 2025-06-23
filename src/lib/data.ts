@@ -1,6 +1,6 @@
 
 import { db, auth } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch, GeoPoint, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch, GeoPoint, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
 
 export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
 export type UserRole = 'provider' | 'seeker' | 'admin';
@@ -41,6 +41,7 @@ export interface Chat {
     lastMessageAt: Timestamp;
     lastMessageSenderId: string;
     createdAt: Timestamp;
+    unreadCount: { [key: string]: number };
 }
 
 export interface Message {
@@ -50,6 +51,7 @@ export interface Message {
     content: string; // For text, this is the message. For audio, it's the data URI.
     type: 'text' | 'audio';
     createdAt: Timestamp;
+    readBy: { [key: string]: boolean };
 }
 
 
@@ -228,6 +230,10 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
         lastMessageAt: serverTimestamp() as Timestamp,
         lastMessageSenderId: "", // System message, no sender
         createdAt: serverTimestamp() as Timestamp,
+        unreadCount: {
+            [seekerId]: 0,
+            [providerId]: 0,
+        },
     };
 
     const newChatDocRef = await addDoc(collection(db, "messages"), newChatData);
@@ -248,6 +254,14 @@ export const sendMessage = async (
     if (!cleanContent) return;
 
     const chatRef = doc(db, "messages", chatId);
+    const chatSnap = await getDoc(chatRef);
+    if (!chatSnap.exists()) throw new Error("Chat does not exist.");
+    
+    const chatData = chatSnap.data() as Chat;
+    const receiverId = Object.keys(chatData.participantIds).find(id => id !== senderId);
+    if (!receiverId) throw new Error("Could not find recipient for the message.");
+
+
     const messagesCollectionRef = collection(chatRef, "messages");
 
     const batch = writeBatch(db);
@@ -259,13 +273,58 @@ export const sendMessage = async (
         content: cleanContent,
         type,
         createdAt: serverTimestamp(),
+        readBy: {
+            [senderId]: true,
+            [receiverId]: false,
+        }
     });
 
     batch.update(chatRef, {
         lastMessage: type === 'audio' ? "🎤 Audio Message" : cleanContent,
         lastMessageAt: serverTimestamp(),
         lastMessageSenderId: senderId,
+        [`unreadCount.${receiverId}`]: increment(1)
     });
     
     await batch.commit();
+};
+
+
+export const markChatAsRead = async (chatId: string): Promise<void> => {
+    if (!db || !auth?.currentUser) return;
+    const userId = auth.currentUser.uid;
+
+    const batch = writeBatch(db);
+
+    const chatRef = doc(db, 'messages', chatId);
+    batch.update(chatRef, { [`unreadCount.${userId}`]: 0 });
+
+    const messagesQuery = query(
+        collection(db, 'messages', chatId, 'messages'),
+        where(`readBy.${userId}`, '==', false)
+    );
+    
+    try {
+        const unreadMessagesSnapshot = await getDocs(messagesQuery);
+
+        if (unreadMessagesSnapshot.empty) {
+            // If there are no messages to mark as read, just commit the count reset.
+            // A catch is added because this might be an empty batch if count was already 0.
+            await batch.commit().catch(err => {
+                if (err.code !== 'invalid-argument') { // Ignore empty batch error
+                    console.error("Error committing unread count reset:", err);
+                }
+            });
+            return;
+        }
+
+        unreadMessagesSnapshot.forEach(messageDoc => {
+            const messageRef = doc(db, 'messages', chatId, 'messages', messageDoc.id);
+            batch.update(messageRef, { [`readBy.${userId}`]: true });
+        });
+
+        await batch.commit();
+    } catch(error) {
+        console.error("Error marking chat as read: ", error);
+    }
 };

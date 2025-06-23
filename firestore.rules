@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -19,11 +20,10 @@ service cloud.firestore {
     
     // Chat Documents
     match /messages/{chatId} {
-      // Allow reading or updating a chat document (e.g. last message) IF the user is a participant.
+      // Allow reading or updating a chat document (e.g. last message, unread count) IF the user is a participant.
       allow read, update: if request.auth != null && request.auth.uid in resource.data.participantIds;
       
       // Allow creating a new chat IF the requesting user is included in the new document's participant list.
-      // This is the key fix for starting new conversations.
       allow create: if request.auth != null && request.auth.uid in request.resource.data.participantIds;
       
       // Prevent chats from being deleted.
@@ -32,7 +32,6 @@ service cloud.firestore {
       // Individual Messages Subcollection
       match /messages/{messageId} {
         // Allow reading a message IF the user is a participant in the parent chat document.
-        // The get() method is a secure way to check the parent document's data.
         allow read: if request.auth != null && get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[request.auth.uid] == true;
                          
         // Allow creating a message IF the user is the sender AND a participant of the parent chat.
@@ -40,8 +39,13 @@ service cloud.firestore {
                          request.auth.uid == request.resource.data.senderId &&
                          get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[request.auth.uid] == true;
                          
-        // Prevent individual messages from being changed or deleted to maintain chat integrity.
-        allow update, delete: if false;
+        // Allow a participant to update a message ONLY to mark it as read for themselves.
+        allow update: if request.auth != null &&
+                       get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[request.auth.uid] == true &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']);
+
+        // Prevent individual messages from being deleted to maintain chat integrity.
+        allow delete: if false;
       }
     }
   }

@@ -1,20 +1,21 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef, FormEvent } from 'react';
+import React, { useState, useEffect, useRef, FormEvent, useMemo } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useTranslation } from '@/hooks/useTranslation';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { Chat, Message, sendMessage } from '@/lib/data';
+import { Chat, Message, sendMessage, markChatAsRead } from '@/lib/data';
 import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Send, MessageSquare, UserCircle, Frown, ArrowLeft, Mic, StopCircle, Trash2 } from 'lucide-react';
+import { Loader2, Send, MessageSquare, UserCircle, Frown, ArrowLeft, Mic, StopCircle, Trash2, Check, CheckCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 
 const formatDate = (date: Timestamp | undefined): string => {
   if (!date) return '';
@@ -156,6 +157,15 @@ export default function MessagesPage() {
   }, [selectedChatId, authUser, t, toast]);
   
   useEffect(() => {
+    if (selectedChatId && authUser) {
+      // When a chat is opened, mark its messages as read.
+      // This also runs when new messages arrive in the selected chat.
+      markChatAsRead(selectedChatId);
+    }
+  }, [selectedChatId, authUser, messages]);
+
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -274,6 +284,12 @@ export default function MessagesPage() {
     };
   };
 
+  const otherParticipantId = useMemo(() => {
+      if (!selectedChat || !authUser) return null;
+      return Object.keys(selectedChat.participantIds).find(p => p !== authUser.uid);
+  }, [selectedChat, authUser]);
+
+
   return (
     <div className="h-[calc(100vh-8rem)] flex border rounded-lg shadow-xl bg-card animate-fadeIn">
       <aside className={cn("w-full md:w-1/3 lg:w-1/4 border-r flex flex-col", selectedChatId && "hidden md:flex")}>
@@ -292,6 +308,7 @@ export default function MessagesPage() {
             <ul>
               {chats.map(chat => {
                 const otherParticipant = getOtherParticipant(chat);
+                const unreadCount = chat.unreadCount?.[authUser?.uid || ''] || 0;
                 return (
                   <li key={chat.id}>
                     <button
@@ -310,7 +327,12 @@ export default function MessagesPage() {
                           <h3 className="font-semibold truncate">{otherParticipant.name}</h3>
                           <span className="text-xs text-muted-foreground">{formatDate(chat.lastMessageAt)}</span>
                         </div>
-                        <p className="text-sm text-muted-foreground truncate">{chat.lastMessageSenderId === authUser?.uid ? "You: " : ""}{chat.lastMessage}</p>
+                        <div className="flex justify-between items-start mt-1">
+                          <p className="text-sm text-muted-foreground truncate pr-2">{chat.lastMessageSenderId === authUser?.uid ? "You: " : ""}{chat.lastMessage}</p>
+                          {unreadCount > 0 && (
+                            <Badge className="h-5 min-w-[1.25rem] text-xs justify-center rounded-full px-1.5">{unreadCount}</Badge>
+                          )}
+                        </div>
                       </div>
                     </button>
                   </li>
@@ -346,23 +368,29 @@ export default function MessagesPage() {
                   <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
               ) : (
-                messages.map(msg => (
-                  <div key={msg.id} className={cn("flex gap-2", msg.senderId === authUser?.uid ? "justify-end" : "justify-start")}>
-                    <div className={cn(
-                      "p-3 rounded-lg max-w-xs lg:max-w-md",
-                      msg.senderId === authUser?.uid ? "bg-primary text-primary-foreground" : "bg-muted"
-                    )}>
-                       {msg.type === 'audio' && msg.content.startsWith('data:audio') ? (
-                            <audio src={msg.content} controls className="w-full" />
-                        ) : (
-                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                        )}
-                      <p className={cn("text-xs mt-1 text-right", msg.senderId === authUser?.uid ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                        {formatDate(msg.createdAt)}
-                      </p>
+                messages.map(msg => {
+                  const isReadByOther = otherParticipantId ? msg.readBy?.[otherParticipantId] : false;
+                  return (
+                    <div key={msg.id} className={cn("flex gap-2", msg.senderId === authUser?.uid ? "justify-end" : "justify-start")}>
+                      <div className={cn(
+                        "p-3 rounded-lg max-w-xs lg:max-w-md",
+                        msg.senderId === authUser?.uid ? "bg-primary text-primary-foreground" : "bg-muted"
+                      )}>
+                        {msg.type === 'audio' && msg.content.startsWith('data:audio') ? (
+                              <audio src={msg.content} controls className="w-full" />
+                          ) : (
+                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                          )}
+                        <div className={cn("text-xs mt-1 flex justify-end items-center gap-1.5", msg.senderId === authUser?.uid ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                           {formatDate(msg.createdAt)}
+                           {msg.senderId === authUser?.uid && (
+                             isReadByOther ? <CheckCheck className="h-4 w-4 text-accent" /> : <Check className="h-4 w-4" />
+                           )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  )
+                })
               )}
               <div ref={messagesEndRef} />
             </div>
