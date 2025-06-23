@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -18,25 +17,33 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.raterUserId;
     }
     
-    // --- Messaging System ---
-    // Rule for the parent chat documents
+    // Chat documents in the 'messages' collection
     match /messages/{chatId} {
-      // A user can read/write a chat document if they are a participant.
-      allow read, write: if request.auth != null && request.auth.uid in resource.data.participants;
+      // Allow a user to read (get, list) or update an existing chat document 
+      // if they are a participant.
+      allow read, update: if request.auth != null && request.auth.uid in resource.data.participants;
 
-      // Rule for the subcollection of messages within a chat
+      // Allow a user to CREATE a chat document if their UID is in the 'participants' list
+      // of the document being created. This is the key fix.
+      allow create: if request.auth != null && request.auth.uid in request.resource.data.participants;
+      
+      // Disallow deleting entire chat conversations.
+      allow delete: if false;
+
+      // Individual messages within the subcollection
       match /messages/{messageId} {
-        // A user can read messages if they are a participant in the parent chat document.
-        // This 'get()' call is allowed in subcollection queries because the path to the parent is fully known.
-        allow read: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/messages/$(chatId)).data.participants;
-        
-        // A user can create a message if they are a participant in the chat
-        // and they are the sender of the message.
-        allow create: if request.auth != null && 
-                         request.auth.uid == request.resource.data.senderId &&
-                         (request.auth.uid in get(/databases/$(database)/documents/messages/$(chatId)).data.participants);
+        // Function to securely check if the requesting user is a member of the parent chat.
+        function isParticipant() {
+          return request.auth != null && get(/databases/$(database)/documents/messages/$(chatId)).data.participants.hasAny([request.auth.uid]);
+        }
 
-        // Nobody can update or delete messages to maintain chat integrity.
+        // Allow reading messages if the user is a participant of the parent chat.
+        allow read: if isParticipant();
+
+        // Allow creating a message if the user is a participant and is the sender.
+        allow create: if isParticipant() && request.auth.uid == request.resource.data.senderId;
+        
+        // Disallow updating or deleting individual messages to maintain chat history integrity.
         allow update, delete: if false;
       }
     }
