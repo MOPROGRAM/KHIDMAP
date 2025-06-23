@@ -92,12 +92,19 @@ export default function MessagesPage() {
     setError(null);
     const q = query(
       collection(db, 'messages'),
-      where(`participantIds.${authUser.uid}`, '==', true),
-      orderBy('lastMessageAt', 'desc')
+      where(`participantIds.${authUser.uid}`, '==', true)
+      // The orderBy clause is removed to prevent requiring a composite index. Sorting is done client-side.
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const convos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
+      let convos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
+      
+      // We sort the conversations on the client-side to ensure newest are first.
+      convos.sort((a, b) => {
+        const timeA = a.lastMessageAt?.toMillis() || 0;
+        const timeB = b.lastMessageAt?.toMillis() || 0;
+        return timeB - timeA;
+      });
       
       setChats(convos);
       setIsLoadingChats(false);
@@ -110,6 +117,7 @@ export default function MessagesPage() {
     }, (err) => {
       console.error("Error fetching chats:", err);
       let errorMessage = t.errorOccurred;
+      // Check if the error message indicates a missing index
       if (err.message.includes("index")) {
         errorMessage = t.firestoreIndexError || "A database index is required for chat. Please check the browser console for a link to create it automatically.";
       }
@@ -142,7 +150,7 @@ export default function MessagesPage() {
       console.error(`Error fetching messages for ${selectedChatId}:`, err);
       let errorMessage = "Could not load messages.";
       if (err.message.includes("index")) {
-        errorMessage = "DATABASE SETUP NEEDED: A database index is required for chat to work. Please check the browser's developer console for an error message containing a link to create the index automatically in Firebase.";
+        errorMessage = t.firestoreIndexError || "DATABASE SETUP NEEDED: A database index is required for chat to work. Please check the browser's developer console for an error message containing a link to create the index automatically in Firebase.";
       }
       toast({ variant: "destructive", title: t.errorOccurred, description: errorMessage, duration: 20000 });
       setIsLoadingMessages(false);

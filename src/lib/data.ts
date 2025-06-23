@@ -149,8 +149,8 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
     try {
         const ratingsQuery = query(
             collection(db, "ratings"),
-            where("ratedUserId", "==", userId),
-            orderBy("createdAt", "desc")
+            where("ratedUserId", "==", userId)
+            // orderBy is removed to avoid needing a composite index. Sorting is done client-side.
         );
         const querySnapshot = await getDocs(ratingsQuery);
         const ratings = querySnapshot.docs.map(docSnap => ({
@@ -158,9 +158,13 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
             ...docSnap.data(),
         } as Rating));
 
+        // Sort ratings by date, newest first.
+        ratings.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+
         return ratings;
     } catch (error: any) {
         console.error(`Error fetching ratings for user ${userId}. Code: ${error.code}. Message: ${error.message}`);
+        // Provide a more helpful error message for the common indexing issue.
         if (String(error.message).includes("index")) {
              throw new Error("The database is being updated. Please try again in a few minutes.");
         }
