@@ -185,11 +185,11 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
         throw new Error("Cannot start a chat with yourself.");
     }
 
-    const chatsRef = collection(db, 'chats');
+    const messagesRef = collection(db, 'messages');
     // A more efficient query to find a chat between two specific users
     // We sort the UIDs to create a canonical participants array for querying.
     const participants = [seekerId, providerId].sort();
-    const q = query(chatsRef, where('participants', '==', participants));
+    const q = query(messagesRef, where('participants', '==', participants));
     
     const querySnapshot = await getDocs(q);
 
@@ -224,7 +224,7 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
         createdAt: serverTimestamp() as Timestamp,
     };
 
-    const newChatDocRef = await addDoc(collection(db, "chats"), newChatData);
+    const newChatDocRef = await addDoc(collection(db, "messages"), newChatData);
     return newChatDocRef.id;
 };
 
@@ -241,7 +241,7 @@ export const sendMessage = async (
     const cleanContent = type === 'text' ? content.trim() : content;
     if (!cleanContent) return;
 
-    const chatRef = doc(db, "chats", chatId);
+    const chatRef = doc(db, "messages", chatId);
     const messagesCollectionRef = collection(chatRef, "messages");
 
     const batch = writeBatch(db);

@@ -86,7 +86,7 @@ export default function MessagesPage() {
     setIsLoadingChats(true);
     setError(null);
     const q = query(
-      collection(db, 'chats'),
+      collection(db, 'messages'),
       where('participants', 'array-contains', authUser.uid)
       // NOTE: We are not ordering by 'lastMessageAt' here to avoid needing a composite index.
       // We will sort the results on the client-side instead.
@@ -125,7 +125,7 @@ export default function MessagesPage() {
     }
 
     setIsLoadingMessages(true);
-    const messagesRef = collection(db, 'chats', selectedChatId, 'messages');
+    const messagesRef = collection(db, 'messages', selectedChatId, 'messages');
     const q = query(messagesRef, orderBy('createdAt', 'asc'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
