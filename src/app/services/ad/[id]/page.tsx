@@ -315,7 +315,7 @@ export default function ProviderDetailsPage() {
       </Button>
 
       <Card className="overflow-hidden shadow-2xl border-none">
-         <div className="bg-card-foreground/5 p-6 sm:p-8">
+        <div className="bg-card-foreground/5 p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row items-center text-center sm:text-left gap-6">
                 <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-background shadow-lg">
                     <AvatarImage src={images.length > 0 ? images[0] : undefined} alt={provider.name || 'Provider avatar'} />
@@ -365,28 +365,33 @@ export default function ProviderDetailsPage() {
                     </Button>
                 )}
             </div>
+            
+            <Separator className="my-8" />
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-8">
+              {/* Main Content Column */}
+              <div className="md:col-span-2 space-y-8">
+                  {provider.qualifications && (
+                    <div>
+                      <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-3"><Sparkles/> {t.aboutProvider.replace('{name}', provider.name || 'الماهر')}</h2>
+                      <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{provider.qualifications}</p>
+                    </div>
+                  )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div className="space-y-6">
-                     {(provider.qualifications || serviceAreas.length > 0) && <Separator/>}
-                     {provider.qualifications && (
-                        <div className="space-y-2">
-                           <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Sparkles/> {t.aboutProvider.replace('{name}', provider.name || 'الماهر')}</h2>
-                           <p className="text-muted-foreground whitespace-pre-wrap">{provider.qualifications}</p>
-                        </div>
-                     )}
-                     {serviceAreas.length > 0 && (
-                        <div className="space-y-2">
-                           <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Building/> {t.servesAreasTitle}</h2>
-                           <p className="text-muted-foreground">{serviceAreas.join(', ')}</p>
-                        </div>
-                     )}
-                </div>
+                  {serviceAreas.length > 0 && (
+                    <div>
+                       <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-3"><Building/> {t.servesAreasTitle}</h2>
+                       <p className="text-muted-foreground">{serviceAreas.join(', ')}</p>
+                    </div>
+                  )}
+              </div>
+
+              {/* Specialties Column */}
+              <div className="space-y-4">
                  {serviceCategories.length > 0 && (
-                    <div className="space-y-4">
-                       <Separator/>
-                       <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Briefcase/> {t.specialties}</h2>
-                       <div className="flex flex-col gap-2">
+                    <div>
+                       <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-4"><Briefcase/> {t.specialties}</h2>
+                       <div className="flex flex-col gap-3">
                             {serviceCategories.map(cat => {
                                 if (!cat || typeof cat !== 'string') return null;
                                 const CatIcon = categoryIcons[cat] || GripVertical;
@@ -399,13 +404,13 @@ export default function ProviderDetailsPage() {
                             })}
                        </div>
                     </div>
-                )}
+                 )}
+              </div>
             </div>
             
             {images.length > 0 && (
-                <div className="mt-8 space-y-4">
-                    <Separator/>
-                    <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Camera/> {t.portfolioTitle} Images</h2>
+                <div className="mt-8 pt-8 border-t">
+                    <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-4"><Camera/> {t.portfolioTitle} Images</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {images.map((url, index) => (
                         <Dialog key={index}>
@@ -429,9 +434,8 @@ export default function ProviderDetailsPage() {
             )}
             
             {videos.length > 0 && (
-                <div className="mt-8 space-y-4">
-                    <Separator/>
-                    <h2 className="text-xl font-bold text-primary flex items-center gap-2"><VideoIcon/> {t.portfolioTitle} Videos</h2>
+                <div className="mt-8 pt-8 border-t">
+                    <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-4"><VideoIcon/> {t.portfolioTitle} Videos</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {videos.map((url, index) => (
                         <Dialog key={index}>
@@ -454,26 +458,27 @@ export default function ProviderDetailsPage() {
                 </div>
             )}
              
-            <div className="mt-8 space-y-4">
-                <Separator/>
-                <h2 className="text-xl font-bold text-primary flex items-center gap-2"><Star/> {t.reviews}</h2>
+            <div className="mt-8 pt-8 border-t">
+                <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-4"><Star/> {t.reviews}</h2>
                 {ratings.length > 0 ? (
                     <div className="space-y-4">
                         {ratings.map(rating => (
                             <Card key={rating.id} className="bg-muted/30 border p-4 shadow-sm">
-                               <div className="flex justify-between items-start">
-                                 <div className="flex items-center gap-2">
-                                    <Avatar className="h-8 w-8">
-                                       <AvatarFallback>{rating.raterName?.charAt(0) || 'U'}</AvatarFallback>
+                               <div className="flex justify-between items-start gap-4">
+                                 <div className="flex items-center gap-3 flex-1">
+                                    <Avatar className="h-10 w-10">
+                                       <AvatarFallback>{rating.raterName?.charAt(0)?.toUpperCase() || 'U'}</AvatarFallback>
                                     </Avatar>
-                                    <div>
+                                    <div className="flex flex-col">
                                        <p className="font-semibold text-foreground text-sm">{rating.raterName}</p>
                                        <p className="text-xs text-muted-foreground">{formatDate(rating.createdAt)}</p>
                                     </div>
                                  </div>
-                                 <StarRating rating={rating.rating} />
+                                 <div className="flex-shrink-0">
+                                    <StarRating rating={rating.rating} />
+                                 </div>
                                </div>
-                               {rating.comment && <p className="mt-3 text-sm text-foreground/80 pl-10">{rating.comment}</p>}
+                               {rating.comment && <p className="mt-3 text-sm text-foreground/80 ltr:pl-12 rtl:pr-12">{rating.comment}</p>}
                             </Card>
                         ))}
                     </div>
@@ -483,7 +488,7 @@ export default function ProviderDetailsPage() {
             </div>
             
             {authUser && userRole === 'seeker' && authUser.uid !== providerId && (
-                <div className="mt-8 pt-4 border-t">
+                <div className="mt-8 pt-8 border-t">
                     <h2 className="text-xl font-semibold text-primary font-headline mb-4">{t.rateThisProvider}</h2>
                     <form onSubmit={handleRatingSubmit} className="space-y-4">
                         <div>
