@@ -149,20 +149,14 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
     try {
         const ratingsQuery = query(
             collection(db, "ratings"),
-            where("ratedUserId", "==", userId)
+            where("ratedUserId", "==", userId),
+            orderBy("createdAt", "desc")
         );
         const querySnapshot = await getDocs(ratingsQuery);
         const ratings = querySnapshot.docs.map(docSnap => ({
             id: docSnap.id,
             ...docSnap.data(),
         } as Rating));
-
-        // Sort client-side to avoid needing a composite index
-        ratings.sort((a, b) => {
-            const dateA = a.createdAt?.toDate()?.getTime() || 0;
-            const dateB = b.createdAt?.toDate()?.getTime() || 0;
-            return dateB - dateA;
-        });
 
         return ratings;
     } catch (error: any) {

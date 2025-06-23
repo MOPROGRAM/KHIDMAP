@@ -92,18 +92,13 @@ export default function MessagesPage() {
     setError(null);
     const q = query(
       collection(db, 'messages'),
-      where(`participantIds.${authUser.uid}`, '==', true)
+      where(`participantIds.${authUser.uid}`, '==', true),
+      orderBy('lastMessageAt', 'desc')
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const convos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
       
-      convos.sort((a, b) => {
-        const dateA = a.lastMessageAt?.toDate()?.getTime() || 0;
-        const dateB = b.lastMessageAt?.toDate()?.getTime() || 0;
-        return dateB - dateA;
-      });
-
       setChats(convos);
       setIsLoadingChats(false);
       
