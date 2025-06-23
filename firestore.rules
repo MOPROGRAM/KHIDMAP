@@ -1,39 +1,32 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can read anyone's profile (for public provider pages)
-    // but can only create, update, or delete their own.
+    // Users can read any profile, but can only write to their own.
     match /users/{userId} {
-      allow read: if true;
-      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow read;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Anyone can read ratings.
-    // Only authenticated users can create new ratings.
-    // Updates and deletes are disallowed for simplicity and to preserve history.
+    // Users can read any rating, but can only create ratings for others.
     match /ratings/{ratingId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow update, delete: if false;
+      allow read;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.raterUserId;
     }
-
-    // --- MESSAGING RULES ---
     
-    // A user can read/update a chat document (the conversation itself)
-    // only if they are a participant.
+    // Rules for the top-level messages collection (the chat rooms)
     match /messages/{chatId} {
-      allow read, update: if request.auth != null && request.auth.uid in resource.data.participants;
-      allow create: if request.auth != null;
-      
-      // A user can read/create messages within a subcollection
-      // only if they are a participant. This rule checks the 'participants' array
-      // which is stored on each message document.
+      // Allow a user to read, update, or delete a chat document if they are a participant.
+      allow read, update, delete: if request.auth != null && request.auth.uid in resource.data.participants;
+      // Allow a user to create a new chat if they are one of the participants in the new document.
+      allow create: if request.auth != null && request.auth.uid in request.resource.data.participants;
+
+      // Rules for the nested "messages" subcollection within each chat
       match /messages/{messageId} {
-        allow read, create: if request.auth != null && request.auth.uid in request.resource.data.participants;
-        allow update, delete: if false; // Disallow editing/deleting messages
+        // A user can read or create a message if they are a participant in that message document.
+        // This relies on the 'participants' array being stored in each message.
+        allow read, create: if request.auth != null && request.auth.uid in resource.data.participants;
       }
     }
   }
