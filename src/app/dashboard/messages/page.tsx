@@ -87,12 +87,21 @@ export default function MessagesPage() {
     setError(null);
     const q = query(
       collection(db, 'chats'),
-      where('participants', 'array-contains', authUser.uid),
-      orderBy('lastMessageAt', 'desc')
+      where('participants', 'array-contains', authUser.uid)
+      // NOTE: We are not ordering by 'lastMessageAt' here to avoid needing a composite index.
+      // We will sort the results on the client-side instead.
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const convos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
+      
+      // Sort client-side
+      convos.sort((a, b) => {
+        const dateA = a.lastMessageAt?.toDate()?.getTime() || 0;
+        const dateB = b.lastMessageAt?.toDate()?.getTime() || 0;
+        return dateB - dateA;
+      });
+
       setChats(convos);
       setIsLoadingChats(false);
     }, (err) => {
@@ -383,28 +392,24 @@ export default function MessagesPage() {
           </>
         ) : (
           <div className="flex flex-col justify-center items-center h-full text-center p-4">
-             {chats.length > 0 && !isLoadingChats ? (
+             {isLoadingChats ? (
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+             ) : chats.length > 0 ? (
                 <>
                   <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />
                   <h2 className="text-xl font-semibold">{t.selectConversation}</h2>
                   <p className="text-muted-foreground">Choose a conversation from the list to see messages.</p>
                 </>
-             ) : !isLoadingChats && !error && (
-                    <>
-                      <Frown className="h-16 w-16 text-muted-foreground mb-4" />
-                      <h2 className="text-xl font-semibold">{t.noConversations}</h2>
-                      <p className="text-muted-foreground">Find a service provider to start a new conversation.</p>
-                       <Button asChild className="mt-4">
-                          <Link href="/services/search">{t.browseServices}</Link>
-                       </Button>
-                    </>
+             ) : (
+                <>
+                  <Frown className="h-16 w-16 text-muted-foreground mb-4" />
+                  <h2 className="text-xl font-semibold">{t.noConversations}</h2>
+                  <p className="text-muted-foreground">Find a service provider to start a new conversation.</p>
+                    <Button asChild className="mt-4">
+                      <Link href="/services/search">{t.browseServices}</Link>
+                    </Button>
+                </>
              )}
-              {(isLoadingChats || error) && (
-                <div>
-                   {isLoadingChats && <Loader2 className="h-12 w-12 animate-spin text-primary" />}
-                   {error && <p className="text-destructive">{error}</p>}
-                </div>
-              )}
           </div>
         )}
       </main>
