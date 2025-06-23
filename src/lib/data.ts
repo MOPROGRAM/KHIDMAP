@@ -186,10 +186,17 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
     }
 
     const messagesRef = collection(db, 'messages');
-    // A more efficient query to find a chat between two specific users
     // We sort the UIDs to create a canonical participants array for querying.
     const participants = [seekerId, providerId].sort();
-    const q = query(messagesRef, where('participants', '==', participants));
+    
+    // The query requires an `array-contains` clause to be compliant with the security rules.
+    // The rule `allow read: if request.auth.uid in resource.data.participants`
+    // can only be proven safe by Firestore if the query constrains by the user's UID.
+    const q = query(
+        messagesRef, 
+        where('participants', '==', participants),
+        where('participants', 'array-contains', seekerId)
+    );
     
     const querySnapshot = await getDocs(q);
 
