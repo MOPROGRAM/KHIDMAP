@@ -1,12 +1,15 @@
-
 rules_version = '2';
+
 service firebase.storage {
   match /b/{bucket}/o {
-    // Portfolio media files
+    // Match any file or folder within a user's specific directory in serviceAds.
+    // This covers both 'images' and 'videos' subfolders.
     match /serviceAds/{userId}/{allPaths=**} {
-      // Anyone can read images/videos for public profiles
+      // Allow anyone to read files (e.g., for public profile pages).
       allow read: if true;
-      // Only the authenticated owner can upload/delete
+
+      // Allow write (create, update, delete) only if the user is authenticated
+      // and their UID matches the folder's {userId}.
       allow write: if request.auth != null && request.auth.uid == userId;
     }
   }

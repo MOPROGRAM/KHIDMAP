@@ -1,29 +1,32 @@
-
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // User Profiles: Anyone can read, only the owner can write.
+    // Users: Public can read profiles, but only the user can write to their own profile.
     match /users/{userId} {
       allow read: if true;
-      allow write: if request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Ratings: Anyone can read, only authenticated users can create.
+    // Ratings: Public can read, but only authenticated users can create.
+    // Update/delete is restricted to the original rater.
     match /ratings/{ratingId} {
       allow read: if true;
       allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.raterUserId;
     }
-
-    // --- Messaging Rules ---
-
-    // Chat document: Users can only read/write if they are a participant.
+    
+    // Messages Collection
     match /messages/{chatId} {
-      allow read, update: if request.auth.uid in resource.data.participants;
+      // Allow read/write access to the chat document only if the user is a participant.
+      allow read, write: if request.auth != null && request.auth.uid in resource.data.participants;
 
-      // Messages sub-collection: Users can only access if they are a participant.
+      // Messages Subcollection
       match /messages/{messageId} {
-        allow read, create: if request.auth.uid in resource.data.participants;
+        // Allow read/write access to individual messages only if the user is a participant.
+        // This rule now correctly checks the `participants` array on the message document itself.
+        allow read, write: if request.auth != null && request.auth.uid in resource.data.participants;
       }
     }
   }
