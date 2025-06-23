@@ -88,14 +88,11 @@ export default function MessagesPage() {
     const q = query(
       collection(db, 'messages'),
       where('participants', 'array-contains', authUser.uid)
-      // NOTE: We are not ordering by 'lastMessageAt' here to avoid needing a composite index.
-      // We will sort the results on the client-side instead.
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const convos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
       
-      // Sort client-side
       convos.sort((a, b) => {
         const dateA = a.lastMessageAt?.toDate()?.getTime() || 0;
         const dateB = b.lastMessageAt?.toDate()?.getTime() || 0;
@@ -119,14 +116,14 @@ export default function MessagesPage() {
   }, [authUser, t, toast]);
 
   useEffect(() => {
-    if (!selectedChatId || !db) {
+    if (!selectedChatId || !db || !authUser) {
       setMessages([]);
       return;
     }
 
     setIsLoadingMessages(true);
     const messagesRef = collection(db, 'messages', selectedChatId, 'messages');
-    const q = query(messagesRef, orderBy('createdAt', 'asc'));
+    const q = query(messagesRef, where('participants', 'array-contains', authUser.uid), orderBy('createdAt', 'asc'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const msgs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
@@ -140,7 +137,7 @@ export default function MessagesPage() {
     });
 
     return () => unsubscribe();
-  }, [selectedChatId, t, toast]);
+  }, [selectedChatId, authUser, t, toast]);
   
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

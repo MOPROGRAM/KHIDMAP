@@ -1,36 +1,32 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users: Allow users to read/write their own profile, and allow anyone to read provider profiles.
+    // Users can read any profile, but only write to their own.
     match /users/{userId} {
-      allow read: if true;
+      allow read;
       allow write: if request.auth.uid == userId;
     }
 
-    // Ratings: Logged-in users can create ratings. No one can update/delete for simplicity.
+    // Users can read any rating, but only create ratings where they are the rater.
     match /ratings/{ratingId} {
-      allow read: if true;
-      allow create: if request.auth.uid != null;
-      allow update, delete: if false;
+        allow read;
+        allow create: if request.auth.uid == request.resource.data.raterUserId;
     }
-    
-    // Messages (Chats) collection
+
+    // Rules for the chat system.
+    // A user can only access a chat document if they are a participant.
     match /messages/{chatId} {
-      // Allow read/update (e.g., lastMessage) if user is a participant
       allow read, update: if request.auth.uid in resource.data.participants;
-      // Allow create if the user creating it is one of the participants
       allow create: if request.auth.uid in request.resource.data.participants;
-      
-      // Messages subcollection
+
+      // Rules for the messages subcollection within a chat.
+      // A user can only access messages if they are a participant.
+      // This requires the 'participants' array to be on each message document.
       match /messages/{messageId} {
-        // Allow read if user is a participant (checking denormalized participants field)
-        allow read: if request.auth.uid in resource.data.participants;
-        // Allow create if user is sender and is a participant
-        allow create: if request.auth.uid == request.resource.data.senderId &&
-                         request.auth.uid in request.resource.data.participants;
-        // Disallow updates/deletes for simplicity and to preserve chat history
-        allow update, delete: if false;
+          allow read, write: if request.auth.uid in resource.data.participants;
       }
     }
   }
