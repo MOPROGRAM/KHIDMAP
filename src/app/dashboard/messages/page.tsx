@@ -91,7 +91,7 @@ export default function MessagesPage() {
     setError(null);
     const q = query(
       collection(db, 'messages'),
-      where('participants', 'array-contains', authUser.uid)
+      where(`participantIds.${authUser.uid}`, '==', true)
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -114,10 +114,10 @@ export default function MessagesPage() {
     }, (err) => {
       console.error("Error fetching chats:", err);
       let errorMessage = t.errorOccurred;
-      if (err.message.includes("indexes") || err.message.includes("permission-denied")) {
-        errorMessage = t.firestoreIndexError || "The database is being set up or rules are incorrect. Chat will be available in a moment.";
+      if (err.message.includes("index")) {
+        errorMessage = t.firestoreIndexError || "A database index is required for chat. Please check the browser console for a link to create it automatically.";
       }
-      toast({ variant: "destructive", title: t.errorOccurred, description: errorMessage });
+      toast({ variant: "destructive", title: t.errorOccurred, description: errorMessage, duration: 20000 });
       setError(errorMessage);
       setIsLoadingChats(false);
     });
@@ -134,8 +134,6 @@ export default function MessagesPage() {
     setIsLoadingMessages(true);
     const messagesRef = collection(db, 'messages', selectedChatId, 'messages');
     
-    // The query is simplified. We only order by creation time.
-    // The security is now handled entirely by Firestore Rules using a `get()` call to the parent chat doc.
     const q = query(messagesRef, orderBy('createdAt'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -147,7 +145,6 @@ export default function MessagesPage() {
     }, (err) => {
       console.error(`Error fetching messages for ${selectedChatId}:`, err);
       let errorMessage = "Could not load messages.";
-      // This error message is critical for the user to fix the database index.
       if (err.message.includes("index")) {
         errorMessage = "DATABASE SETUP NEEDED: A database index is required for chat to work. Please check the browser's developer console for an error message containing a link to create the index automatically in Firebase.";
       }
@@ -269,7 +266,7 @@ export default function MessagesPage() {
 
   const getOtherParticipant = (chat: Chat) => {
     if (!authUser) return { id: '', name: 'Unknown User', avatar: undefined };
-    const otherId = chat.participants.find(p => p !== authUser.uid);
+    const otherId = Object.keys(chat.participantIds).find(p => p !== authUser.uid);
     return {
       id: otherId || '',
       name: chat.participantNames?.[otherId || ''] || 'Unknown User',

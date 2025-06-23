@@ -34,7 +34,7 @@ export interface Rating {
 
 export interface Chat {
     id: string;
-    participants: string[]; // Array of user UIDs
+    participantIds: { [key: string]: true }; // Switched from array to map for robust querying
     participantNames: { [key: string]: string };
     participantAvatars: { [key: string]: string | null };
     lastMessage: string;
@@ -186,16 +186,12 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
     }
 
     const messagesRef = collection(db, 'messages');
-    // We sort the UIDs to create a canonical participants array for querying.
-    const participants = [seekerId, providerId].sort();
     
-    // The query requires an `array-contains` clause to be compliant with the security rules.
-    // The rule `allow read: if request.auth.uid in resource.data.participants`
-    // can only be proven safe by Firestore if the query constrains by the user's UID.
     const q = query(
         messagesRef, 
-        where('participants', '==', participants),
-        where('participants', 'array-contains', seekerId)
+        where(`participantIds.${seekerId}`, '==', true),
+        where(`participantIds.${providerId}`, '==', true),
+        limit(1)
     );
     
     const querySnapshot = await getDocs(q);
@@ -216,7 +212,10 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
     }
 
     const newChatData: Omit<Chat, 'id'> = {
-        participants,
+        participantIds: {
+            [seekerId]: true,
+            [providerId]: true,
+        },
         participantNames: {
             [seekerId]: seekerProfile.name || "User",
             [providerId]: providerProfile.name || "Provider",
@@ -254,8 +253,6 @@ export const sendMessage = async (
     const batch = writeBatch(db);
 
     const newMessageRef = doc(messagesCollectionRef);
-    // The `participants` field is no longer needed in the message document,
-    // as security rules now check the parent chat document.
     batch.set(newMessageRef, {
         chatId,
         senderId,
