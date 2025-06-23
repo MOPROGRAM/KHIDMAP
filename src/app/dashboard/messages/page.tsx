@@ -126,32 +126,32 @@ export default function MessagesPage() {
   }, [authUser, t, toast]);
 
   useEffect(() => {
-    if (!selectedChatId || !db || !authUser) {
+    if (!selectedChatId || !db) {
       setMessages([]);
       return;
     }
 
     setIsLoadingMessages(true);
     const messagesRef = collection(db, 'messages', selectedChatId, 'messages');
-    // Query without ordering to avoid composite index requirement. We will sort on the client.
-    const q = query(messagesRef, where('participants', 'array-contains', authUser.uid));
+    
+    // The query is simplified. We only order by creation time.
+    // The security is now handled entirely by Firestore Rules using a `get()` call to the parent chat doc.
+    const q = query(messagesRef, orderBy('createdAt'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const msgs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
       
-      // Sort messages on the client-side
-      msgs.sort((a, b) => {
-          const timeA = a.createdAt?.toMillis() || 0;
-          const timeB = b.createdAt?.toMillis() || 0;
-          return timeA - timeB;
-      });
-
       setMessages(msgs);
       setIsLoadingMessages(false);
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, (err) => {
       console.error(`Error fetching messages for ${selectedChatId}:`, err);
-      toast({ variant: "destructive", title: t.errorOccurred, description: "Could not load messages." });
+      let errorMessage = "Could not load messages.";
+      // This error message is critical for the user to fix the database index.
+      if (err.message.includes("index")) {
+        errorMessage = "DATABASE SETUP NEEDED: A database index is required for chat to work. Please check the browser's developer console for an error message containing a link to create the index automatically in Firebase.";
+      }
+      toast({ variant: "destructive", title: t.errorOccurred, description: errorMessage, duration: 20000 });
       setIsLoadingMessages(false);
     });
 

@@ -50,7 +50,6 @@ export interface Message {
     content: string; // For text, this is the message. For audio, it's the data URI.
     type: 'text' | 'audio';
     createdAt: Timestamp;
-    participants?: string[];
 }
 
 
@@ -252,27 +251,17 @@ export const sendMessage = async (
     const chatRef = doc(db, "messages", chatId);
     const messagesCollectionRef = collection(chatRef, "messages");
 
-    // Fetch the chat document to get the participants array.
-    // This is necessary for the new, more secure subcollection rule.
-    const chatDoc = await getDoc(chatRef);
-    if (!chatDoc.exists()) {
-        throw new Error("Chat does not exist.");
-    }
-    const chatParticipants = chatDoc.data()?.participants;
-    if (!chatParticipants) {
-        throw new Error("Could not find participants for this chat.");
-    }
-
     const batch = writeBatch(db);
 
     const newMessageRef = doc(messagesCollectionRef);
+    // The `participants` field is no longer needed in the message document,
+    // as security rules now check the parent chat document.
     batch.set(newMessageRef, {
         chatId,
         senderId,
         content: cleanContent,
         type,
         createdAt: serverTimestamp(),
-        participants: chatParticipants, // Denormalize participants for security rules
     });
 
     batch.update(chatRef, {
