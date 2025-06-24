@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -30,16 +31,19 @@ export default function CallNotification() {
 
     const q = query(
       collection(db, "calls"),
-      where("calleeId", "==", currentUser.uid),
+      where(`participantIds.${currentUser.uid}`, "==", true),
       where("status", "==", "ringing")
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        const callDoc = snapshot.docs[0];
-        setIncomingCall({ id: callDoc.id, ...callDoc.data() } as Call);
+      // With the new query, we might get calls where the user is the caller.
+      // We must filter client-side to only act on calls where the user is the callee.
+      const incomingCallDoc = snapshot.docs.find(doc => doc.data().calleeId === currentUser.uid);
+
+      if (incomingCallDoc) {
+          setIncomingCall({ id: incomingCallDoc.id, ...incomingCallDoc.data() } as Call);
       } else {
-        setIncomingCall(null);
+          setIncomingCall(null);
       }
     }, (error) => {
         console.error("Error listening for incoming calls:", error);

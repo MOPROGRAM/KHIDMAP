@@ -123,6 +123,7 @@ export default function ProviderDetailsPage() {
   
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [ratingInput, setRatingInput] = useState(0);
   const [commentInput, setCommentInput] = useState('');
@@ -176,6 +177,7 @@ export default function ProviderDetailsPage() {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setAuthUser(user);
       setUserRole(user ? localStorage.getItem('userRole') : null);
+      setIsAuthLoading(false);
     });
     
     fetchProviderData();
@@ -272,7 +274,7 @@ export default function ProviderDetailsPage() {
   const videos = useMemo(() => Array.isArray(provider?.videos) ? provider.videos : [], [provider]);
   const cleanPhoneNumber = useMemo(() => provider?.phoneNumber?.replace(/[^0-9+]/g, '') || '', [provider?.phoneNumber]);
 
-  if (isLoading) {
+  if (isLoading || isAuthLoading) {
     return (
       <div className="flex flex-col justify-center items-center min-h-[calc(100vh-15rem)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
