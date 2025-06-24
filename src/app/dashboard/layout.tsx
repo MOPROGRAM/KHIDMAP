@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -188,11 +189,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </Button>
       </aside>
       <main className={cn(
-        "flex-1 p-2 md:p-4",
-        isMessagesPage ? "flex flex-col overflow-hidden" : "overflow-y-auto"
+        "flex-1 flex flex-col p-2 md:p-4",
+        isMessagesPage ? "overflow-hidden" : "overflow-y-auto"
       )}>
         {authUser && !isEmailVerified && (
-          <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-600 rounded-md shadow">
+          <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-600 rounded-md shadow shrink-0">
             <p className="font-medium">{t.verifyEmailPromptTitle}</p>
             <p className="text-sm">{t.verifyEmailPromptMessage?.replace('{email}', authUser.email || '')}</p>
             <Button variant="link" size="sm" className="p-0 h-auto text-yellow-700 dark:text-yellow-300 hover:underline font-semibold" onClick={async () => {

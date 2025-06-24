@@ -315,7 +315,7 @@ export default function MessagesPage() {
   const otherParticipantId = otherParticipant.id;
 
   return (
-    <div className="flex h-full w-full border rounded-lg shadow-xl bg-card animate-fadeIn overflow-hidden">
+    <div className="flex flex-1 border rounded-lg shadow-xl bg-card animate-fadeIn overflow-hidden">
       <aside className={cn("w-full md:w-1/3 lg:w-1/4 border-r flex flex-col", selectedChatId && "hidden md:flex")}>
         <div className="p-4 border-b">
           <h2 className="text-xl font-bold font-headline">{t.conversations}</h2>
@@ -387,18 +387,6 @@ export default function MessagesPage() {
                 <AvatarFallback><UserCircle className="h-5 w-5" /></AvatarFallback>
               </Avatar>
               <h3 className="font-semibold flex-1 truncate">{otherParticipant.name}</h3>
-              <Button onClick={() => handleInitiateCall('audio')} variant="ghost" size="icon" disabled={isInitiatingCall || !selectedChat}>
-                  <Phone className="h-5 w-5" />
-                  <span className="sr-only">{t.audioCall}</span>
-              </Button>
-              <div className="h-10 w-10">
-                {otherParticipant.videoCallsEnabled && (
-                    <Button onClick={() => handleInitiateCall('video')} variant="ghost" size="icon" disabled={isInitiatingCall || !selectedChat}>
-                      <VideoIcon className="h-5 w-5" />
-                      <span className="sr-only">{t.videoCall}</span>
-                    </Button>
-                )}
-              </div>
              </>
            ) : (
              <div className="hidden md:flex items-center gap-3 w-full animate-pulse h-full">
@@ -481,7 +469,7 @@ export default function MessagesPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        <footer className="p-3 border-t bg-background shrink-0 h-16 flex items-center">
+        <footer className="p-3 border-t bg-background shrink-0 flex items-center gap-2">
           {selectedChat ? (
             isRecording ? (
                 <div className="flex items-center justify-between gap-2 w-full">
@@ -493,6 +481,17 @@ export default function MessagesPage() {
                     <Button size="icon" onClick={handleStopRecording} className="bg-destructive hover:bg-destructive/90"><StopCircle className="h-5 w-5" /></Button>
                 </div>
             ) : (
+              <>
+                <Button onClick={() => handleInitiateCall('audio')} variant="ghost" size="icon" disabled={isInitiatingCall || !selectedChat}>
+                  <Phone className="h-5 w-5" />
+                  <span className="sr-only">{t.audioCall}</span>
+                </Button>
+                {otherParticipant.videoCallsEnabled && (
+                  <Button onClick={() => handleInitiateCall('video')} variant="ghost" size="icon" disabled={isInitiatingCall || !selectedChat}>
+                    <VideoIcon className="h-5 w-5" />
+                    <span className="sr-only">{t.videoCall}</span>
+                  </Button>
+                )}
                 <form onSubmit={handleSendMessage} className="flex items-center gap-2 w-full">
                     <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder={t.typeYourMessage} autoComplete="off" disabled={isSending} />
                     <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,video/*" />
@@ -505,6 +504,7 @@ export default function MessagesPage() {
                         <Button type="button" size="icon" onClick={handleStartRecording} disabled={isSending}><Mic className="h-4 w-4" /></Button>
                     )}
                 </form>
+              </>
             )
           ) : (
              <div className="hidden md:flex items-center gap-2 w-full animate-pulse h-full">

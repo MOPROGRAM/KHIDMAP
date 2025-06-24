@@ -72,13 +72,15 @@ export default function CallPage() {
     pcRef.current = pc;
 
     pc.ontrack = (event) => {
-        if (remoteVideoRef.current) {
+        if (remoteVideoRef.current && remoteVideoRef.current.srcObject !== event.streams[0]) {
             remoteVideoRef.current.srcObject = event.streams[0];
             const videoTrack = event.streams[0].getVideoTracks()[0];
             if (videoTrack) {
                 videoTrack.onunmute = () => setIsRemoteVideoActive(true);
                 videoTrack.onmute = () => setIsRemoteVideoActive(false);
                 setIsRemoteVideoActive(!videoTrack.muted);
+            } else {
+                 setIsRemoteVideoActive(false); // For audio-only streams
             }
         }
     };
@@ -315,18 +317,20 @@ export default function CallPage() {
       
       {/* Remote View Area */}
       <div className="flex-1 bg-black flex items-center justify-center overflow-hidden relative">
+        {/* Remote video is always in the DOM to ensure audio plays, but visibility is controlled by opacity */}
         <video 
           ref={remoteVideoRef} 
           autoPlay 
-          playsInline 
+          playsInline
           className={cn(
-            "h-full w-full object-contain transition-opacity",
+            "absolute inset-0 h-full w-full object-contain transition-opacity duration-300",
             isRemoteVideoActive && !isAudioCall ? "opacity-100" : "opacity-0"
           )} 
         />
         
+        {/* Overlay for audio call UI or when remote video is off */}
         {(isAudioCall || !isRemoteVideoActive) && (
-           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gray-900 z-10">
             <Avatar className="h-40 w-40 border-4 border-gray-700">
               <AvatarImage src={otherParticipant.avatar || undefined} />
               <AvatarFallback className="bg-gray-800"><UserCircle className="h-24 w-24 text-gray-600" /></AvatarFallback>
@@ -349,7 +353,7 @@ export default function CallPage() {
 
       {/* Local Video Preview (only for video calls) */}
       {!isAudioCall && (
-          <Card className="absolute bottom-24 right-6 md:bottom-28 md:right-8 h-48 w-36 md:h-64 md:w-48 bg-black border-2 border-gray-700 shadow-2xl overflow-hidden">
+          <Card className="absolute bottom-24 right-6 md:bottom-28 md:right-8 h-48 w-36 md:h-64 md:w-48 bg-black border-2 border-gray-700 shadow-2xl overflow-hidden z-20">
             <CardContent className="p-0 h-full">
               <video ref={localVideoRef} className={cn("h-full w-full object-cover", isVideoOff && "hidden")} autoPlay playsInline muted />
                {isVideoOff && (
@@ -362,13 +366,13 @@ export default function CallPage() {
       )}
       
       {isCallActive && !isAudioCall && isRemoteVideoActive && (
-        <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-lg font-mono">
+        <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-lg font-mono z-20">
             {formatDuration(callDuration)}
         </div>
       )}
 
       {/* Controls */}
-      <div className="absolute bottom-0 left-0 right-0 h-20 bg-black/50 backdrop-blur-md flex items-center justify-center">
+      <div className="absolute bottom-0 left-0 right-0 h-20 bg-black/50 backdrop-blur-md flex items-center justify-center z-20">
         <div className="flex items-center gap-4">
           <Button onClick={toggleMute} variant="outline" size="lg" className={cn("rounded-full h-14 w-14 p-0 bg-white/10 border-none hover:bg-white/20", isMuted && "bg-destructive hover:bg-destructive/90")}>
             {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
