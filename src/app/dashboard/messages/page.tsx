@@ -176,7 +176,7 @@ export default function MessagesPage() {
   };
   
   const handleInitiateCall = async (callType: 'audio' | 'video') => {
-    if (!otherParticipantId || isInitiatingCall) return;
+    if (!otherParticipantId || isInitiatingCall || !selectedChat) return;
     setIsInitiatingCall(true);
     try {
       toast({ title: t.initiatingCall, description: `Calling ${getOtherParticipant(selectedChat).name}...` });
@@ -371,9 +371,9 @@ export default function MessagesPage() {
       </aside>
 
       <main className={cn("flex-1 flex flex-col", !selectedChatId && "hidden md:flex")}>
-        {selectedChat ? (
-          <>
-            <header className="p-3 border-b flex items-center gap-3">
+        <header className="p-3 border-b flex items-center gap-3 shrink-0 h-[65px]">
+           {selectedChat ? (
+             <>
                <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSelectedChatId(null)}>
                   <ArrowLeft className="h-5 w-5" />
                </Button>
@@ -382,92 +382,114 @@ export default function MessagesPage() {
                 <AvatarFallback><UserCircle className="h-5 w-5" /></AvatarFallback>
               </Avatar>
               <h3 className="font-semibold flex-1 truncate">{otherParticipant.name}</h3>
-              <Button onClick={() => handleInitiateCall('audio')} variant="ghost" size="icon" disabled={isInitiatingCall}>
+              <Button onClick={() => handleInitiateCall('audio')} variant="ghost" size="icon" disabled={isInitiatingCall || !selectedChat}>
                   <Phone className="h-5 w-5" />
                   <span className="sr-only">{t.audioCall}</span>
               </Button>
-              {otherParticipant.videoCallsEnabled && (
-                  <Button onClick={() => handleInitiateCall('video')} variant="ghost" size="icon" disabled={isInitiatingCall}>
-                    <VideoIcon className="h-5 w-5" />
-                    <span className="sr-only">{t.videoCall}</span>
-                  </Button>
-              )}
-            </header>
+              <div className="h-10 w-10">
+                {otherParticipant.videoCallsEnabled && (
+                    <Button onClick={() => handleInitiateCall('video')} variant="ghost" size="icon" disabled={isInitiatingCall || !selectedChat}>
+                      <VideoIcon className="h-5 w-5" />
+                      <span className="sr-only">{t.videoCall}</span>
+                    </Button>
+                )}
+              </div>
+             </>
+           ) : (
+             <div className="hidden md:flex items-center gap-3 w-full animate-pulse">
+                <div className="h-10 w-10 rounded-full bg-muted" />
+                <div className="h-5 w-32 rounded-md bg-muted" />
+                <div className="ml-auto flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-muted" />
+                  <div className="h-10 w-10 rounded-full bg-muted" />
+                </div>
+              </div>
+           )}
+        </header>
             
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/20">
-              {isLoadingMessages ? (
-                <div className="flex justify-center items-center h-full"> <Loader2 className="h-8 w-8 animate-spin" /> </div>
-              ) : (
-                messages.map(msg => {
-                  const isReadByOther = otherParticipantId ? msg.readBy?.[otherParticipantId] : false;
-                  return (
-                    <div key={msg.id} className={cn("flex gap-2.5", msg.senderId === authUser?.uid ? "justify-end" : "justify-start")}>
-                      <div className={cn("p-2 rounded-lg max-w-sm lg:max-w-md shadow-sm", msg.senderId === authUser?.uid ? "bg-primary text-primary-foreground" : "bg-card border")}>
-                          {msg.type === 'text' && <p className="text-sm whitespace-pre-wrap px-1">{msg.content}</p>}
-                          {msg.type === 'audio' && <AudioPlayer src={msg.content} />}
-                          {msg.type === 'image' && (
-                            <Dialog>
-                                <DialogTrigger asChild><Image src={msg.content} alt={t.image || 'Image'} width={250} height={250} className="rounded-md cursor-pointer object-cover aspect-square" /></DialogTrigger>
-                                <DialogContent className="max-w-4xl p-0 bg-transparent border-0"><Image src={msg.content} alt={t.image || 'Image'} width={1024} height={1024} className="rounded-lg object-contain max-h-[90vh] w-full" /></DialogContent>
-                            </Dialog>
-                          )}
-                          {msg.type === 'video' && <video src={msg.content} controls className="rounded-md w-full max-w-[250px]" />}
-                        
-                        <div className={cn("text-xs mt-1.5 flex justify-end items-center gap-1", msg.senderId === authUser?.uid ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                           {formatDate(msg.createdAt)}
-                           {msg.senderId === authUser?.uid && (isReadByOther ? <CheckCheck className="h-4 w-4 text-blue-400" /> : <Check className="h-4 w-4" />)}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            <footer className="p-3 border-t bg-background">
-              {isRecording ? (
-                  <div className="flex items-center justify-between gap-2">
-                      <Button variant="ghost" size="icon" onClick={handleCancelRecording} className="text-destructive"><Trash2 className="h-5 w-5" /></Button>
-                      <div className="flex items-center gap-2 text-sm text-destructive font-mono">
-                          <div className="w-3 h-3 rounded-full bg-destructive animate-pulse"></div>
-                          <span>{formatRecordingTime(recordingTime)}</span>
-                      </div>
-                      <Button size="icon" onClick={handleStopRecording} className="bg-destructive hover:bg-destructive/90"><StopCircle className="h-5 w-5" /></Button>
-                  </div>
-              ) : (
-                  <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                      <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder={t.typeYourMessage} autoComplete="off" disabled={isSending} />
-                      <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,video/*" />
-                      <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isSending}><Paperclip className="h-4 w-4" /></Button>
-                      {newMessage.trim() ? (
-                          <Button type="submit" size="icon" disabled={isSending}>
-                              {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                          </Button>
-                      ) : (
-                          <Button type="button" size="icon" onClick={handleStartRecording} disabled={isSending}><Mic className="h-4 w-4" /></Button>
-                      )}
-                  </form>
-              )}
-            </footer>
-          </>
-        ) : (
-          <div className="flex flex-col justify-center items-center h-full text-center p-4">
-             {isLoadingChats ? ( <Loader2 className="h-12 w-12 animate-spin text-primary" />
-             ) : chats.length > 0 ? ( <>
+        <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/20">
+          {!selectedChat ? (
+            <div className="hidden md:flex flex-col justify-center items-center h-full text-center p-4">
+              {isLoadingChats ? (
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              ) : chats.length > 0 ? (
+                <>
                   <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />
                   <h2 className="text-xl font-semibold">{t.selectConversation}</h2>
                   <p className="text-muted-foreground">{t.selectConversationDescription}</p>
                 </>
-             ) : ( <>
+              ) : (
+                <>
                   <Frown className="h-16 w-16 text-muted-foreground mb-4" />
                   <h2 className="text-xl font-semibold">{t.noConversations}</h2>
                   <p className="text-muted-foreground">{t.noConversationsDescription}</p>
-                    <Button asChild className="mt-4"><Link href="/services/search">{t.browseServices}</Link></Button>
+                  <Button asChild className="mt-4"><Link href="/services/search">{t.browseServices}</Link></Button>
                 </>
-             )}
-          </div>
-        )}
+              )}
+            </div>
+          ) : isLoadingMessages ? (
+            <div className="flex justify-center items-center h-full"> <Loader2 className="h-8 w-8 animate-spin" /> </div>
+          ) : (
+            messages.map(msg => {
+              const isReadByOther = otherParticipantId ? msg.readBy?.[otherParticipantId] : false;
+              return (
+                <div key={msg.id} className={cn("flex gap-2.5", msg.senderId === authUser?.uid ? "justify-end" : "justify-start")}>
+                  <div className={cn("p-2 rounded-lg max-w-sm lg:max-w-md shadow-sm", msg.senderId === authUser?.uid ? "bg-primary text-primary-foreground" : "bg-card border")}>
+                      {msg.type === 'text' && <p className="text-sm whitespace-pre-wrap px-1">{msg.content}</p>}
+                      {msg.type === 'audio' && <AudioPlayer src={msg.content} />}
+                      {msg.type === 'image' && (
+                        <Dialog>
+                            <DialogTrigger asChild><Image src={msg.content} alt={t.image || 'Image'} width={250} height={250} className="rounded-md cursor-pointer object-cover aspect-square" /></DialogTrigger>
+                            <DialogContent className="max-w-4xl p-0 bg-transparent border-0"><Image src={msg.content} alt={t.image || 'Image'} width={1024} height={1024} className="rounded-lg object-contain max-h-[90vh] w-full" /></DialogContent>
+                        </Dialog>
+                      )}
+                      {msg.type === 'video' && <video src={msg.content} controls className="rounded-md w-full max-w-[250px]" />}
+                    
+                    <div className={cn("text-xs mt-1.5 flex justify-end items-center gap-1", msg.senderId === authUser?.uid ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                       {formatDate(msg.createdAt)}
+                       {msg.senderId === authUser?.uid && (isReadByOther ? <CheckCheck className="h-4 w-4 text-blue-400" /> : <Check className="h-4 w-4" />)}
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <footer className="p-3 border-t bg-background shrink-0">
+          {selectedChat && (
+            isRecording ? (
+                <div className="flex items-center justify-between gap-2">
+                    <Button variant="ghost" size="icon" onClick={handleCancelRecording} className="text-destructive"><Trash2 className="h-5 w-5" /></Button>
+                    <div className="flex items-center gap-2 text-sm text-destructive font-mono">
+                        <div className="w-3 h-3 rounded-full bg-destructive animate-pulse"></div>
+                        <span>{formatRecordingTime(recordingTime)}</span>
+                    </div>
+                    <Button size="icon" onClick={handleStopRecording} className="bg-destructive hover:bg-destructive/90"><StopCircle className="h-5 w-5" /></Button>
+                </div>
+            ) : (
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                    <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder={t.typeYourMessage} autoComplete="off" disabled={isSending} />
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,video/*" />
+                    <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isSending}><Paperclip className="h-4 w-4" /></Button>
+                    {newMessage.trim() ? (
+                        <Button type="submit" size="icon" disabled={isSending}>
+                            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        </Button>
+                    ) : (
+                        <Button type="button" size="icon" onClick={handleStartRecording} disabled={isSending}><Mic className="h-4 w-4" /></Button>
+                    )}
+                </form>
+            )
+          )}
+          {!selectedChat && (
+            <div className="hidden md:flex items-center gap-2 w-full animate-pulse h-[40px]">
+                <div className="h-10 rounded-md bg-muted flex-1" />
+                <div className="h-10 w-10 rounded-full bg-muted" />
+            </div>
+          )}
+        </footer>
       </main>
     </div>
   );
