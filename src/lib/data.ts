@@ -64,6 +64,7 @@ export interface Call {
   calleeName: string;
   calleeAvatar?: string | null;
   status: 'ringing' | 'active' | 'declined' | 'ended' | 'unanswered';
+  participantIds: { [key: string]: true };
   createdAt: Timestamp;
   // WebRTC signaling fields
   offer?: { sdp: string; type: 'offer' };
@@ -375,6 +376,10 @@ export const initiateCall = async (calleeId: string): Promise<string | null> => 
             calleeName,
             calleeAvatar,
             status: 'ringing',
+            participantIds: {
+              [callerId]: true,
+              [calleeId]: true,
+            },
             createdAt: serverTimestamp(),
         };
 
