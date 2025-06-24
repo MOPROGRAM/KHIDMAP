@@ -4,18 +4,22 @@
 import React, { useState, useEffect, useRef, FormEvent, useMemo } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useTranslation } from '@/hooks/useTranslation';
-import { auth, db } from '@/lib/firebase';
+import { auth, db, storage } from '@/lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { Chat, Message, sendMessage, markChatAsRead } from '@/lib/data';
 import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Send, MessageSquare, UserCircle, Frown, ArrowLeft, Mic, StopCircle, Trash2, Check, CheckCheck } from 'lucide-react';
+import { Loader2, Send, MessageSquare, UserCircle, Frown, ArrowLeft, Mic, StopCircle, Trash2, Check, CheckCheck, Paperclip, File as FileIcon, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import AudioPlayer from '@/components/chat/AudioPlayer';
+import Image from 'next/image';
+import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+
 
 const formatDate = (date: Timestamp | undefined): string => {
   if (!date) return '';
@@ -57,6 +61,8 @@ export default function MessagesPage() {
   const audioChunksRef = useRef<Blob[]>([]);
   const [recordingTime, setRecordingTime] = useState(0);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initialSelectionDone = useRef(false);
@@ -72,19 +78,16 @@ export default function MessagesPage() {
     return () => unsubscribe();
   }, [router]);
 
-  // This effect handles chat selection from a URL parameter.
   useEffect(() => {
     const chatIdFromUrl = searchParams.get('chatId');
-    if (chatIdFromUrl) {
+    if (chatIdFromUrl && !initialSelectionDone.current) {
       setSelectedChatId(chatIdFromUrl);
-      initialSelectionDone.current = true; // Mark that selection happened
-      // Clean the URL
+      initialSelectionDone.current = true;
       const newUrl = pathname;
       router.replace(newUrl, {scroll: false});
     }
   }, [searchParams, router, pathname]);
 
-  // This effect loads all chats and handles default selection.
   useEffect(() => {
     if (!authUser || !db) return;
 
@@ -93,31 +96,23 @@ export default function MessagesPage() {
     const q = query(
       collection(db, 'messages'),
       where(`participantIds.${authUser.uid}`, '==', true)
-      // The orderBy clause is removed to prevent requiring a composite index. Sorting is done client-side.
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       let convos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
-      
-      // We sort the conversations on the client-side to ensure newest are first.
-      convos.sort((a, b) => {
-        const timeA = a.lastMessageAt?.toMillis() || 0;
-        const timeB = b.lastMessageAt?.toMillis() || 0;
-        return timeB - timeA;
-      });
+      convos.sort((a, b) => (b.lastMessageAt?.toMillis() || 0) - (a.lastMessageAt?.toMillis() || 0));
       
       setChats(convos);
       setIsLoadingChats(false);
       
-      // If no selection has been made yet (e.g., from the URL) and there are chats, select the most recent one.
       if (!initialSelectionDone.current && convos.length > 0) {
-        setSelectedChatId(convos[0].id);
+        const chatIdFromUrl = searchParams.get('chatId');
+        setSelectedChatId(chatIdFromUrl || convos[0].id);
         initialSelectionDone.current = true;
       }
     }, (err) => {
       console.error("Error fetching chats:", err);
       let errorMessage = t.errorOccurred;
-      // Check if the error message indicates a missing index
       if (err.message.includes("index")) {
         errorMessage = t.firestoreIndexError || "A database index is required for chat. Please check the browser console for a link to create it automatically.";
       }
@@ -127,7 +122,7 @@ export default function MessagesPage() {
     });
 
     return () => unsubscribe();
-  }, [authUser, t, toast]);
+  }, [authUser, t, toast, searchParams]);
 
   useEffect(() => {
     if (!selectedChatId || !db) {
@@ -145,7 +140,6 @@ export default function MessagesPage() {
       
       setMessages(msgs);
       setIsLoadingMessages(false);
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, (err) => {
       console.error(`Error fetching messages for ${selectedChatId}:`, err);
       let errorMessage = "Could not load messages.";
@@ -157,21 +151,17 @@ export default function MessagesPage() {
     });
 
     return () => unsubscribe();
-  }, [selectedChatId, authUser, t, toast]);
+  }, [selectedChatId, t, toast]);
   
   useEffect(() => {
     if (selectedChatId && authUser) {
-      // When a chat is opened, mark its messages as read.
-      // This also runs when new messages arrive in the selected chat.
       markChatAsRead(selectedChatId);
     }
   }, [selectedChatId, authUser, messages]);
 
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
 
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
@@ -196,7 +186,7 @@ export default function MessagesPage() {
     }
     
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        toast({ variant: "destructive", title: "Audio Recording Not Supported", description: "Your browser does not support audio recording." });
+        toast({ variant: "destructive", title: t.audioRecordingNotSupported, description: t.audioRecordingNotSupportedDescription });
         return;
     }
     
@@ -206,41 +196,30 @@ export default function MessagesPage() {
         mediaRecorderRef.current = recorder;
         audioChunksRef.current = [];
         
-        recorder.ondataavailable = (event) => {
-            audioChunksRef.current.push(event.data);
-        };
-        
+        recorder.ondataavailable = (event) => audioChunksRef.current.push(event.data);
         recorder.onstop = async () => {
             const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-            const reader = new FileReader();
-            reader.readAsDataURL(audioBlob);
-            reader.onloadend = async () => {
-                const base64String = reader.result as string;
-                if (selectedChatId && base64String) {
-                    setIsSending(true);
-                    try {
-                        await sendMessage(selectedChatId, base64String, 'audio');
-                    } catch (err: any) {
-                         console.error("Error sending audio message:", err);
-                         toast({ variant: "destructive", title: t.errorOccurred, description: err.message });
-                    } finally {
-                        setIsSending(false);
-                    }
+            if (selectedChatId) {
+                setIsSending(true);
+                try {
+                    await sendMessage(selectedChatId, audioBlob, 'audio');
+                } catch (err: any) {
+                     console.error("Error sending audio message:", err);
+                     toast({ variant: "destructive", title: t.errorOccurred, description: err.message });
+                } finally {
+                    setIsSending(false);
                 }
-            };
+            }
             stream.getTracks().forEach(track => track.stop());
         };
         
         recorder.start();
         setIsRecording(true);
         setRecordingTime(0);
-        recordingIntervalRef.current = setInterval(() => {
-            setRecordingTime(prevTime => prevTime + 1);
-        }, 1000);
-
+        recordingIntervalRef.current = setInterval(() => setRecordingTime(prevTime => prevTime + 1), 1000);
     } catch (err) {
         console.error("Error starting recording:", err);
-        toast({ variant: "destructive", title: "Microphone Access Denied", description: "Please enable microphone access in your browser settings." });
+        toast({ variant: "destructive", title: t.microphoneAccessDenied, description: t.microphoneAccessDeniedDescription });
     }
   };
 
@@ -248,10 +227,7 @@ export default function MessagesPage() {
     if (mediaRecorderRef.current && isRecording) {
         mediaRecorderRef.current.stop();
         setIsRecording(false);
-        if (recordingIntervalRef.current) {
-            clearInterval(recordingIntervalRef.current);
-            recordingIntervalRef.current = null;
-        }
+        if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
     }
   };
 
@@ -261,14 +237,41 @@ export default function MessagesPage() {
         mediaRecorderRef.current.onondataavailable = null;
         mediaRecorderRef.current.stop();
         setIsRecording(false);
-        if (recordingIntervalRef.current) {
-            clearInterval(recordingIntervalRef.current);
-            recordingIntervalRef.current = null;
-        }
+        if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
         audioChunksRef.current = [];
     }
   };
   
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedChatId) return;
+
+    const MAX_SIZE = 15 * 1024 * 1024; // 15MB
+    if (file.size > MAX_SIZE) {
+        toast({ variant: "destructive", title: t.fileTooLargeTitle, description: t.fileTooLargeDescription.replace('{size}', '15MB') });
+        return;
+    }
+
+    let fileType: 'image' | 'video' | 'file';
+    if (file.type.startsWith('image/')) fileType = 'image';
+    else if (file.type.startsWith('video/')) fileType = 'video';
+    else {
+        toast({ variant: "destructive", title: t.unsupportedFileTypeTitle, description: t.unsupportedFileTypeDescription });
+        return;
+    }
+    
+    setIsSending(true);
+    try {
+        await sendMessage(selectedChatId, file, fileType);
+    } catch (err: any) {
+        console.error("Error sending file:", err);
+        toast({ variant: "destructive", title: t.fileUploadErrorTitle, description: err.message });
+    } finally {
+        setIsSending(false);
+        if (event.target) event.target.value = ''; // Reset file input
+    }
+  };
+
   const formatRecordingTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -291,7 +294,6 @@ export default function MessagesPage() {
       if (!selectedChat || !authUser) return null;
       return Object.keys(selectedChat.participantIds).find(p => p !== authUser.uid);
   }, [selectedChat, authUser]);
-
 
   return (
     <div className="h-[calc(100vh-8rem)] flex border rounded-lg shadow-xl bg-card animate-fadeIn">
@@ -331,7 +333,10 @@ export default function MessagesPage() {
                           <span className="text-xs text-muted-foreground">{formatDate(chat.lastMessageAt)}</span>
                         </div>
                         <div className="flex justify-between items-start mt-1">
-                          <p className="text-sm text-muted-foreground truncate pr-2">{chat.lastMessageSenderId === authUser?.uid ? "You: " : ""}{chat.lastMessage}</p>
+                          <p className="text-sm text-muted-foreground truncate pr-2 flex items-center gap-1">
+                             {chat.lastMessageSenderId === authUser?.uid && <span>{t.you}:</span>}
+                             {chat.lastMessage}
+                          </p>
                           {unreadCount > 0 && (
                             <Badge className="h-5 min-w-[1.25rem] text-xs justify-center rounded-full px-1.5">{unreadCount}</Badge>
                           )}
@@ -365,30 +370,28 @@ export default function MessagesPage() {
               <h3 className="font-semibold">{getOtherParticipant(selectedChat).name}</h3>
             </header>
             
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
+            <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/20">
               {isLoadingMessages ? (
-                <div className="flex justify-center items-center h-full">
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
+                <div className="flex justify-center items-center h-full"> <Loader2 className="h-8 w-8 animate-spin" /> </div>
               ) : (
                 messages.map(msg => {
                   const isReadByOther = otherParticipantId ? msg.readBy?.[otherParticipantId] : false;
                   return (
-                    <div key={msg.id} className={cn("flex gap-2", msg.senderId === authUser?.uid ? "justify-end" : "justify-start")}>
-                      <div className={cn(
-                        "p-3 rounded-lg max-w-xs lg:max-w-md",
-                        msg.senderId === authUser?.uid ? "bg-primary text-primary-foreground" : "bg-muted"
-                      )}>
-                        {msg.type === 'audio' && msg.content.startsWith('data:audio') ? (
-                              <audio src={msg.content} controls className="w-full" />
-                          ) : (
-                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    <div key={msg.id} className={cn("flex gap-2.5", msg.senderId === authUser?.uid ? "justify-end" : "justify-start")}>
+                      <div className={cn("p-2 rounded-lg max-w-sm lg:max-w-md shadow-sm", msg.senderId === authUser?.uid ? "bg-primary text-primary-foreground" : "bg-card border")}>
+                          {msg.type === 'text' && <p className="text-sm whitespace-pre-wrap px-1">{msg.content}</p>}
+                          {msg.type === 'audio' && <AudioPlayer src={msg.content} />}
+                          {msg.type === 'image' && (
+                            <Dialog>
+                                <DialogTrigger asChild><Image src={msg.content} alt={t.image} width={250} height={250} className="rounded-md cursor-pointer object-cover aspect-square" /></DialogTrigger>
+                                <DialogContent className="max-w-4xl p-0 bg-transparent border-0"><Image src={msg.content} alt={t.image} width={1024} height={1024} className="rounded-lg object-contain max-h-[90vh] w-full" /></DialogContent>
+                            </Dialog>
                           )}
-                        <div className={cn("text-xs mt-1 flex justify-end items-center gap-1.5", msg.senderId === authUser?.uid ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                          {msg.type === 'video' && <video src={msg.content} controls className="rounded-md w-full max-w-[250px]" />}
+                        
+                        <div className={cn("text-xs mt-1.5 flex justify-end items-center gap-1", msg.senderId === authUser?.uid ? "text-primary-foreground/70" : "text-muted-foreground")}>
                            {formatDate(msg.createdAt)}
-                           {msg.senderId === authUser?.uid && (
-                             isReadByOther ? <CheckCheck className="h-4 w-4 text-accent" /> : <Check className="h-4 w-4" />
-                           )}
+                           {msg.senderId === authUser?.uid && (isReadByOther ? <CheckCheck className="h-4 w-4 text-accent" /> : <Check className="h-4 w-4" />)}
                         </div>
                       </div>
                     </div>
@@ -398,37 +401,27 @@ export default function MessagesPage() {
               <div ref={messagesEndRef} />
             </div>
 
-            <footer className="p-3 border-t">
+            <footer className="p-3 border-t bg-background">
               {isRecording ? (
                   <div className="flex items-center justify-between gap-2">
-                      <Button variant="ghost" size="icon" onClick={handleCancelRecording} className="text-destructive">
-                          <Trash2 className="h-5 w-5" />
-                      </Button>
+                      <Button variant="ghost" size="icon" onClick={handleCancelRecording} className="text-destructive"><Trash2 className="h-5 w-5" /></Button>
                       <div className="flex items-center gap-2 text-sm text-destructive font-mono">
                           <div className="w-3 h-3 rounded-full bg-destructive animate-pulse"></div>
                           <span>{formatRecordingTime(recordingTime)}</span>
                       </div>
-                      <Button size="icon" onClick={handleStopRecording} className="bg-destructive hover:bg-destructive/90">
-                          <StopCircle className="h-5 w-5" />
-                      </Button>
+                      <Button size="icon" onClick={handleStopRecording} className="bg-destructive hover:bg-destructive/90"><StopCircle className="h-5 w-5" /></Button>
                   </div>
               ) : (
                   <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                      <Input
-                          value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                          placeholder={t.typeYourMessage}
-                          autoComplete="off"
-                          disabled={isSending}
-                      />
+                      <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder={t.typeYourMessage} autoComplete="off" disabled={isSending} />
+                      <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,video/*" />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isSending}><Paperclip className="h-4 w-4" /></Button>
                       {newMessage.trim() ? (
                           <Button type="submit" size="icon" disabled={isSending}>
                               {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                           </Button>
                       ) : (
-                          <Button type="button" size="icon" onClick={handleStartRecording} disabled={isSending}>
-                              <Mic className="h-4 w-4" />
-                          </Button>
+                          <Button type="button" size="icon" onClick={handleStartRecording} disabled={isSending}><Mic className="h-4 w-4" /></Button>
                       )}
                   </form>
               )}
@@ -436,22 +429,17 @@ export default function MessagesPage() {
           </>
         ) : (
           <div className="flex flex-col justify-center items-center h-full text-center p-4">
-             {isLoadingChats ? (
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-             ) : chats.length > 0 ? (
-                <>
+             {isLoadingChats ? ( <Loader2 className="h-12 w-12 animate-spin text-primary" />
+             ) : chats.length > 0 ? ( <>
                   <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />
                   <h2 className="text-xl font-semibold">{t.selectConversation}</h2>
-                  <p className="text-muted-foreground">Choose a conversation from the list to see messages.</p>
+                  <p className="text-muted-foreground">{t.selectConversationDescription}</p>
                 </>
-             ) : (
-                <>
+             ) : ( <>
                   <Frown className="h-16 w-16 text-muted-foreground mb-4" />
                   <h2 className="text-xl font-semibold">{t.noConversations}</h2>
-                  <p className="text-muted-foreground">Find a service provider to start a new conversation.</p>
-                    <Button asChild className="mt-4">
-                      <Link href="/services/search">{t.browseServices}</Link>
-                    </Button>
+                  <p className="text-muted-foreground">{t.noConversationsDescription}</p>
+                    <Button asChild className="mt-4"><Link href="/services/search">{t.browseServices}</Link></Button>
                 </>
              )}
           </div>
@@ -460,3 +448,5 @@ export default function MessagesPage() {
     </div>
   );
 }
+
+    

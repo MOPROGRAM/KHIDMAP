@@ -288,9 +288,18 @@ export type Translations = {
   messageSent: string;
   conversations: string;
   noConversations: string;
+  noConversationsDescription: string;
   selectConversation: string;
+  selectConversationDescription: string;
   typeYourMessage: string;
   loginToMessage: string;
+  you: string;
+  image: string;
+  video: string;
+  audioRecordingNotSupported: string;
+  audioRecordingNotSupportedDescription: string;
+  microphoneAccessDenied: string;
+  microphoneAccessDeniedDescription: string;
   
   // Settings page > password
   changePassword?: string;
@@ -552,9 +561,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     portfolioLimitReachedTitle: "Portfolio Limit Reached",
     portfolioLimitReachedDescription: "You can upload a maximum of 5 files.",
     fileTooLargeTitle: "File Too Large",
-    fileTooLargeDescription: "The file size cannot exceed 10MB.",
+    fileTooLargeDescription: "File size cannot exceed {size}.",
     unsupportedFileTypeTitle: "Unsupported File Type",
-    unsupportedFileTypeDescription: "Please upload a supported image or video file.",
+    unsupportedFileTypeDescription: "Please upload a supported image or video file (JPG, PNG, MP4, etc.).",
     fileUploadedSuccessTitle: "File Uploaded",
     fileUploadErrorTitle: "Upload Error",
     fileUploadErrorDescription: "There was an error uploading your file. Please try again.",
@@ -582,9 +591,18 @@ export const translations: Record<'en' | 'ar', Translations> = {
     messageSent: "Message Sent",
     conversations: "Conversations",
     noConversations: "No conversations yet.",
-    selectConversation: "Select a conversation to start chatting.",
+    noConversationsDescription: "Find a service provider to start a new conversation.",
+    selectConversation: "Select a conversation",
+    selectConversationDescription: "Choose a conversation from the list to see messages.",
     typeYourMessage: "Type your message...",
     loginToMessage: "You must be logged in to send messages.",
+    you: "You",
+    image: "Image",
+    video: "Video",
+    audioRecordingNotSupported: "Audio Recording Not Supported",
+    audioRecordingNotSupportedDescription: "Your browser does not support audio recording.",
+    microphoneAccessDenied: "Microphone Access Denied",
+    microphoneAccessDeniedDescription: "Please enable microphone access in your browser settings.",
     changePassword: "Password Management",
     changePasswordDescription: "To change your password, we will send a secure reset link to your email address.",
     sendResetEmail: "Send Password Reset Email",
@@ -837,9 +855,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     portfolioLimitReachedTitle: "تم الوصول للحد الأقصى",
     portfolioLimitReachedDescription: "يمكنك رفع 5 ملفات كحد أقصى.",
     fileTooLargeTitle: "الملف كبير جدًا",
-    fileTooLargeDescription: "حجم الملف لا يمكن أن يتجاوز 10 ميجابايت.",
+    fileTooLargeDescription: "حجم الملف لا يمكن أن يتجاوز {size}.",
     unsupportedFileTypeTitle: "نوع الملف غير مدعوم",
-    unsupportedFileTypeDescription: "يرجى رفع صورة أو ملف فيديو مدعوم.",
+    unsupportedFileTypeDescription: "يرجى رفع ملف صورة أو فيديو مدعوم (JPG, PNG, MP4, etc.).",
     fileUploadedSuccessTitle: "تم رفع الملف",
     fileUploadErrorTitle: "خطأ في الرفع",
     fileUploadErrorDescription: "حدث خطأ أثناء رفع الملف. يرجى المحاولة مرة أخرى.",
@@ -867,9 +885,18 @@ export const translations: Record<'en' | 'ar', Translations> = {
     messageSent: "تم إرسال الرسالة",
     conversations: "المحادثات",
     noConversations: "لا توجد محادثات بعد.",
-    selectConversation: "اختر محادثة لبدء الدردشة.",
+    noConversationsDescription: "ابحث عن مقدم خدمة لبدء محادثة جديدة.",
+    selectConversation: "اختر محادثة",
+    selectConversationDescription: "اختر محادثة من القائمة لرؤية الرسائل.",
     typeYourMessage: "اكتب رسالتك...",
     loginToMessage: "يجب عليك تسجيل الدخول لإرسال الرسائل.",
+    you: "أنت",
+    image: "صورة",
+    video: "فيديو",
+    audioRecordingNotSupported: "تسجيل الصوت غير مدعوم",
+    audioRecordingNotSupportedDescription: "متصفحك لا يدعم تسجيل الصوت.",
+    microphoneAccessDenied: "تم رفض الوصول إلى الميكروفون",
+    microphoneAccessDeniedDescription: "يرجى تمكين الوصول إلى الميكروفون في إعدادات المتصفح.",
     changePassword: "إدارة كلمة المرور",
     changePasswordDescription: "لتغيير كلمة المرور الخاصة بك، سنرسل رابط إعادة تعيين آمن إلى عنوان بريدك الإلكتروني.",
     sendResetEmail: "إرسال بريد إعادة تعيين كلمة المرور",
@@ -881,3 +908,5 @@ export const translations: Record<'en' | 'ar', Translations> = {
     profileNotFoundDescription: "لم يتم العثور على ملفك الشخصي. جاري تسجيل خروجك للأمان.",
   },
 };
+
+    

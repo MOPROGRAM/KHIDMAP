@@ -1,16 +1,25 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Match any file or folder within a user's specific directory in serviceAds.
-    // This covers both 'images' and 'videos' subfolders.
+    // Files for provider portfolios
     match /serviceAds/{userId}/{allPaths=**} {
-      // Allow anyone to read files (e.g., for public profile pages).
       allow read: if true;
-
-      // Allow write (create, update, delete) only if the user is authenticated
-      // and their UID matches the folder's {userId}.
       allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Files for chat messages
+    match /chats/{chatId}/{fileName} {
+      // Allow reading a chat file if the user is a participant in the corresponding chat document in Firestore.
+      allow read: if request.auth != null && 
+                   get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[request.auth.uid] == true;
+      
+      // Allow writing a chat file if the user is authenticated and is a participant in the chat.
+      allow write: if request.auth != null &&
+                    get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[request.auth.uid] == true;
     }
   }
 }
+
+    

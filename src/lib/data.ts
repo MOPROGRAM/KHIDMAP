@@ -1,6 +1,7 @@
 
-import { db, auth } from '@/lib/firebase';
+import { db, auth, storage } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch, GeoPoint, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
 export type UserRole = 'provider' | 'seeker' | 'admin';
@@ -34,7 +35,7 @@ export interface Rating {
 
 export interface Chat {
     id: string;
-    participantIds: { [key: string]: true }; // Switched from array to map for robust querying
+    participantIds: { [key: string]: true };
     participantNames: { [key: string]: string };
     participantAvatars: { [key: string]: string | null };
     lastMessage: string;
@@ -48,10 +49,10 @@ export interface Message {
     id: string;
     chatId: string;
     senderId: string;
-    content: string; // For text, this is the message. For audio, it's the data URI.
-    type: 'text' | 'audio';
+    content: string; 
+    type: 'text' | 'audio' | 'image' | 'video';
     createdAt: Timestamp;
-    readBy: { [key: string]: boolean };
+    readBy: { [key:string]: boolean };
 }
 
 
@@ -150,7 +151,6 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
         const ratingsQuery = query(
             collection(db, "ratings"),
             where("ratedUserId", "==", userId)
-            // orderBy is removed to avoid needing a composite index. Sorting is done client-side.
         );
         const querySnapshot = await getDocs(ratingsQuery);
         const ratings = querySnapshot.docs.map(docSnap => ({
@@ -158,13 +158,11 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
             ...docSnap.data(),
         } as Rating));
 
-        // Sort ratings by date, newest first.
         ratings.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
 
         return ratings;
     } catch (error: any) {
         console.error(`Error fetching ratings for user ${userId}. Code: ${error.code}. Message: ${error.message}`);
-        // Provide a more helpful error message for the common indexing issue.
         if (String(error.message).includes("index")) {
              throw new Error("The database is being updated. Please try again in a few minutes.");
         }
@@ -197,11 +195,9 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
-        // Chat already exists
         return querySnapshot.docs[0].id;
     }
 
-    // If chat doesn't exist, create it
     const [seekerProfile, providerProfile] = await Promise.all([
         getUserProfileById(seekerId),
         getUserProfileById(providerId)
@@ -226,7 +222,7 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
         },
         lastMessage: "Conversation started.",
         lastMessageAt: serverTimestamp() as Timestamp,
-        lastMessageSenderId: "", // System message, no sender
+        lastMessageSenderId: "",
         createdAt: serverTimestamp() as Timestamp,
         unreadCount: {
             [seekerId]: 0,
@@ -241,15 +237,35 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
 
 export const sendMessage = async (
     chatId: string, 
-    content: string,
-    type: 'text' | 'audio'
+    content: string | File | Blob,
+    type: 'text' | 'audio' | 'image' | 'video'
 ): Promise<void> => {
     if (!db || !auth?.currentUser) {
         throw new Error("User not authenticated or database is unavailable.");
     }
     const senderId = auth.currentUser.uid;
-    const cleanContent = type === 'text' ? content.trim() : content;
-    if (!cleanContent) return;
+
+    let messageContent: string;
+    let lastMessageText: string;
+
+    if (content instanceof File || content instanceof Blob) {
+        if (!storage) throw new Error("Storage service is not available.");
+        
+        const filePath = `chats/${chatId}/${new Date().getTime()}_${(content instanceof File ? content.name : type)}`;
+        const fileRef = ref(storage, filePath);
+        await uploadBytes(fileRef, content);
+        messageContent = await getDownloadURL(fileRef);
+
+        if (type === 'image') lastMessageText = "📷 Image";
+        else if (type === 'video') lastMessageText = "📹 Video";
+        else if (type === 'audio') lastMessageText = "🎤 Audio Message";
+        else lastMessageText = "📎 File";
+    } else {
+        messageContent = content.trim();
+        lastMessageText = messageContent;
+    }
+    
+    if (!messageContent) return;
 
     const chatRef = doc(db, "messages", chatId);
     const chatSnap = await getDoc(chatRef);
@@ -259,26 +275,21 @@ export const sendMessage = async (
     const receiverId = Object.keys(chatData.participantIds).find(id => id !== senderId);
     if (!receiverId) throw new Error("Could not find recipient for the message.");
 
-
     const messagesCollectionRef = collection(chatRef, "messages");
-
     const batch = writeBatch(db);
-
     const newMessageRef = doc(messagesCollectionRef);
+
     batch.set(newMessageRef, {
         chatId,
         senderId,
-        content: cleanContent,
+        content: messageContent,
         type,
         createdAt: serverTimestamp(),
-        readBy: {
-            [senderId]: true,
-            [receiverId]: false,
-        }
+        readBy: { [senderId]: true, [receiverId]: false }
     });
 
     batch.update(chatRef, {
-        lastMessage: type === 'audio' ? "🎤 Audio Message" : cleanContent,
+        lastMessage: lastMessageText,
         lastMessageAt: serverTimestamp(),
         lastMessageSenderId: senderId,
         [`unreadCount.${receiverId}`]: increment(1)
@@ -292,30 +303,19 @@ export const markChatAsRead = async (chatId: string): Promise<void> => {
     if (!db || !auth?.currentUser) return;
     const userId = auth.currentUser.uid;
 
-    const batch = writeBatch(db);
-
     const chatRef = doc(db, 'messages', chatId);
-    batch.update(chatRef, { [`unreadCount.${userId}`]: 0 });
+    const unreadCountUpdate = { [`unreadCount.${userId}`]: 0 };
 
-    const messagesQuery = query(
+    const unreadMessagesQuery = query(
         collection(db, 'messages', chatId, 'messages'),
         where(`readBy.${userId}`, '==', false)
     );
     
     try {
-        const unreadMessagesSnapshot = await getDocs(messagesQuery);
+        const batch = writeBatch(db);
+        batch.update(chatRef, unreadCountUpdate);
 
-        if (unreadMessagesSnapshot.empty) {
-            // If there are no messages to mark as read, just commit the count reset.
-            // A catch is added because this might be an empty batch if count was already 0.
-            await batch.commit().catch(err => {
-                if (err.code !== 'invalid-argument') { // Ignore empty batch error
-                    console.error("Error committing unread count reset:", err);
-                }
-            });
-            return;
-        }
-
+        const unreadMessagesSnapshot = await getDocs(unreadMessagesQuery);
         unreadMessagesSnapshot.forEach(messageDoc => {
             const messageRef = doc(db, 'messages', chatId, 'messages', messageDoc.id);
             batch.update(messageRef, { [`readBy.${userId}`]: true });
@@ -323,6 +323,12 @@ export const markChatAsRead = async (chatId: string): Promise<void> => {
 
         await batch.commit();
     } catch(error) {
-        console.error("Error marking chat as read: ", error);
+        // This can sometimes fail if there's nothing to commit, which is fine.
+        // We log other errors.
+        if (error instanceof Error && !error.message.includes('empty')) {
+             console.error("Error marking chat as read: ", error);
+        }
     }
 };
+
+    
