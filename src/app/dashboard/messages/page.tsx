@@ -11,7 +11,7 @@ import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'fireba
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Send, MessageSquare, UserCircle, Frown, ArrowLeft, Mic, StopCircle, Trash2, Check, CheckCheck, Paperclip, File as FileIcon, Image as ImageIcon, Video as VideoIcon, Phone } from 'lucide-react';
+import { Loader2, Send, MessageSquare, UserCircle, Frown, ArrowLeft, Mic, StopCircle, Trash2, Check, CheckCheck, Paperclip, Image as ImageIcon, Video as VideoIcon, Phone, PhoneOff, PhoneMissed } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
@@ -35,6 +35,12 @@ const formatDate = (date: Timestamp | undefined): string => {
     return 'Yesterday';
   }
   return jsDate.toLocaleDateString();
+};
+
+const formatCallDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
 };
 
 
@@ -131,7 +137,6 @@ export default function MessagesPage() {
     setIsLoadingMessages(true);
     const messagesRef = collection(db, 'messages', selectedChatId, 'messages');
     
-    // Sort client-side to avoid needing a composite index
     const q = query(messagesRef, orderBy('createdAt'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -176,21 +181,21 @@ export default function MessagesPage() {
   };
   
   const handleInitiateCall = async (callType: 'audio' | 'video') => {
-    if (!otherParticipantId || isInitiatingCall || !selectedChat) return;
+    if (!otherParticipantId || isInitiatingCall || !selectedChatId) return;
     setIsInitiatingCall(true);
     try {
-      toast({ title: t.initiatingCall, description: `Calling ${getOtherParticipant(selectedChat).name}...` });
-      const callId = await initiateCall(otherParticipantId, callType);
-      if (callId) {
-        router.push(`/call/${callId}`);
-      } else {
-        throw new Error("Failed to get call ID");
-      }
+        toast({ title: t.initiatingCall, description: `Calling ${getOtherParticipant(selectedChat).name}...` });
+        const callId = await initiateCall(selectedChatId, otherParticipantId, callType);
+        if (callId) {
+            router.push(`/call/${callId}`);
+        } else {
+            throw new Error("Failed to get call ID");
+        }
     } catch (error: any) {
-      console.error("Error initiating call:", error);
-      toast({ variant: "destructive", title: t.callFailed, description: error.message });
+        console.error("Error initiating call:", error);
+        toast({ variant: "destructive", title: t.callFailed, description: error.message });
     } finally {
-      setIsInitiatingCall(false);
+        setIsInitiatingCall(false);
     }
   };
 
@@ -310,7 +315,7 @@ export default function MessagesPage() {
   const otherParticipantId = otherParticipant.id;
 
   return (
-    <div className="h-full flex border rounded-lg shadow-xl bg-card animate-fadeIn">
+    <div className="h-[calc(100vh-8rem)] flex border rounded-lg shadow-xl bg-card animate-fadeIn">
       <aside className={cn("w-full md:w-1/3 lg:w-1/4 border-r flex flex-col", selectedChatId && "hidden md:flex")}>
         <div className="p-4 border-b">
           <h2 className="text-xl font-bold font-headline">{t.conversations}</h2>
@@ -396,7 +401,7 @@ export default function MessagesPage() {
               </div>
              </>
            ) : (
-             <div className="hidden md:flex items-center gap-3 w-full animate-pulse">
+             <div className="hidden md:flex items-center gap-3 w-full animate-pulse h-full">
                 <div className="h-10 w-10 rounded-full bg-muted" />
                 <div className="h-5 w-32 rounded-md bg-muted" />
                 <div className="ml-auto flex items-center gap-2">
@@ -432,6 +437,25 @@ export default function MessagesPage() {
           ) : (
             messages.map(msg => {
               const isReadByOther = otherParticipantId ? msg.readBy?.[otherParticipantId] : false;
+              if (msg.type === 'system_call_status') {
+                 const callIcon = msg.content === 'unanswered' ? PhoneMissed : msg.content === 'declined' ? PhoneOff : Phone;
+                 const callTypeIcon = msg.callMetadata?.type === 'video' ? VideoIcon : Phone;
+                 const durationText = msg.callMetadata?.duration ? ` - ${formatCallDuration(msg.callMetadata.duration)}` : '';
+                 return (
+                     <div key={msg.id} className="flex items-center justify-center my-2">
+                        <div className="text-xs text-muted-foreground flex items-center gap-2 p-2 bg-background/50 rounded-full border">
+                            {React.createElement(callIcon, { className: 'h-4 w-4' })}
+                            <span>
+                                {msg.content === 'unanswered' && t.missedCall}
+                                {msg.content === 'ended' && t.callEnded}
+                                {msg.content === 'declined' && t.callDeclined}
+                            </span>
+                             {React.createElement(callTypeIcon, { className: 'h-4 w-4' })}
+                             {durationText && <span className="font-mono">{durationText}</span>}
+                        </div>
+                    </div>
+                 )
+              }
               return (
                 <div key={msg.id} className={cn("flex gap-2.5", msg.senderId === authUser?.uid ? "justify-end" : "justify-start")}>
                   <div className={cn("p-2 rounded-lg max-w-sm lg:max-w-md shadow-sm", msg.senderId === authUser?.uid ? "bg-primary text-primary-foreground" : "bg-card border")}>
@@ -483,7 +507,7 @@ export default function MessagesPage() {
                 </form>
             )
           ) : (
-             <div className="hidden md:flex items-center gap-2 w-full animate-pulse">
+             <div className="hidden md:flex items-center gap-2 w-full animate-pulse h-full">
                 <div className="h-10 rounded-md bg-muted flex-1" />
                 <div className="h-10 w-10 rounded-full bg-muted" />
             </div>
@@ -493,5 +517,3 @@ export default function MessagesPage() {
     </div>
   );
 }
-
-    

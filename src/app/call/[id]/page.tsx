@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { Timestamp } from 'firebase/firestore';
 
 const servers = {
   iceServers: [
@@ -33,6 +34,7 @@ export default function CallPage() {
   const [call, setCall] = useState<Call | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [callDuration, setCallDuration] = useState(0);
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -43,8 +45,10 @@ export default function CallPage() {
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const ringtoneRef = useRef<HTMLAudioElement>(null);
 
   const signalingStarted = useRef(false);
+  const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!callId || !db) {
@@ -87,10 +91,16 @@ export default function CallPage() {
                 return;
             }
         }
+        
+        if (callData.status === 'ringing') {
+            ringtoneRef.current?.play().catch(e => console.warn("Ringtone play failed:", e));
+        } else {
+            ringtoneRef.current?.pause();
+        }
 
         if (callData.status === 'ended' || callData.status === 'declined' || callData.status === 'unanswered') {
           toast({ title: t.callEnded, description: t.callHasBeenTerminated });
-          router.push('/dashboard/messages');
+           setTimeout(() => router.push(`/dashboard/messages?chatId=${callData.chatId}`), 2000);
         }
 
         if (pcRef.current && !pcRef.current.currentRemoteDescription && callData.answer) {
@@ -108,6 +118,11 @@ export default function CallPage() {
       unsubscribeCall();
       localStreamRef.current?.getTracks().forEach(track => track.stop());
       pcRef.current?.close();
+      if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
+      if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+      }
     };
   }, [callId, router, t, toast]);
   
@@ -154,7 +169,7 @@ export default function CallPage() {
                 await pcRef.current.setRemoteDescription(new RTCSessionDescription(call.offer));
                 const answerDescription = await pcRef.current.createAnswer();
                 await pcRef.current.setLocalDescription(answerDescription);
-                await updateDoc(callDocRef, { answer: { sdp: answerDescription.sdp, type: answerDescription.type } });
+                await updateDoc(callDocRef, { answer: { sdp: answerDescription.sdp, type: answerDescription.type }, status: 'active', startedAt: Timestamp.now() });
             }
         }
     };
@@ -167,9 +182,22 @@ export default function CallPage() {
          handleSignaling();
          signalingStarted.current = true;
     }
-
-
   }, [call, callId]);
+  
+  useEffect(() => {
+    if (call?.status === 'active') {
+        if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
+        durationIntervalRef.current = setInterval(() => {
+            setCallDuration(prev => prev + 1);
+        }, 1000);
+    } else {
+        if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
+    }
+
+    return () => {
+        if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
+    };
+  }, [call?.status]);
 
   const handleEndCall = async () => {
     if (callId) {
@@ -198,6 +226,13 @@ export default function CallPage() {
         ? { name: call.calleeName, avatar: call.calleeAvatar }
         : { name: call.callerName, avatar: call.callerAvatar };
   }
+  
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  }
+
 
   if (loading) {
     return (
@@ -221,9 +256,11 @@ export default function CallPage() {
   const otherParticipant = getOtherParticipant();
   const remoteVideoActive = remoteStreamRef.current && remoteStreamRef.current.active && remoteStreamRef.current.getVideoTracks().length > 0;
   const isAudioCall = call?.type === 'audio';
+  const isCallActive = call?.status === 'active';
 
   return (
     <div className="h-screen w-full bg-gray-900 text-white flex flex-col relative">
+      <audio ref={ringtoneRef} src="/sounds/ringing.mp3" loop />
       {/* Remote View */}
       <div className="flex-1 bg-black flex items-center justify-center overflow-hidden">
         {isAudioCall || !remoteVideoActive ? (
@@ -233,11 +270,17 @@ export default function CallPage() {
               <AvatarFallback className="bg-gray-800"><UserCircle className="h-24 w-24 text-gray-600" /></AvatarFallback>
             </Avatar>
             <p className="text-2xl font-semibold">{otherParticipant.name}</p>
-             {isAudioCall && <Phone className="h-8 w-8 text-gray-400" />}
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="text-lg">{call?.status === 'ringing' ? t.ringing : t.connecting}</span>
-            </div>
+            
+            {isCallActive ? (
+                <div className="text-lg font-mono">{formatDuration(callDuration)}</div>
+            ) : (
+                <div className="flex items-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span className="text-lg">{call?.status === 'ringing' ? t.ringing : t.connecting}</span>
+                </div>
+            )}
+
+            {isAudioCall && !isCallActive && <Phone className="h-8 w-8 text-gray-400 mt-2" />}
           </div>
         ) : (
           <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-contain" />
@@ -256,6 +299,12 @@ export default function CallPage() {
                )}
             </CardContent>
           </Card>
+      )}
+      
+      {isCallActive && !isAudioCall && remoteVideoActive && (
+        <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-lg font-mono">
+            {formatDuration(callDuration)}
+        </div>
       )}
 
       {/* Controls */}

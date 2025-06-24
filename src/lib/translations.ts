@@ -338,6 +338,11 @@ export type Translations = {
   cameraAccessRequired?: string;
   enableVideoCalls: string;
   enableVideoCallsDescription: string;
+  missedCall: string;
+  callDeclined: string;
+  callDuration: string;
+  videoCallLog: string;
+  audioCallLog: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -660,6 +665,11 @@ export const translations: Record<'en' | 'ar', Translations> = {
     cameraAccessRequired: "Camera access is required to display your video.",
     enableVideoCalls: "Enable Video Calls",
     enableVideoCallsDescription: "Allow other users to start video calls with you.",
+    missedCall: "Missed call",
+    callDeclined: "Call declined",
+    callDuration: "Call duration",
+    videoCallLog: "Video call",
+    audioCallLog: "Audio call",
   },
   ar: {
     appName: "خدماب",
@@ -977,5 +987,10 @@ export const translations: Record<'en' | 'ar', Translations> = {
     cameraAccessRequired: "الوصول إلى الكاميرا مطلوب لعرض الفيديو الخاص بك.",
     enableVideoCalls: "تفعيل مكالمات الفيديو",
     enableVideoCallsDescription: "السماح للمستخدمين الآخرين ببدء مكالمات فيديو معك.",
+    missedCall: "مكالمة فائتة",
+    callDeclined: "تم رفض المكالمة",
+    callDuration: "مدة المكالمة",
+    videoCallLog: "مكالمة فيديو",
+    audioCallLog: "مكالمة صوتية",
   },
 };

@@ -53,13 +53,18 @@ export interface Message {
     chatId: string;
     senderId: string;
     content: string; 
-    type: 'text' | 'audio' | 'image' | 'video';
+    type: 'text' | 'audio' | 'image' | 'video' | 'system_call_status';
     createdAt: Timestamp;
     readBy: { [key:string]: boolean };
+    callMetadata?: {
+        type: 'audio' | 'video';
+        duration: number; // in seconds
+    }
 }
 
 export interface Call {
   id: string;
+  chatId: string;
   callerId: string;
   callerName: string;
   callerAvatar?: string | null;
@@ -70,6 +75,7 @@ export interface Call {
   type: 'video' | 'audio';
   participantIds: { [key: string]: true };
   createdAt: Timestamp;
+  startedAt?: Timestamp; // To calculate duration
   // WebRTC signaling fields
   offer?: { sdp: string; type: 'offer' };
   answer?: { sdp: string; type: 'answer' };
@@ -190,6 +196,46 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
 
 
 // --- Messaging Firestore Functions ---
+const logCallEventInChat = async (
+    chatId: string,
+    callType: 'audio' | 'video',
+    status: 'unanswered' | 'ended' | 'declined',
+    duration: number = 0
+) => {
+    if (!db || !auth?.currentUser) return;
+    const senderId = auth.currentUser.uid;
+
+    const chatRef = doc(db, 'messages', chatId);
+    const messagesCollectionRef = collection(chatRef, 'messages');
+    const newMessageRef = doc(messagesCollectionRef);
+
+    const batch = writeBatch(db);
+
+    batch.set(newMessageRef, {
+        chatId,
+        senderId: 'system', // Special sender for system messages
+        content: status,
+        type: 'system_call_status',
+        createdAt: serverTimestamp(),
+        readBy: {},
+        callMetadata: { type: callType, duration },
+    });
+
+    let lastMessageText = '';
+    if (status === 'unanswered') lastMessageText = `Missed ${callType} call`;
+    if (status === 'ended') lastMessageText = `Call ended - ${callType}`;
+    if (status === 'declined') lastMessageText = `Declined ${callType} call`;
+
+
+    batch.update(chatRef, {
+        lastMessage: lastMessageText,
+        lastMessageAt: serverTimestamp(),
+        lastMessageSenderId: 'system',
+    });
+
+    await batch.commit();
+}
+
 
 export const startOrGetChat = async (providerId: string): Promise<string> => {
     if (!db || !auth?.currentUser) {
@@ -355,7 +401,7 @@ export const markChatAsRead = async (chatId: string): Promise<void> => {
 
 // --- Call Functions ---
 
-export const initiateCall = async (calleeId: string, callType: 'audio' | 'video'): Promise<string | null> => {
+export const initiateCall = async (chatId: string, calleeId: string, callType: 'audio' | 'video'): Promise<string | null> => {
     if (!db || !auth?.currentUser) {
         throw new Error("User not authenticated or database is unavailable.");
     }
@@ -377,6 +423,7 @@ export const initiateCall = async (calleeId: string, callType: 'audio' | 'video'
         const calleeAvatar = calleeDoc.exists() ? (calleeDoc.data().images?.[0] || null) : null;
         
         const newCallData = {
+            chatId,
             callerId,
             callerName,
             callerAvatar,
@@ -398,7 +445,7 @@ export const initiateCall = async (calleeId: string, callType: 'audio' | 'video'
         setTimeout(async () => {
             const currentCallDoc = await getDoc(callDocRef);
             if (currentCallDoc.exists() && currentCallDoc.data().status === 'ringing') {
-                await updateDoc(callDocRef, { status: 'unanswered' });
+                await updateCallStatus(callDocRef.id, 'unanswered');
             }
         }, 30000); // 30 seconds to answer
 
@@ -415,7 +462,30 @@ export const updateCallStatus = async (callId: string, status: Call['status']): 
     }
     try {
         const callDocRef = doc(db, "calls", callId);
-        await updateDoc(callDocRef, { status });
+        const callSnap = await getDoc(callDocRef);
+
+        if (!callSnap.exists()) {
+            throw new Error("Call not found.");
+        }
+        const callData = callSnap.data() as Call;
+
+        const updateData: Partial<Call> = { status };
+
+        if (status === 'active' && !callData.startedAt) {
+            updateData.startedAt = serverTimestamp() as Timestamp;
+        }
+
+        await updateDoc(callDocRef, updateData);
+
+        if (status === 'ended' || status === 'unanswered' || status === 'declined') {
+            let duration = 0;
+            if (status === 'ended' && callData.startedAt) {
+                 const now = Timestamp.now();
+                 duration = now.seconds - callData.startedAt.seconds;
+            }
+            await logCallEventInChat(callData.chatId, callData.type, status, duration);
+        }
+
     } catch (error) {
         console.error(`Error updating call ${callId} to ${status}:`, error);
         throw error;
