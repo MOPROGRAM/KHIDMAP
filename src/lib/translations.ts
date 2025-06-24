@@ -23,6 +23,11 @@ export type Translations = {
   email: string;
   password: string;
   name: string;
+  username: string;
+  usernameTaken: string;
+  usernameInvalid: string;
+  usernameHelpText: string;
+  usernameCantBeChanged: string;
   qualifications: string;
   phoneNumber: string;
   address: string;
@@ -360,6 +365,11 @@ export const translations: Record<'en' | 'ar', Translations> = {
     email: "Email",
     password: "Password",
     name: "Full Name",
+    username: "Username",
+    usernameTaken: "This username is already taken.",
+    usernameInvalid: "3-20 chars, lowercase, numbers, or _ only.",
+    usernameHelpText: "Unique, lowercase, numbers, and underscores.",
+    usernameCantBeChanged: "Username cannot be changed after registration.",
     qualifications: "About Me / Bio",
     phoneNumber: "Phone Number",
     address: "Address / Service Location",
@@ -675,6 +685,11 @@ export const translations: Record<'en' | 'ar', Translations> = {
     email: "البريد الإلكتروني",
     password: "كلمة المرور",
     name: "الاسم الكامل",
+    username: "اسم المستخدم",
+    usernameTaken: "اسم المستخدم هذا مأخوذ بالفعل.",
+    usernameInvalid: "3-20 حرفًا، أحرف صغيرة، أرقام، أو _ فقط.",
+    usernameHelpText: "فريد، أحرف صغيرة، أرقام، وشرطات سفلية.",
+    usernameCantBeChanged: "لا يمكن تغيير اسم المستخدم بعد التسجيل.",
     qualifications: "عني / نبذة تعريفية",
     phoneNumber: "رقم الهاتف",
     address: "العنوان / موقع الخدمة",

@@ -14,11 +14,12 @@ import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Eye, EyeOff, Loader2, MailCheck, AlertTriangle } from 'lucide-react';
 import { auth, db } from '@/lib/firebase'; 
 import { createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, User as FirebaseUser, sendEmailVerification } from 'firebase/auth';
-import { doc, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, Timestamp, writeBatch, getDoc } from 'firebase/firestore';
 import { z } from "zod";
 
 const RegisterSchema = z.object({
   name: z.string().min(1, { message: "requiredField" }),
+  username: z.string().min(3, { message: "usernameInvalid" }).max(20, { message: "usernameInvalid" }).regex(/^[a-z0-9_]+$/, { message: "usernameInvalid" }),
   email: z.string().email({ message: "invalidEmail" }),
   password: z.string().min(6, { message: "passwordTooShort" }),
   confirmPassword: z.string().min(6, { message: "passwordTooShort" }),
@@ -36,6 +37,7 @@ export default function RegisterPage() {
   const { toast } = useToast();
 
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPasswordState] = useState(''); // Renamed to avoid conflict
   const [confirmPassword, setConfirmPassword] = useState(''); 
@@ -83,7 +85,7 @@ export default function RegisterPage() {
     setErrors({});
     setShowVerificationMessage(false);
 
-    const validationResult = RegisterSchema.safeParse({ name, email, password: password, confirmPassword, role });
+    const validationResult = RegisterSchema.safeParse({ name, username: username.toLowerCase(), email, password: password, confirmPassword, role });
 
     if (!validationResult.success) {
       const fieldErrors: Record<string, string> = {};
@@ -97,6 +99,15 @@ export default function RegisterPage() {
       setIsLoading(false);
       return;
     }
+
+    // Check for username availability
+    const usernameDocRef = doc(db, 'usernames', validationResult.data.username);
+    const usernameDoc = await getDoc(usernameDocRef);
+    if (usernameDoc.exists()) {
+        setErrors(prev => ({ ...prev, username: t.usernameTaken }));
+        setIsLoading(false);
+        return;
+    }
     
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, validationResult.data.email, validationResult.data.password);
@@ -105,17 +116,18 @@ export default function RegisterPage() {
       await updateProfile(firebaseUser, { displayName: validationResult.data.name });
       
       const userDocRef = doc(db, "users", firebaseUser.uid);
+      const claimedUsernameRef = doc(db, "usernames", validationResult.data.username);
       
       const userDocData: any = {
         uid: firebaseUser.uid,
         name: validationResult.data.name,
+        username: validationResult.data.username,
         email: firebaseUser.email,
         role: validationResult.data.role,
         createdAt: Timestamp.now(), 
         emailVerified: firebaseUser.emailVerified,
       };
 
-      // Proactively initialize provider-specific fields to prevent errors later
       if (validationResult.data.role === 'provider') {
         Object.assign(userDocData, {
             phoneNumber: '',
@@ -125,8 +137,11 @@ export default function RegisterPage() {
             location: null,
         });
       }
-
-      await setDoc(userDocRef, userDocData);
+      
+      const batch = writeBatch(db);
+      batch.set(userDocRef, userDocData);
+      batch.set(claimedUsernameRef, { uid: firebaseUser.uid });
+      await batch.commit();
 
       await sendEmailVerification(firebaseUser);
       setShowVerificationMessage(true);
@@ -186,11 +201,20 @@ export default function RegisterPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">{t.name}</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required disabled={!isAuthServiceAvailable || isLoading} />
-                {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                  <Label htmlFor="name">{t.name}</Label>
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required disabled={!isAuthServiceAvailable || isLoading} />
+                  {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="username">{t.username}</Label>
+                  <Input id="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} required disabled={!isAuthServiceAvailable || isLoading} />
+                   <p className="text-xs text-muted-foreground">{t.usernameHelpText}</p>
+                  {errors.username && <p className="text-sm text-destructive">{errors.username}</p>}
+                </div>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email">{t.email}</Label>
                 <Input id="email" type="email" placeholder="m@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={!isAuthServiceAvailable || isLoading} />

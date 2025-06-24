@@ -16,7 +16,7 @@ import { auth, db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'; 
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
-import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, Video, VideoIcon } from 'lucide-react';
+import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, Video, VideoIcon, AtSign } from 'lucide-react';
 import { z } from 'zod';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Image from 'next/image';
@@ -41,6 +41,7 @@ export default function ProviderProfilePage() {
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
   
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState(''); 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [qualifications, setQualifications] = useState('');
@@ -75,6 +76,7 @@ export default function ProviderProfilePage() {
               if (docSnap.exists()) {
                 const firestoreProfile = docSnap.data() as UserProfile;
                 setName(firestoreProfile.name || user.displayName || ''); 
+                setUsername(firestoreProfile.username || '');
                 setPhoneNumber(firestoreProfile.phoneNumber || '');
                 setQualifications(firestoreProfile.qualifications || '');
                 setServiceAreasString((firestoreProfile.serviceAreas || []).join(', ')); 
@@ -384,10 +386,19 @@ export default function ProviderProfilePage() {
                 {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
               </div>
               <div className="space-y-1.5">
+                <Label htmlFor="username">{t.username}</Label>
+                <div className="relative">
+                  <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input id="username" value={username} readOnly disabled className="bg-muted/50 cursor-not-allowed pl-9" />
+                </div>
+                <p className="text-xs text-muted-foreground">{t.usernameCantBeChanged}</p>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
                 <Label htmlFor="email">{t.email}</Label>
                 <Input id="email" type="email" value={email} readOnly disabled className="bg-muted/50 cursor-not-allowed"/>
                 {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-              </div>
             </div>
 
             <div className="space-y-1.5">

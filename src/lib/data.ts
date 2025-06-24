@@ -9,6 +9,7 @@ export type UserRole = 'provider' | 'seeker' | 'admin';
 export interface UserProfile {
   uid: string;
   name: string;
+  username?: string;
   email: string;
   role: UserRole;
   phoneNumber?: string;

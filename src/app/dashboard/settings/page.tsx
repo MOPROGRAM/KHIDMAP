@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -20,7 +21,7 @@ import { AlertTriangle, Loader2, Trash2, KeyRound, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { auth, db } from '@/lib/firebase';
 import { deleteUser, sendPasswordResetEmail } from 'firebase/auth';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { doc, deleteDoc, getDoc, writeBatch } from 'firebase/firestore';
 
 export default function SettingsPage() {
   const t = useTranslation();
@@ -76,9 +77,23 @@ export default function SettingsPage() {
     }
 
     try {
-      // First, delete the user's document from Firestore.
       const userDocRef = doc(db, "users", user.uid);
-      await deleteDoc(userDocRef);
+      const userDocSnap = await getDoc(userDocRef);
+
+      const batch = writeBatch(db);
+
+      // Delete the user's document from Firestore.
+      batch.delete(userDocRef);
+
+      // If the user has a username, delete the username document.
+      if (userDocSnap.exists() && userDocSnap.data().username) {
+        const username = userDocSnap.data().username;
+        const usernameDocRef = doc(db, "usernames", username);
+        batch.delete(usernameDocRef);
+      }
+      
+      // Commit the batched writes to Firestore.
+      await batch.commit();
 
       // Then, delete the user from Firebase Authentication.
       await deleteUser(user);
