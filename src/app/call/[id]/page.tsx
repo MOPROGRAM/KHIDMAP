@@ -270,9 +270,25 @@ export default function CallPage() {
   return (
     <div className="h-screen w-full bg-gray-900 text-white flex flex-col relative">
       <audio ref={ringtoneRef} src="/sounds/ringing.mp3" loop />
-      {/* Remote View */}
-      <div className="flex-1 bg-black flex items-center justify-center overflow-hidden">
-        {isAudioCall || !remoteVideoActive ? (
+      
+      {/* Remote View Area */}
+      <div className="flex-1 bg-black flex items-center justify-center overflow-hidden relative">
+        {/* Unconditional Video Element for the remote stream */}
+        {/* It will be visually hidden for audio calls but will play the audio track */}
+        <video 
+          ref={remoteVideoRef} 
+          autoPlay 
+          playsInline 
+          className={cn(
+            "h-full w-full object-contain",
+            // Hide it if it's an audio call, or if it's a video call but the stream isn't active yet
+            isAudioCall || !remoteVideoActive ? "hidden" : "block"
+          )} 
+        />
+        
+        {/* Avatar/Placeholder UI */}
+        {/* Show this for audio calls, or for video calls before the stream is active */}
+        {(isAudioCall || !remoteVideoActive) && (
            <div className="flex flex-col items-center gap-4">
             <Avatar className="h-40 w-40 border-4 border-gray-700">
               <AvatarImage src={otherParticipant.avatar || undefined} />
@@ -291,8 +307,6 @@ export default function CallPage() {
 
             {isAudioCall && !isCallActive && <Phone className="h-8 w-8 text-gray-400 mt-2" />}
           </div>
-        ) : (
-          <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-contain" />
         )}
       </div>
 
