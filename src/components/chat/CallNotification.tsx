@@ -99,7 +99,7 @@ export default function CallNotification() {
 
   return (
     <>
-      <audio ref={ringtoneRef} src="/sounds/ringing.mp3" loop preload="auto" />
+      <audio ref={ringtoneRef} src="/sounds/ringing.mp3" loop preload="auto" playsInline />
       <AlertDialog open={!!incomingCall}>
         <AlertDialogContent>
           <AlertDialogHeader className="items-center text-center">

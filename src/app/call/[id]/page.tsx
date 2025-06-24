@@ -8,7 +8,7 @@ import { db, auth } from '@/lib/firebase';
 import { Call, updateCallStatus } from '@/lib/data';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mic, MicOff, Video, VideoOff, PhoneOff, UserCircle, Phone } from 'lucide-react';
+import { Loader2, Mic, MicOff, Video, VideoOff, PhoneOff, UserCircle, Phone, Speaker } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -38,10 +38,13 @@ export default function CallPage() {
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isRemoteVideoActive, setIsRemoteVideoActive] = useState(false);
+
+  const [isSpeakerphoneOn, setIsSpeakerphoneOn] = useState(false);
+  const [isSpeakerphoneSupported, setIsSpeakerphoneSupported] = useState(false);
   
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
-  const remoteStreamRef = useRef<MediaStream | null>(null);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -49,6 +52,13 @@ export default function CallPage() {
 
   const signalingStarted = useRef(false);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Effect to check for speakerphone support
+  useEffect(() => {
+    if (navigator.mediaDevices && typeof (remoteVideoRef.current as any)?.setSinkId !== 'undefined') {
+        setIsSpeakerphoneSupported(true);
+    }
+  }, []);
 
   // Main effect to setup and listen to the call document
   useEffect(() => {
@@ -61,16 +71,16 @@ export default function CallPage() {
     const pc = new RTCPeerConnection(servers);
     pcRef.current = pc;
 
-    const remoteStream = new MediaStream();
-    remoteStreamRef.current = remoteStream;
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = remoteStream;
-    }
-
     pc.ontrack = (event) => {
-      event.streams[0].getTracks().forEach((track) => {
-        remoteStream.addTrack(track);
-      });
+        if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = event.streams[0];
+            const videoTrack = event.streams[0].getVideoTracks()[0];
+            if (videoTrack) {
+                videoTrack.onunmute = () => setIsRemoteVideoActive(true);
+                videoTrack.onmute = () => setIsRemoteVideoActive(false);
+                setIsRemoteVideoActive(!videoTrack.muted);
+            }
+        }
     };
 
     const callDocRef = doc(db, 'calls', callId);
@@ -235,6 +245,33 @@ export default function CallPage() {
     setIsVideoOff(prev => !prev);
   }
 
+  const toggleSpeakerphone = async () => {
+    if (!isSpeakerphoneSupported || !remoteVideoRef.current) return;
+    const videoElement = remoteVideoRef.current as any;
+    try {
+        if (isSpeakerphoneOn) {
+            // Attempt to switch to default (earpiece on mobile)
+            await videoElement.setSinkId('');
+        } else {
+            // Attempt to switch to speaker
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const speaker = devices.find(d => d.kind === 'audiooutput' && d.deviceId === 'default');
+             if (speaker) {
+                 await videoElement.setSinkId(speaker.deviceId);
+             } else {
+                 // Fallback if no specific speaker found, try the first available output
+                 const anyAudioOutput = devices.find(d => d.kind === 'audiooutput');
+                 if (anyAudioOutput) await videoElement.setSinkId(anyAudioOutput.deviceId);
+             }
+        }
+        setIsSpeakerphoneOn(prev => !prev);
+        toast({ title: !isSpeakerphoneOn ? "Speaker On" : "Speaker Off" });
+    } catch (error) {
+        console.error('Error setting audio output device:', error);
+        toast({ variant: 'destructive', title: "Error", description: "Could not switch audio device." });
+    }
+  };
+
   const getOtherParticipant = () => {
     if (!call || !auth.currentUser) return { name: "User", avatar: undefined };
     return auth.currentUser.uid === call.callerId
@@ -269,36 +306,26 @@ export default function CallPage() {
   }
 
   const otherParticipant = getOtherParticipant();
-  const remoteVideoActive = remoteStreamRef.current && remoteStreamRef.current.active && remoteStreamRef.current.getVideoTracks().length > 0;
   const isAudioCall = call?.type === 'audio';
   const isCallActive = call?.status === 'active';
 
   return (
     <div className="h-screen w-full bg-gray-900 text-white flex flex-col relative">
-      <audio ref={ringtoneRef} src="/sounds/ringing.mp3" loop />
+      <audio ref={ringtoneRef} src="/sounds/ringing.mp3" loop playsInline />
       
       {/* Remote View Area */}
       <div className="flex-1 bg-black flex items-center justify-center overflow-hidden relative">
-        {/* 
-          This video element handles the remote media stream.
-          It's always in the DOM to ensure audio plays correctly even in audio-only calls.
-          Visibility is controlled by opacity, not `display: none`, to prevent playback issues.
-        */}
         <video 
           ref={remoteVideoRef} 
           autoPlay 
           playsInline 
           className={cn(
             "h-full w-full object-contain transition-opacity",
-            remoteVideoActive && !isAudioCall ? "opacity-100" : "opacity-0"
+            isRemoteVideoActive && !isAudioCall ? "opacity-100" : "opacity-0"
           )} 
         />
         
-        {/* 
-          Avatar/Placeholder UI is shown on top.
-          It's visible for audio calls, or for video calls before the remote video stream becomes active.
-        */}
-        {(isAudioCall || !remoteVideoActive) && (
+        {(isAudioCall || !isRemoteVideoActive) && (
            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
             <Avatar className="h-40 w-40 border-4 border-gray-700">
               <AvatarImage src={otherParticipant.avatar || undefined} />
@@ -334,7 +361,7 @@ export default function CallPage() {
           </Card>
       )}
       
-      {isCallActive && !isAudioCall && remoteVideoActive && (
+      {isCallActive && !isAudioCall && isRemoteVideoActive && (
         <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-lg font-mono">
             {formatDuration(callDuration)}
         </div>
@@ -342,7 +369,7 @@ export default function CallPage() {
 
       {/* Controls */}
       <div className="absolute bottom-0 left-0 right-0 h-20 bg-black/50 backdrop-blur-md flex items-center justify-center">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           <Button onClick={toggleMute} variant="outline" size="lg" className={cn("rounded-full h-14 w-14 p-0 bg-white/10 border-none hover:bg-white/20", isMuted && "bg-destructive hover:bg-destructive/90")}>
             {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
           </Button>
@@ -353,6 +380,9 @@ export default function CallPage() {
           )}
           <Button onClick={handleEndCall} variant="destructive" size="lg" className="rounded-full h-14 w-14 p-0">
             <PhoneOff className="h-6 w-6" />
+          </Button>
+          <Button onClick={toggleSpeakerphone} variant="outline" size="lg" className={cn("rounded-full h-14 w-14 p-0 bg-white/10 border-none hover:bg-white/20", isSpeakerphoneOn && "bg-primary text-primary-foreground hover:bg-primary/90")} disabled={!isSpeakerphoneSupported}>
+            <Speaker className="h-6 w-6" />
           </Button>
         </div>
       </div>
