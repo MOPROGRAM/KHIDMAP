@@ -16,11 +16,12 @@ import { auth, db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'; 
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
-import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, Video } from 'lucide-react';
+import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, Video, VideoIcon } from 'lucide-react';
 import { z } from 'zod';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 
 const ProfileFormSchema = z.object({
   name: z.string().min(1, { message: "requiredField" }),
@@ -29,6 +30,7 @@ const ProfileFormSchema = z.object({
   qualifications: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')),
   serviceAreasString: z.string().min(1, { message: "requiredField" }).optional().or(z.literal('')),
   serviceCategories: z.array(z.enum(['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HomeCleaning', 'Construction', 'Plastering', 'Other'])).min(0).optional(), 
+  videoCallsEnabled: z.boolean().optional(),
 });
 
 export default function ProviderProfilePage() {
@@ -47,6 +49,7 @@ export default function ProviderProfilePage() {
   const [location, setLocation] = useState<{ latitude: number, longitude: number } | null>(null);
   const [images, setImages] = useState<string[]>([]);
   const [videos, setVideos] = useState<string[]>([]);
+  const [videoCallsEnabled, setVideoCallsEnabled] = useState(true);
   
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -78,6 +81,7 @@ export default function ProviderProfilePage() {
                 setServiceCategories(firestoreProfile.serviceCategories || []);
                 setImages(firestoreProfile.images || []);
                 setVideos(firestoreProfile.videos || []);
+                setVideoCallsEnabled(firestoreProfile.videoCallsEnabled ?? true);
                 
                 if (firestoreProfile.location) {
                   setLocation({
@@ -284,7 +288,8 @@ export default function ProviderProfilePage() {
       phoneNumber, 
       qualifications, 
       serviceAreasString, 
-      serviceCategories 
+      serviceCategories,
+      videoCallsEnabled
     });
 
     if (!validationResult.success) {
@@ -311,6 +316,7 @@ export default function ProviderProfilePage() {
       role: 'provider',
       updatedAt: serverTimestamp(),
       location: location ? new GeoPoint(location.latitude, location.longitude) : null,
+      videoCallsEnabled: data.videoCallsEnabled,
     };
 
     try {
@@ -446,6 +452,25 @@ export default function ProviderProfilePage() {
                      <p className="text-xs text-muted-foreground mt-3">{t.locationHelpText}</p>
                 </Card>
              </div>
+
+             <div className="space-y-1.5">
+                <Label>{t.settings}</Label>
+                <Card className="p-4 bg-muted/50 border-dashed">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <Label htmlFor="video-calls-switch" className="font-medium">{t.enableVideoCalls}</Label>
+                            <p className="text-xs text-muted-foreground">{t.enableVideoCallsDescription}</p>
+                        </div>
+                        <Switch
+                            id="video-calls-switch"
+                            checked={videoCallsEnabled}
+                            onCheckedChange={setVideoCallsEnabled}
+                            disabled={!isCoreServicesAvailable || isLoading}
+                        />
+                    </div>
+                </Card>
+            </div>
+
             <Button type="submit" className="w-full text-base py-2.5" disabled={isLoading || !isCoreServicesAvailable}>
               {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-4 w-4 animate-spin" /> : <Save className="ltr:mr-2 rtl:ml-2 h-4 w-4"/>}
               {t.saveChanges}
@@ -508,7 +533,7 @@ export default function ProviderProfilePage() {
       <Card className="shadow-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Video className="h-6 w-6 text-primary" />
+            <VideoIcon className="h-6 w-6 text-primary" />
             {t.portfolioTitle} Videos
           </CardTitle>
           <CardDescription>Upload up to 2 videos (max 10MB each).</CardDescription>

@@ -8,7 +8,7 @@ import { db, auth } from '@/lib/firebase';
 import { Call, updateCallStatus } from '@/lib/data';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mic, MicOff, Video, VideoOff, PhoneOff, UserCircle } from 'lucide-react';
+import { Loader2, Mic, MicOff, Video, VideoOff, PhoneOff, UserCircle, Phone } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -54,21 +54,6 @@ export default function CallPage() {
     }
 
     pcRef.current = new RTCPeerConnection(servers);
-
-    const setupMedia = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        localStreamRef.current = stream;
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-        }
-        stream.getTracks().forEach((track) => pcRef.current?.addTrack(track, stream));
-      } catch (err) {
-        console.error('Failed to get local stream', err);
-        toast({ variant: 'destructive', title: t.mediaAccessDeniedTitle, description: t.mediaAccessDeniedDescription });
-        setError(t.mediaAccessDeniedTitle as string);
-      }
-    };
     
     remoteStreamRef.current = new MediaStream();
     pcRef.current.ontrack = (event) => {
@@ -79,14 +64,29 @@ export default function CallPage() {
             remoteVideoRef.current.srcObject = remoteStreamRef.current;
         }
     };
-    
-    setupMedia();
 
     const callDocRef = doc(db, 'calls', callId);
-    const unsubscribeCall = onSnapshot(callDocRef, (docSnap) => {
+    const unsubscribeCall = onSnapshot(callDocRef, async (docSnap) => {
       if (docSnap.exists()) {
         const callData = { id: docSnap.id, ...docSnap.data() } as Call;
         setCall(callData);
+
+        if (!localStreamRef.current) {
+            try {
+                const constraints = { audio: true, video: callData.type === 'video' };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                localStreamRef.current = stream;
+                 if (callData.type === 'video' && localVideoRef.current) {
+                    localVideoRef.current.srcObject = stream;
+                }
+                stream.getTracks().forEach((track) => pcRef.current?.addTrack(track, stream));
+            } catch (err) {
+                console.error('Failed to get local stream', err);
+                toast({ variant: 'destructive', title: t.mediaAccessDeniedTitle, description: t.mediaAccessDeniedDescription });
+                setError(t.mediaAccessDeniedTitle as string);
+                return;
+            }
+        }
 
         if (callData.status === 'ended' || callData.status === 'declined' || callData.status === 'unanswered') {
           toast({ title: t.callEnded, description: t.callHasBeenTerminated });
@@ -150,7 +150,7 @@ export default function CallPage() {
                 });
             });
 
-            if (call.offer) {
+            if (call.offer && !pcRef.current.currentRemoteDescription) {
                 await pcRef.current.setRemoteDescription(new RTCSessionDescription(call.offer));
                 const answerDescription = await pcRef.current.createAnswer();
                 await pcRef.current.setLocalDescription(answerDescription);
@@ -160,10 +160,14 @@ export default function CallPage() {
     };
 
     if ((call.status === 'active' && call.calleeId === auth.currentUser.uid) || 
-        (call.status === 'ringing' && call.callerId === auth.currentUser.uid)) {
+        (call.status === 'ringing' && call.callerId === auth.currentUser.uid && call.offer)) {
         handleSignaling();
         signalingStarted.current = true;
+    } else if(call.status === 'active' && call.callerId === auth.currentUser.uid) {
+         handleSignaling();
+         signalingStarted.current = true;
     }
+
 
   }, [call, callId]);
 
@@ -216,38 +220,43 @@ export default function CallPage() {
 
   const otherParticipant = getOtherParticipant();
   const remoteVideoActive = remoteStreamRef.current && remoteStreamRef.current.active && remoteStreamRef.current.getVideoTracks().length > 0;
+  const isAudioCall = call?.type === 'audio';
 
   return (
     <div className="h-screen w-full bg-gray-900 text-white flex flex-col relative">
-      {/* Remote Video */}
+      {/* Remote View */}
       <div className="flex-1 bg-black flex items-center justify-center overflow-hidden">
-        <video ref={remoteVideoRef} autoPlay playsInline className={cn("h-full w-full object-contain", !remoteVideoActive && "hidden")} />
-        {!remoteVideoActive && (
-          <div className="flex flex-col items-center gap-4">
+        {isAudioCall || !remoteVideoActive ? (
+           <div className="flex flex-col items-center gap-4">
             <Avatar className="h-40 w-40 border-4 border-gray-700">
               <AvatarImage src={otherParticipant.avatar || undefined} />
               <AvatarFallback className="bg-gray-800"><UserCircle className="h-24 w-24 text-gray-600" /></AvatarFallback>
             </Avatar>
             <p className="text-2xl font-semibold">{otherParticipant.name}</p>
+             {isAudioCall && <Phone className="h-8 w-8 text-gray-400" />}
             <div className="flex items-center gap-2">
               <Loader2 className="h-5 w-5 animate-spin" />
               <span className="text-lg">{call?.status === 'ringing' ? t.ringing : t.connecting}</span>
             </div>
           </div>
+        ) : (
+          <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-contain" />
         )}
       </div>
 
-      {/* Local Video */}
-      <Card className="absolute bottom-24 right-6 md:bottom-28 md:right-8 h-48 w-36 md:h-64 md:w-48 bg-black border-2 border-gray-700 shadow-2xl overflow-hidden">
-        <CardContent className="p-0 h-full">
-          <video ref={localVideoRef} className={cn("h-full w-full object-cover", isVideoOff && "hidden")} autoPlay playsInline muted />
-           {isVideoOff && (
-            <div className="h-full w-full flex items-center justify-center bg-black">
-                <UserCircle className="h-16 w-16 text-gray-600" />
-            </div>
-           )}
-        </CardContent>
-      </Card>
+      {/* Local Video Preview (only for video calls) */}
+      {!isAudioCall && (
+          <Card className="absolute bottom-24 right-6 md:bottom-28 md:right-8 h-48 w-36 md:h-64 md:w-48 bg-black border-2 border-gray-700 shadow-2xl overflow-hidden">
+            <CardContent className="p-0 h-full">
+              <video ref={localVideoRef} className={cn("h-full w-full object-cover", isVideoOff && "hidden")} autoPlay playsInline muted />
+               {isVideoOff && (
+                <div className="h-full w-full flex items-center justify-center bg-black">
+                    <UserCircle className="h-16 w-16 text-gray-600" />
+                </div>
+               )}
+            </CardContent>
+          </Card>
+      )}
 
       {/* Controls */}
       <div className="absolute bottom-0 left-0 right-0 h-20 bg-black/50 backdrop-blur-md flex items-center justify-center">
@@ -255,9 +264,11 @@ export default function CallPage() {
           <Button onClick={toggleMute} variant="outline" size="lg" className={cn("rounded-full h-14 w-14 p-0 bg-white/10 border-none hover:bg-white/20", isMuted && "bg-destructive hover:bg-destructive/90")}>
             {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
           </Button>
-          <Button onClick={toggleVideo} variant="outline" size="lg" className={cn("rounded-full h-14 w-14 p-0 bg-white/10 border-none hover:bg-white/20", isVideoOff && "bg-destructive hover:bg-destructive/90")}>
-            {isVideoOff ? <VideoOff className="h-6 w-6" /> : <Video className="h-6 w-6" />}
-          </Button>
+          {!isAudioCall && (
+            <Button onClick={toggleVideo} variant="outline" size="lg" className={cn("rounded-full h-14 w-14 p-0 bg-white/10 border-none hover:bg-white/20", isVideoOff && "bg-destructive hover:bg-destructive/90")}>
+                {isVideoOff ? <VideoOff className="h-6 w-6" /> : <Video className="h-6 w-6" />}
+            </Button>
+          )}
           <Button onClick={handleEndCall} variant="destructive" size="lg" className="rounded-full h-14 w-14 p-0">
             <PhoneOff className="h-6 w-6" />
           </Button>

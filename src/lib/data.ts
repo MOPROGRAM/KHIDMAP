@@ -21,6 +21,7 @@ export interface UserProfile {
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
   emailVerified?: boolean;
+  videoCallsEnabled?: boolean;
 }
 
 export interface Rating {
@@ -38,6 +39,7 @@ export interface Chat {
     participantIds: { [key: string]: true };
     participantNames: { [key: string]: string };
     participantAvatars: { [key: string]: string | null };
+    participantSettings: { [key: string]: { videoCallsEnabled: boolean } };
     lastMessage: string;
     lastMessageAt: Timestamp;
     lastMessageSenderId: string;
@@ -64,6 +66,7 @@ export interface Call {
   calleeName: string;
   calleeAvatar?: string | null;
   status: 'ringing' | 'active' | 'declined' | 'ended' | 'unanswered';
+  type: 'video' | 'audio';
   participantIds: { [key: string]: true };
   createdAt: Timestamp;
   // WebRTC signaling fields
@@ -234,6 +237,10 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
              [seekerId]: seekerProfile.images?.[0] || null,
              [providerId]: providerProfile.images?.[0] || null,
         },
+        participantSettings: {
+            [seekerId]: { videoCallsEnabled: seekerProfile.videoCallsEnabled ?? true },
+            [providerId]: { videoCallsEnabled: providerProfile.videoCallsEnabled ?? true },
+        },
         lastMessage: "Conversation started.",
         lastMessageAt: serverTimestamp() as Timestamp,
         lastMessageSenderId: "",
@@ -347,7 +354,7 @@ export const markChatAsRead = async (chatId: string): Promise<void> => {
 
 // --- Call Functions ---
 
-export const initiateCall = async (calleeId: string): Promise<string | null> => {
+export const initiateCall = async (calleeId: string, callType: 'audio' | 'video'): Promise<string | null> => {
     if (!db || !auth?.currentUser) {
         throw new Error("User not authenticated or database is unavailable.");
     }
@@ -376,6 +383,7 @@ export const initiateCall = async (calleeId: string): Promise<string | null> => 
             calleeName,
             calleeAvatar,
             status: 'ringing',
+            type: callType,
             participantIds: {
               [callerId]: true,
               [calleeId]: true,

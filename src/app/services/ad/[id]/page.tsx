@@ -235,12 +235,12 @@ export default function ProviderDetailsPage() {
     }
   };
   
-  const handleInitiateCall = async () => {
+  const handleInitiateCall = async (callType: 'audio' | 'video') => {
     if (!authUser || !provider || isInitiatingCall) return;
     setIsInitiatingCall(true);
     try {
       toast({ title: t.initiatingCall, description: `Calling ${provider.name}...` });
-      const callId = await initiateCall(provider.uid);
+      const callId = await initiateCall(provider.uid, callType);
       if (callId) {
         router.push(`/call/${callId}`);
       } else {
@@ -249,6 +249,7 @@ export default function ProviderDetailsPage() {
     } catch (error: any) {
       console.error("Error initiating call:", error);
       toast({ variant: "destructive", title: t.callFailed, description: error.message });
+    } finally {
       setIsInitiatingCall(false);
     }
   };
@@ -374,10 +375,16 @@ export default function ProviderDetailsPage() {
                       {isStartingChat ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : <MessageSquare className="ltr:mr-2 rtl:ml-2"/>}
                       {t.messageProvider?.replace('{providerName}', provider.name.split(' ')[0])}
                   </Button>
-                  <Button onClick={handleInitiateCall} disabled={isInitiatingCall} size="lg" className="w-full group">
-                      {isInitiatingCall ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : <VideoIcon className="ltr:mr-2 rtl:ml-2"/>}
-                      {t.videoCall}
+                  <Button onClick={() => handleInitiateCall('audio')} disabled={isInitiatingCall} size="lg" className="w-full group">
+                      {isInitiatingCall ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : <Phone className="ltr:mr-2 rtl:ml-2"/>}
+                      {t.audioCall}
                   </Button>
+                  {(provider.videoCallsEnabled ?? true) && (
+                    <Button onClick={() => handleInitiateCall('video')} disabled={isInitiatingCall} size="lg" className="w-full group">
+                        {isInitiatingCall ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : <VideoIcon className="ltr:mr-2 rtl:ml-2"/>}
+                        {t.videoCall}
+                    </Button>
+                  )}
                   </>
                 )}
                  {provider.phoneNumber && (

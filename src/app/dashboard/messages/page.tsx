@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef, FormEvent, useMemo } from 'react';
@@ -10,7 +11,7 @@ import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'fireba
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Send, MessageSquare, UserCircle, Frown, ArrowLeft, Mic, StopCircle, Trash2, Check, CheckCheck, Paperclip, File as FileIcon, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
+import { Loader2, Send, MessageSquare, UserCircle, Frown, ArrowLeft, Mic, StopCircle, Trash2, Check, CheckCheck, Paperclip, File as FileIcon, Image as ImageIcon, Video as VideoIcon, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
@@ -174,12 +175,12 @@ export default function MessagesPage() {
     }
   };
   
-  const handleInitiateCall = async () => {
+  const handleInitiateCall = async (callType: 'audio' | 'video') => {
     if (!otherParticipantId || isInitiatingCall) return;
     setIsInitiatingCall(true);
     try {
       toast({ title: t.initiatingCall, description: `Calling ${getOtherParticipant(selectedChat).name}...` });
-      const callId = await initiateCall(otherParticipantId);
+      const callId = await initiateCall(otherParticipantId, callType);
       if (callId) {
         router.push(`/call/${callId}`);
       } else {
@@ -188,6 +189,7 @@ export default function MessagesPage() {
     } catch (error: any) {
       console.error("Error initiating call:", error);
       toast({ variant: "destructive", title: t.callFailed, description: error.message });
+    } finally {
       setIsInitiatingCall(false);
     }
   };
@@ -294,19 +296,18 @@ export default function MessagesPage() {
   const selectedChat = chats.find(c => c.id === selectedChatId);
 
   const getOtherParticipant = (chat: Chat | undefined) => {
-    if (!chat || !authUser) return { id: '', name: 'Unknown User', avatar: undefined };
+    if (!chat || !authUser) return { id: '', name: 'Unknown User', avatar: undefined, videoCallsEnabled: true };
     const otherId = Object.keys(chat.participantIds).find(p => p !== authUser.uid);
     return {
       id: otherId || '',
       name: chat.participantNames?.[otherId || ''] || 'Unknown User',
-      avatar: chat.participantAvatars?.[otherId || ''] || undefined
+      avatar: chat.participantAvatars?.[otherId || ''] || undefined,
+      videoCallsEnabled: chat.participantSettings?.[otherId || '']?.videoCallsEnabled ?? true,
     };
   };
-
-  const otherParticipantId = useMemo(() => {
-      if (!selectedChat || !authUser) return null;
-      return Object.keys(selectedChat.participantIds).find(p => p !== authUser.uid);
-  }, [selectedChat, authUser]);
+  
+  const otherParticipant = useMemo(() => getOtherParticipant(selectedChat), [selectedChat, authUser]);
+  const otherParticipantId = otherParticipant.id;
 
   return (
     <div className="h-[calc(100vh-8rem)] flex border rounded-lg shadow-xl bg-card animate-fadeIn">
@@ -325,7 +326,7 @@ export default function MessagesPage() {
           ) : chats.length > 0 ? (
             <ul>
               {chats.map(chat => {
-                const otherParticipant = getOtherParticipant(chat);
+                const otherParticipantListItem = getOtherParticipant(chat);
                 const unreadCount = chat.unreadCount?.[authUser?.uid || ''] || 0;
                 return (
                   <li key={chat.id}>
@@ -337,12 +338,12 @@ export default function MessagesPage() {
                       )}
                     >
                       <Avatar className="h-12 w-12 border">
-                        <AvatarImage src={otherParticipant.avatar} alt={otherParticipant.name} />
+                        <AvatarImage src={otherParticipantListItem.avatar} alt={otherParticipantListItem.name} />
                         <AvatarFallback><UserCircle className="h-6 w-6" /></AvatarFallback>
                       </Avatar>
                       <div className="flex-1 overflow-hidden">
                         <div className="flex justify-between items-center">
-                          <h3 className="font-semibold truncate">{otherParticipant.name}</h3>
+                          <h3 className="font-semibold truncate">{otherParticipantListItem.name}</h3>
                           <span className="text-xs text-muted-foreground">{formatDate(chat.lastMessageAt)}</span>
                         </div>
                         <div className="flex justify-between items-start mt-1">
@@ -377,14 +378,20 @@ export default function MessagesPage() {
                   <ArrowLeft className="h-5 w-5" />
                </Button>
               <Avatar>
-                <AvatarImage src={getOtherParticipant(selectedChat).avatar} />
+                <AvatarImage src={otherParticipant.avatar} />
                 <AvatarFallback><UserCircle className="h-5 w-5" /></AvatarFallback>
               </Avatar>
-              <h3 className="font-semibold flex-1 truncate">{getOtherParticipant(selectedChat).name}</h3>
-              <Button onClick={handleInitiateCall} variant="ghost" size="icon" disabled={isInitiatingCall}>
-                <VideoIcon className="h-5 w-5" />
-                <span className="sr-only">{t.videoCall}</span>
+              <h3 className="font-semibold flex-1 truncate">{otherParticipant.name}</h3>
+              <Button onClick={() => handleInitiateCall('audio')} variant="ghost" size="icon" disabled={isInitiatingCall}>
+                  <Phone className="h-5 w-5" />
+                  <span className="sr-only">{t.audioCall}</span>
               </Button>
+              {otherParticipant.videoCallsEnabled && (
+                  <Button onClick={() => handleInitiateCall('video')} variant="ghost" size="icon" disabled={isInitiatingCall}>
+                    <VideoIcon className="h-5 w-5" />
+                    <span className="sr-only">{t.videoCall}</span>
+                  </Button>
+              )}
             </header>
             
             <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/20">

@@ -1,3 +1,4 @@
+
 export type Translations = {
   appName: string;
   tagline: string;
@@ -330,6 +331,8 @@ export type Translations = {
   mediaAccessDeniedTitle?: string;
   mediaAccessDeniedDescription?: string;
   cameraAccessRequired?: string;
+  enableVideoCalls: string;
+  enableVideoCallsDescription: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -645,6 +648,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     mediaAccessDeniedTitle: "Media Access Denied",
     mediaAccessDeniedDescription: "Please enable camera and microphone permissions in your browser to make calls.",
     cameraAccessRequired: "Camera access is required to display your video.",
+    enableVideoCalls: "Enable Video Calls",
+    enableVideoCallsDescription: "Allow other users to start video calls with you.",
   },
   ar: {
     appName: "خدماب",
@@ -955,5 +960,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     mediaAccessDeniedTitle: "تم رفض الوصول إلى الوسائط",
     mediaAccessDeniedDescription: "يرجى تمكين أذونات الكاميرا والميكروفون في متصفحك لإجراء المكالمات.",
     cameraAccessRequired: "الوصول إلى الكاميرا مطلوب لعرض الفيديو الخاص بك.",
+    enableVideoCalls: "تفعيل مكالمات الفيديو",
+    enableVideoCallsDescription: "السماح للمستخدمين الآخرين ببدء مكالمات فيديو معك.",
   },
 };
