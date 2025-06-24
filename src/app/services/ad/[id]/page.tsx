@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState, useCallback, FormEvent, useMemo } from 'react';
@@ -444,8 +445,8 @@ export default function ProviderDetailsPage() {
                             <DialogTrigger asChild>
                                 <div className="relative group aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer">
                                     <Image src={url} alt={`Image portfolio ${index + 1}`} layout="fill" className="object-cover transition-transform group-hover:scale-105" />
-                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Camera className="w-10 h-10 text-white" />
+                                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-70 group-hover:opacity-100 group-hover:bg-black/40 transition-all duration-300">
+                                        <Camera className="w-10 h-10 text-white transition-transform group-hover:scale-110" />
                                     </div>
                                 </div>
                             </DialogTrigger>
@@ -469,8 +470,8 @@ export default function ProviderDetailsPage() {
                              <DialogTrigger asChild>
                                 <div className="relative group aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer">
                                    <video src={url} className="w-full h-full object-cover" />
-                                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <VideoIcon className="w-10 h-10 text-white" />
+                                   <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-70 group-hover:opacity-100 group-hover:bg-black/40 transition-all duration-300">
+                                        <VideoIcon className="w-10 h-10 text-white transition-transform group-hover:scale-110" />
                                     </div>
                                 </div>
                             </DialogTrigger>
