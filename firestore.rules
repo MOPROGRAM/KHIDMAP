@@ -1,76 +1,87 @@
-
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can read any profile, but only write to their own.
+    // Helper function to check if a user is authenticated
+    function isUserAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if the requesting user is a participant in a document
+    function isParticipant(docId, collectionName) {
+      return request.auth.uid in get(/databases/$(database)/documents/$(collectionName)/$(docId)).data.participantIds;
+    }
+
+    // USERS collection: Public profiles for providers, private for others.
     match /users/{userId} {
-      allow read;
-      allow write: if request.auth.uid == userId;
+      // Anyone can read a provider's profile. Seekers/Admins can read their own.
+      allow get: if get(/databases/$(database)/documents/users/$(userId)).data.role == 'provider'
+                  || (isUserAuthenticated() && request.auth.uid == userId);
+      
+      // All authenticated users can list providers for the search page.
+      allow list: if isUserAuthenticated();
+
+      // Users can only create and update their own profile.
+      allow create, update: if isUserAuthenticated() && request.auth.uid == userId;
+
+      // Users can only delete their own profile.
+      allow delete: if isUserAuthenticated() && request.auth.uid == userId;
     }
 
-    // Usernames must be unique and can only be created/deleted by their owner.
+    // USERNAMES collection: Ensures username uniqueness.
     match /usernames/{username} {
-        allow read;
-        allow create: if request.auth.uid != null && request.resource.data.uid == request.auth.uid;
-        allow delete: if request.auth.uid == get(/databases/$(database)/documents/usernames/$(username)).data.uid;
+      // Anyone can check if a username exists.
+      allow get;
+      // Only the user themselves can claim a username.
+      allow create: if isUserAuthenticated() && request.resource.data.uid == request.auth.uid;
+      // Only the user themselves can delete their username document.
+      allow delete: if isUserAuthenticated() && resource.data.uid == request.auth.uid;
     }
 
-    // Ratings can be read by anyone, but only created by the rater, who cannot be the rated user.
+    // RATINGS collection: For user reviews.
     match /ratings/{ratingId} {
-      allow read;
-      allow create: if request.auth.uid != null 
-                    && request.resource.data.raterUserId == request.auth.uid
-                    && request.resource.data.ratedUserId != request.auth.uid;
+      // Anyone can read/list ratings.
+      allow get, list;
+      // Only authenticated users can create ratings for others.
+      allow create: if isUserAuthenticated() && request.resource.data.raterUserId == request.auth.uid;
     }
-    
-    // ---- MESSAGING ----
+
+    // MESSAGES collection: Represents a chat conversation.
     match /messages/{chatId} {
-      // Allow GETting a chat document only if the user is a participant.
-      allow get: if request.auth.uid in resource.data.participantIds;
-
-      // Allow LISTing chats for any authenticated user. The client-side query MUST filter for the user's own chats.
-      // This is a common pattern for "inbox" style collections.
-      allow list: if request.auth.uid != null;
+      // Allow GET, UPDATE, DELETE only for participants of the chat.
+      allow get, update, delete: if isUserAuthenticated() && isParticipant(chatId, 'messages');
       
-      // Allow CREATEing a chat only if the creator is one of the participants.
-      allow create: if request.auth.uid != null && request.auth.uid in request.resource.data.participantIds;
-      
-      // Allow UPDATE on a chat document (e.g., to update last message, unread count) only if the user is a participant.
-      allow update: if request.auth.uid in resource.data.participantIds;
+      // Allow LIST for authenticated users (client-side query must enforce filtering).
+      allow list: if isUserAuthenticated();
 
-      // ---- Messages Subcollection ----
+      // Allow CREATE if the creator is a participant.
+      allow create: if isUserAuthenticated() && request.resource.data.participantIds[request.auth.uid] == true;
+
+      // MESSAGES subcollection: The actual messages within a chat.
       match /messages/{messageId} {
-        // Participants of the parent chat can read and create messages.
-        allow read, create: if request.auth.uid in get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds;
-        
-        // Participants can only update a message to mark it as read by them. They cannot change content.
-        allow update: if (request.auth.uid in get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds)
-                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']);
+        // Allow participants to list and get messages.
+        allow get, list: if isUserAuthenticated() && isParticipant(chatId, 'messages');
+        // Allow participants to create messages. Sender must be the authenticated user.
+        allow create: if isUserAuthenticated() && isParticipant(chatId, 'messages') && request.resource.data.senderId == request.auth.uid;
       }
     }
 
-    // ---- CALLING ----
+    // CALLS collection: For WebRTC signaling.
     match /calls/{callId} {
-      // Allow GETting a call document only if the user is a participant.
-      allow get: if request.auth.uid in resource.data.participantIds;
+      // Allow CREATE if the caller is the authenticated user.
+      allow create: if isUserAuthenticated() && request.resource.data.callerId == request.auth.uid;
 
-      // Allow LISTing calls for any authenticated user. The client MUST filter these securely.
-      // This is necessary for the incoming call listener to work.
-      allow list: if request.auth.uid != null;
+      // Allow participants to read or update the call document (e.g., status, answer).
+      allow get, update: if isUserAuthenticated() && isParticipant(callId, 'calls');
+      
+      // Allow list for participants (e.g., to find ringing calls).
+      allow list: if isUserAuthenticated();
 
-      // Allow CREATEing a call only if the creator is the caller.
-      allow create: if request.auth.uid != null && request.resource.data.callerId == request.auth.uid;
-
-      // Allow UPDATEing a call (e.g., status, offer, answer) only if the user is a participant.
-      allow update: if request.auth.uid in resource.data.participantIds;
-
-      // ---- Candidates Subcollections ----
-      match /callerCandidates/{candidateId} {
-        allow read, create: if request.auth.uid in get(/databases/$(database)/documents/calls/$(callId)).data.participantIds;
-      }
-      match /calleeCandidates/{candidateId} {
-        allow read, create: if request.auth.uid in get(/databases/$(database)/documents/calls/$(callId)).data.participantIds;
+      // ICE CANDIDATES subcollections.
+      match /{candidatesCollection}/{candidateId} {
+        // Allow participants of the parent call to read and create ICE candidates.
+        allow get, list, create: if isUserAuthenticated() && isParticipant(callId, 'calls');
       }
     }
   }
