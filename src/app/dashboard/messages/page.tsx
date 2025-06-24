@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef, FormEvent, useMemo } from 'react';
@@ -309,7 +310,7 @@ export default function MessagesPage() {
   const otherParticipantId = otherParticipant.id;
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex border rounded-lg shadow-xl bg-card animate-fadeIn">
+    <div className="h-full flex border rounded-lg shadow-xl bg-card animate-fadeIn">
       <aside className={cn("w-full md:w-1/3 lg:w-1/4 border-r flex flex-col", selectedChatId && "hidden md:flex")}>
         <div className="p-4 border-b">
           <h2 className="text-xl font-bold font-headline">{t.conversations}</h2>
@@ -492,3 +493,5 @@ export default function MessagesPage() {
     </div>
   );
 }
+
+    
