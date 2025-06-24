@@ -61,6 +61,8 @@ export interface Call {
   callerName: string;
   callerAvatar?: string | null;
   calleeId: string;
+  calleeName: string;
+  calleeAvatar?: string | null;
   status: 'ringing' | 'active' | 'declined' | 'ended' | 'unanswered';
   createdAt: Timestamp;
   // WebRTC signaling fields
@@ -349,21 +351,29 @@ export const initiateCall = async (calleeId: string): Promise<string | null> => 
         throw new Error("User not authenticated or database is unavailable.");
     }
     const callerId = auth.currentUser.uid;
-    const callerName = auth.currentUser.displayName || "Unknown User";
 
     if (calleeId === callerId) {
         throw new Error("You cannot call yourself.");
     }
 
     try {
-        const userDoc = await getDoc(doc(db, "users", callerId));
-        const callerAvatar = userDoc.exists() ? (userDoc.data().images?.[0] || null) : null;
+        const [callerDoc, calleeDoc] = await Promise.all([
+             getDoc(doc(db, "users", callerId)),
+             getDoc(doc(db, "users", calleeId))
+        ]);
+
+        const callerName = callerDoc.exists() ? (callerDoc.data().name || "Unknown Caller") : "Unknown Caller";
+        const callerAvatar = callerDoc.exists() ? (callerDoc.data().images?.[0] || null) : null;
+        const calleeName = calleeDoc.exists() ? (calleeDoc.data().name || "User") : "User";
+        const calleeAvatar = calleeDoc.exists() ? (calleeDoc.data().images?.[0] || null) : null;
         
         const newCallData = {
             callerId,
             callerName,
             callerAvatar,
             calleeId,
+            calleeName,
+            calleeAvatar,
             status: 'ringing',
             createdAt: serverTimestamp(),
         };

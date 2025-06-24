@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, onSnapshot, collection, addDoc, updateDoc, getDocs, query, where } from 'firebase/firestore';
+import { doc, onSnapshot, collection, addDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { Call, updateCallStatus } from '@/lib/data';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -44,6 +44,8 @@ export default function CallPage() {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
+  const signalingStarted = useRef(false);
+
   useEffect(() => {
     if (!callId || !db) {
       setError(t.errorOccurred);
@@ -53,7 +55,6 @@ export default function CallPage() {
 
     pcRef.current = new RTCPeerConnection(servers);
 
-    // Get camera and microphone permissions and set up local stream
     const setupMedia = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -61,12 +62,7 @@ export default function CallPage() {
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
         }
-
-        // Push tracks from local stream to peer connection
-        stream.getTracks().forEach((track) => {
-          pcRef.current?.addTrack(track, stream);
-        });
-
+        stream.getTracks().forEach((track) => pcRef.current?.addTrack(track, stream));
       } catch (err) {
         console.error('Failed to get local stream', err);
         toast({ variant: 'destructive', title: t.mediaAccessDeniedTitle, description: t.mediaAccessDeniedDescription });
@@ -74,18 +70,18 @@ export default function CallPage() {
       }
     };
     
-    // Handle remote stream
+    remoteStreamRef.current = new MediaStream();
     pcRef.current.ontrack = (event) => {
-      remoteStreamRef.current = event.streams[0];
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = event.streams[0];
-      }
+        event.streams[0].getTracks().forEach((track) => {
+            remoteStreamRef.current?.addTrack(track);
+        });
+        if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = remoteStreamRef.current;
+        }
     };
     
-    // Start media setup
     setupMedia();
 
-    // Firestore call document listener
     const callDocRef = doc(db, 'calls', callId);
     const unsubscribeCall = onSnapshot(callDocRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -97,12 +93,9 @@ export default function CallPage() {
           router.push('/dashboard/messages');
         }
 
-        // Handle WebRTC signaling based on document changes
         if (pcRef.current && !pcRef.current.currentRemoteDescription && callData.answer) {
-            const answerDescription = new RTCSessionDescription(callData.answer);
-            pcRef.current.setRemoteDescription(answerDescription);
+            pcRef.current.setRemoteDescription(new RTCSessionDescription(callData.answer));
         }
-
       } else {
         setError(t.errorOccurred);
         toast({ variant: "destructive", title: "Error", description: "Call not found." });
@@ -111,7 +104,6 @@ export default function CallPage() {
       setLoading(false);
     });
 
-    // Cleanup logic
     return () => {
       unsubscribeCall();
       localStreamRef.current?.getTracks().forEach(track => track.stop());
@@ -120,66 +112,57 @@ export default function CallPage() {
   }, [callId, router, t, toast]);
   
 
-  // Handle Offer/Answer and ICE candidates based on role
   useEffect(() => {
-    if (!pcRef.current || !auth.currentUser || !callId) return;
+    if (!pcRef.current || !auth.currentUser || !callId || !call || signalingStarted.current) return;
 
-    const currentUserId = auth.currentUser.uid;
-    const callDocRef = doc(db, 'calls', callId);
-
-    // ICE Candidate logic
-    const callerCandidatesCollection = collection(callDocRef, 'callerCandidates');
-    const calleeCandidatesCollection = collection(callDocRef, 'calleeCandidates');
-
-    pcRef.current.onicecandidate = (event) => {
-      if (event.candidate) {
-        const candidatesCollection = currentUserId === call?.callerId ? callerCandidatesCollection : calleeCandidatesCollection;
-        addDoc(candidatesCollection, event.candidate.toJSON());
-      }
-    };
-    
     const handleSignaling = async () => {
-      if (currentUserId === call?.callerId) {
-        // Listen for ICE candidates from callee
-        onSnapshot(calleeCandidatesCollection, (snapshot) => {
-            snapshot.docChanges().forEach((change) => {
-                if (change.type === 'added') {
-                    const data = change.doc.data();
-                    pcRef.current?.addIceCandidate(new RTCIceCandidate(data));
-                }
+        const currentUserId = auth.currentUser!.uid;
+        const callDocRef = doc(db, 'calls', callId);
+        const callerCandidatesCollection = collection(callDocRef, 'callerCandidates');
+        const calleeCandidatesCollection = collection(callDocRef, 'calleeCandidates');
+
+        pcRef.current!.onicecandidate = (event) => {
+            if (event.candidate) {
+                const candidatesCollection = currentUserId === call.callerId ? callerCandidatesCollection : calleeCandidatesCollection;
+                addDoc(candidatesCollection, event.candidate.toJSON());
+            }
+        };
+
+        if (currentUserId === call.callerId) {
+            onSnapshot(calleeCandidatesCollection, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        pcRef.current?.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                    }
+                });
             });
-        });
 
-        // Create offer
-        const offerDescription = await pcRef.current?.createOffer();
-        await pcRef.current?.setLocalDescription(offerDescription);
-        await updateDoc(callDocRef, { offer: { sdp: offerDescription?.sdp, type: offerDescription?.type } });
+            const offerDescription = await pcRef.current.createOffer();
+            await pcRef.current.setLocalDescription(offerDescription);
+            await updateDoc(callDocRef, { offer: { sdp: offerDescription.sdp, type: offerDescription.type } });
 
-      } else if (currentUserId === call?.calleeId) {
-        // Listen for ICE candidates from caller
-        onSnapshot(callerCandidatesCollection, (snapshot) => {
-            snapshot.docChanges().forEach((change) => {
-                if (change.type === 'added') {
-                    const data = change.doc.data();
-                    pcRef.current?.addIceCandidate(new RTCIceCandidate(data));
-                }
+        } else if (currentUserId === call.calleeId) {
+            onSnapshot(callerCandidatesCollection, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        pcRef.current?.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                    }
+                });
             });
-        });
 
-        // Create answer
-        if (call?.offer) {
-          await pcRef.current?.setRemoteDescription(new RTCSessionDescription(call.offer));
-          const answerDescription = await pcRef.current?.createAnswer();
-          await pcRef.current?.setLocalDescription(answerDescription);
-          await updateDoc(callDocRef, { answer: { sdp: answerDescription?.sdp, type: answerDescription?.type } });
+            if (call.offer) {
+                await pcRef.current.setRemoteDescription(new RTCSessionDescription(call.offer));
+                const answerDescription = await pcRef.current.createAnswer();
+                await pcRef.current.setLocalDescription(answerDescription);
+                await updateDoc(callDocRef, { answer: { sdp: answerDescription.sdp, type: answerDescription.type } });
+            }
         }
-      }
     };
 
-    if (call?.status === 'active') { // Only start signaling when call is active
-      handleSignaling();
-    } else if (call?.status === 'ringing' && call?.callerId === currentUserId) { // For caller, start signaling immediately
-      handleSignaling();
+    if ((call.status === 'active' && call.calleeId === auth.currentUser.uid) || 
+        (call.status === 'ringing' && call.callerId === auth.currentUser.uid)) {
+        handleSignaling();
+        signalingStarted.current = true;
     }
 
   }, [call, callId]);
@@ -208,7 +191,7 @@ export default function CallPage() {
   const getOtherParticipant = () => {
     if (!call || !auth.currentUser) return { name: "User", avatar: undefined };
     return auth.currentUser.uid === call.callerId
-        ? { name: "Callee", avatar: undefined } // In a real app, you'd fetch callee's info
+        ? { name: call.calleeName, avatar: call.calleeAvatar }
         : { name: call.callerName, avatar: call.callerAvatar };
   }
 
@@ -232,13 +215,14 @@ export default function CallPage() {
   }
 
   const otherParticipant = getOtherParticipant();
+  const remoteVideoActive = remoteStreamRef.current && remoteStreamRef.current.active && remoteStreamRef.current.getVideoTracks().length > 0;
 
   return (
     <div className="h-screen w-full bg-gray-900 text-white flex flex-col relative">
       {/* Remote Video */}
       <div className="flex-1 bg-black flex items-center justify-center overflow-hidden">
-        <video ref={remoteVideoRef} autoPlay playsInline className={cn("h-full w-full object-contain", !remoteStreamRef.current && "hidden")} />
-        {!remoteStreamRef.current && (
+        <video ref={remoteVideoRef} autoPlay playsInline className={cn("h-full w-full object-contain", !remoteVideoActive && "hidden")} />
+        {!remoteVideoActive && (
           <div className="flex flex-col items-center gap-4">
             <Avatar className="h-40 w-40 border-4 border-gray-700">
               <AvatarImage src={otherParticipant.avatar || undefined} />
@@ -255,8 +239,13 @@ export default function CallPage() {
 
       {/* Local Video */}
       <Card className="absolute bottom-24 right-6 md:bottom-28 md:right-8 h-48 w-36 md:h-64 md:w-48 bg-black border-2 border-gray-700 shadow-2xl overflow-hidden">
-        <CardContent className="p-0">
+        <CardContent className="p-0 h-full">
           <video ref={localVideoRef} className={cn("h-full w-full object-cover", isVideoOff && "hidden")} autoPlay playsInline muted />
+           {isVideoOff && (
+            <div className="h-full w-full flex items-center justify-center bg-black">
+                <UserCircle className="h-16 w-16 text-gray-600" />
+            </div>
+           )}
         </CardContent>
       </Card>
 
@@ -277,4 +266,3 @@ export default function CallPage() {
     </div>
   );
 }
-
