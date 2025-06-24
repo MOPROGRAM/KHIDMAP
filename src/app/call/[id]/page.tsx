@@ -50,6 +50,7 @@ export default function CallPage() {
   const signalingStarted = useRef(false);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Main effect to setup and listen to the call document
   useEffect(() => {
     if (!callId || !db) {
       setError(t.errorOccurred);
@@ -60,14 +61,12 @@ export default function CallPage() {
     const pc = new RTCPeerConnection(servers);
     pcRef.current = pc;
 
-    // Create the remote stream instance and attach it to the video element proactively.
     const remoteStream = new MediaStream();
     remoteStreamRef.current = remoteStream;
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = remoteStream;
     }
 
-    // Define the ontrack handler to populate the already-attached stream.
     pc.ontrack = (event) => {
       event.streams[0].getTracks().forEach((track) => {
         remoteStream.addTrack(track);
@@ -101,12 +100,6 @@ export default function CallPage() {
             }
         }
         
-        if (callData.status === 'ringing') {
-            ringtoneRef.current?.play().catch(e => console.warn("Ringtone play failed:", e));
-        } else {
-            ringtoneRef.current?.pause();
-        }
-
         if (callData.status === 'ended' || callData.status === 'declined' || callData.status === 'unanswered') {
           toast({ title: t.callEnded, description: t.callHasBeenTerminated });
            setTimeout(() => router.push(`/dashboard/messages?chatId=${callData.chatId}`), 2000);
@@ -135,7 +128,7 @@ export default function CallPage() {
     };
   }, [callId, router, t, toast]);
   
-
+  // Effect for handling WebRTC signaling
   useEffect(() => {
     if (!pcRef.current || !auth.currentUser || !callId || !call || signalingStarted.current) return;
 
@@ -193,6 +186,7 @@ export default function CallPage() {
     }
   }, [call, callId]);
   
+  // Effect for handling the call timer
   useEffect(() => {
     if (call?.status === 'active') {
         if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
@@ -207,6 +201,18 @@ export default function CallPage() {
         if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
     };
   }, [call?.status]);
+
+  // Effect for handling outgoing ringtone for the caller
+  useEffect(() => {
+    const isCaller = call?.callerId === auth.currentUser?.uid;
+    if (isCaller && call?.status === 'ringing' && ringtoneRef.current) {
+        ringtoneRef.current.play().catch(e => {
+            console.warn("Ringtone play failed. This may be due to browser autoplay policies.", e);
+        });
+    } else if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+    }
+  }, [call?.status, call?.callerId]);
 
   const handleEndCall = async () => {
     if (callId) {

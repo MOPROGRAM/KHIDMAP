@@ -26,6 +26,7 @@ export default function CallNotification() {
   const [incomingCall, setIncomingCall] = useState<Call | null>(null);
   const ringtoneRef = useRef<HTMLAudioElement>(null);
 
+  // Effect to listen for incoming call documents from Firestore
   useEffect(() => {
     const currentUser = auth.currentUser;
     if (!currentUser || !db) return;
@@ -38,17 +39,11 @@ export default function CallNotification() {
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const incomingCallDoc = snapshot.docs.find(doc => doc.data().calleeId === currentUser.uid);
-
       if (incomingCallDoc) {
           const callData = { id: incomingCallDoc.id, ...incomingCallDoc.data() } as Call;
           setIncomingCall(callData);
-          ringtoneRef.current?.play().catch(e => console.warn("Ringtone play failed:", e));
       } else {
           setIncomingCall(null);
-          if (ringtoneRef.current) {
-            ringtoneRef.current.pause();
-            ringtoneRef.current.currentTime = 0;
-          }
       }
     }, (error) => {
         console.error("Error listening for incoming calls:", error);
@@ -58,16 +53,28 @@ export default function CallNotification() {
     return () => unsubscribe();
   }, [toast, t]);
 
-  const stopRingtone = () => {
-    if (ringtoneRef.current) {
+  // Effect to handle playing the ringtone sound based on the incomingCall state
+  useEffect(() => {
+    if (incomingCall && ringtoneRef.current) {
+      ringtoneRef.current.play().catch(e => {
+        console.warn("Ringtone play failed. This may be due to browser autoplay policies.", e);
+      });
+    } else if (!incomingCall && ringtoneRef.current) {
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
     }
-  };
+
+    // Cleanup to ensure sound stops if component unmounts
+    return () => {
+        if (ringtoneRef.current) {
+            ringtoneRef.current.pause();
+            ringtoneRef.current.currentTime = 0;
+        }
+    }
+  }, [incomingCall]);
 
   const handleAccept = async () => {
     if (!incomingCall) return;
-    stopRingtone();
     try {
         await updateCallStatus(incomingCall.id, 'active');
         toast({ title: t.callAccepted, description: t.connecting });
@@ -81,7 +88,6 @@ export default function CallNotification() {
 
   const handleDecline = async () => {
     if (!incomingCall) return;
-    stopRingtone();
      try {
         await updateCallStatus(incomingCall.id, 'declined');
     } catch(error) {
