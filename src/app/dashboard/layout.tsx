@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -38,6 +37,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [isCoreServicesAvailable, setIsCoreServicesAvailable] = useState(false);
 
+  const isMessagesPage = pathname.startsWith('/dashboard/messages');
 
   useEffect(() => {
     if (auth && db) {
@@ -154,7 +154,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const filteredNavItems = userRole ? navItems.filter(item => item.roles.includes(userRole)) : navItems.filter(item => item.href === '/dashboard');
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)]">
+    <div className="flex h-[calc(100vh-4rem)]">
       <aside className="w-64 border-r bg-background p-4 space-y-2 hidden md:flex flex-col sticky top-16 h-[calc(100vh-4rem)]">
         <div className="px-2 py-1">
           <Logo />
@@ -187,7 +187,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {t.logout}
         </Button>
       </aside>
-      <main className="flex-1 p-2 md:p-4 overflow-y-auto">
+      <main className={cn(
+        "flex-1 p-2 md:p-4",
+        isMessagesPage ? "flex flex-col overflow-hidden" : "overflow-y-auto"
+      )}>
         {authUser && !isEmailVerified && (
           <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-600 rounded-md shadow">
             <p className="font-medium">{t.verifyEmailPromptTitle}</p>
