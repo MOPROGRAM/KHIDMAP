@@ -313,6 +313,16 @@ export type Translations = {
   roleMissingDescription?: string;
   profileNotFoundTitle?: string;
   profileNotFoundDescription?: string;
+  
+  // Calling
+  videoCall?: string;
+  audioCall?: string;
+  incomingCall?: string;
+  isCallingYou?: string; // "{userName} is calling you..."
+  accept?: string;
+  decline?: string;
+  callFailed?: string;
+  initiatingCall?: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -511,7 +521,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     providerNotFound: "Provider not found.",
     providerIdMissing: "Provider ID is missing from the request.",
     failedLoadProviderDetails: "Failed to load provider details.",
-    firestoreIndexError: "The database is being updated to support this query. Please check the browser console for a link to create the required index automatically.",
+    firestoreIndexError: "The database is being updated to support this query. Please try again in a few minutes.",
     permissionDeniedError: "Access Denied. You do not have permission to view this information. This may be due to a misconfiguration of database security rules.",
     of: "of",
     viewProfile: "View Profile",
@@ -612,6 +622,14 @@ export const translations: Record<'en' | 'ar', Translations> = {
     roleMissingDescription: "Your user profile is incomplete. Please contact support or try registering again.",
     profileNotFoundTitle: "Profile Not Found",
     profileNotFoundDescription: "Your user profile could not be found. Logging you out for security.",
+    videoCall: "Video Call",
+    audioCall: "Audio Call",
+    incomingCall: "Incoming Call",
+    isCallingYou: "is calling you...",
+    accept: "Accept",
+    decline: "Decline",
+    callFailed: "Call Failed",
+    initiatingCall: "Initiating Call...",
   },
   ar: {
     appName: "خدماب",
@@ -805,7 +823,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     providerNotFound: "لم يتم العثور على مقدم الخدمة.",
     providerIdMissing: "معرف مقدم الخدمة مفقود من الطلب.",
     failedLoadProviderDetails: "فشل تحميل تفاصيل مقدم الخدمة.",
-    firestoreIndexError: "قاعدة البيانات قيد التحديث لدعم هذا الاستعلام. يرجى مراجعة وحدة تحكم المتصفح للحصول على رابط لإنشاء الفهرس المطلوب تلقائيًا.",
+    firestoreIndexError: "قاعدة البيانات قيد التحديث لدعم هذا الاستعلام. يرجى المحاولة مرة أخرى خلال بضع دقائق.",
     permissionDeniedError: "تم رفض الوصول. ليس لديك إذن لعرض هذه المعلومات. قد يكون هذا بسبب خطأ في تكوين قواعد أمان قاعدة البيانات.",
     of: "من",
     viewProfile: "عرض الملف الشخصي",
@@ -906,7 +924,13 @@ export const translations: Record<'en' | 'ar', Translations> = {
     roleMissingDescription: "ملفك الشخصي غير مكتمل. يرجى الاتصال بالدعم أو محاولة التسجيل مرة أخرى.",
     profileNotFoundTitle: "لم يتم العثور على الملف الشخصي",
     profileNotFoundDescription: "لم يتم العثور على ملفك الشخصي. جاري تسجيل خروجك للأمان.",
+    videoCall: "مكالمة فيديو",
+    audioCall: "مكالمة صوتية",
+    incomingCall: "مكالمة واردة",
+    isCallingYou: "يتصل بك...",
+    accept: "قبول",
+    decline: "رفض",
+    callFailed: "فشل الاتصال",
+    initiatingCall: "جاري بدء المكالمة...",
   },
 };
-
-    

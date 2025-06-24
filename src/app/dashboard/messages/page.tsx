@@ -6,7 +6,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useTranslation } from '@/hooks/useTranslation';
 import { auth, db, storage } from '@/lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { Chat, Message, sendMessage, markChatAsRead } from '@/lib/data';
+import { Chat, Message, sendMessage, markChatAsRead, initiateCall } from '@/lib/data';
 import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,7 @@ export default function MessagesPage() {
   const [isLoadingChats, setIsLoadingChats] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isInitiatingCall, setIsInitiatingCall] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [isRecording, setIsRecording] = useState(false);
@@ -100,6 +101,8 @@ export default function MessagesPage() {
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       let convos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
+      
+      // Sort client-side to avoid needing a composite index
       convos.sort((a, b) => (b.lastMessageAt?.toMillis() || 0) - (a.lastMessageAt?.toMillis() || 0));
       
       setChats(convos);
@@ -112,17 +115,12 @@ export default function MessagesPage() {
       }
     }, (err) => {
       console.error("Error fetching chats:", err);
-      let errorMessage = t.errorOccurred;
-      if (err.message.includes("index")) {
-        errorMessage = t.firestoreIndexError || "A database index is required for chat. Please check the browser console for a link to create it automatically.";
-      }
-      toast({ variant: "destructive", title: t.errorOccurred, description: errorMessage, duration: 20000 });
-      setError(errorMessage);
+      setError(t.errorOccurred);
       setIsLoadingChats(false);
     });
 
     return () => unsubscribe();
-  }, [authUser, t, toast, searchParams]);
+  }, [authUser, t, searchParams]);
 
   useEffect(() => {
     if (!selectedChatId || !db) {
@@ -133,6 +131,7 @@ export default function MessagesPage() {
     setIsLoadingMessages(true);
     const messagesRef = collection(db, 'messages', selectedChatId, 'messages');
     
+    // Sort client-side to avoid needing a composite index
     const q = query(messagesRef, orderBy('createdAt'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -143,9 +142,6 @@ export default function MessagesPage() {
     }, (err) => {
       console.error(`Error fetching messages for ${selectedChatId}:`, err);
       let errorMessage = "Could not load messages.";
-      if (err.message.includes("index")) {
-        errorMessage = t.firestoreIndexError || "DATABASE SETUP NEEDED: A database index is required for chat to work. Please check the browser's developer console for an error message containing a link to create the index automatically in Firebase.";
-      }
       toast({ variant: "destructive", title: t.errorOccurred, description: errorMessage, duration: 20000 });
       setIsLoadingMessages(false);
     });
@@ -176,6 +172,22 @@ export default function MessagesPage() {
       toast({ variant: "destructive", title: t.errorOccurred, description: err.message });
     } finally {
       setIsSending(false);
+    }
+  };
+  
+  const handleInitiateCall = async () => {
+    if (!otherParticipantId || isInitiatingCall) return;
+    setIsInitiatingCall(true);
+    try {
+      toast({ title: t.initiatingCall, description: `Calling ${getOtherParticipant(selectedChat).name}...` });
+      await initiateCall(otherParticipantId);
+      // The CallNotification component will handle the rest of the UI for the callee.
+      // We could add an "outgoing call" modal for the caller here in the future.
+    } catch (error: any) {
+      console.error("Error initiating call:", error);
+      toast({ variant: "destructive", title: t.callFailed, description: error.message });
+    } finally {
+      setIsInitiatingCall(false);
     }
   };
 
@@ -248,7 +260,7 @@ export default function MessagesPage() {
 
     const MAX_SIZE = 15 * 1024 * 1024; // 15MB
     if (file.size > MAX_SIZE) {
-        toast({ variant: "destructive", title: t.fileTooLargeTitle, description: t.fileTooLargeDescription.replace('{size}', '15MB') });
+        toast({ variant: "destructive", title: t.fileTooLargeTitle, description: t.fileTooLargeDescription?.replace('{size}', '15MB') });
         return;
     }
 
@@ -280,8 +292,8 @@ export default function MessagesPage() {
 
   const selectedChat = chats.find(c => c.id === selectedChatId);
 
-  const getOtherParticipant = (chat: Chat) => {
-    if (!authUser) return { id: '', name: 'Unknown User', avatar: undefined };
+  const getOtherParticipant = (chat: Chat | undefined) => {
+    if (!chat || !authUser) return { id: '', name: 'Unknown User', avatar: undefined };
     const otherId = Object.keys(chat.participantIds).find(p => p !== authUser.uid);
     return {
       id: otherId || '',
@@ -367,7 +379,11 @@ export default function MessagesPage() {
                 <AvatarImage src={getOtherParticipant(selectedChat).avatar} />
                 <AvatarFallback><UserCircle className="h-5 w-5" /></AvatarFallback>
               </Avatar>
-              <h3 className="font-semibold">{getOtherParticipant(selectedChat).name}</h3>
+              <h3 className="font-semibold flex-1 truncate">{getOtherParticipant(selectedChat).name}</h3>
+              <Button onClick={handleInitiateCall} variant="ghost" size="icon" disabled={isInitiatingCall}>
+                <VideoIcon className="h-5 w-5" />
+                <span className="sr-only">{t.videoCall}</span>
+              </Button>
             </header>
             
             <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/20">
@@ -383,15 +399,15 @@ export default function MessagesPage() {
                           {msg.type === 'audio' && <AudioPlayer src={msg.content} />}
                           {msg.type === 'image' && (
                             <Dialog>
-                                <DialogTrigger asChild><Image src={msg.content} alt={t.image} width={250} height={250} className="rounded-md cursor-pointer object-cover aspect-square" /></DialogTrigger>
-                                <DialogContent className="max-w-4xl p-0 bg-transparent border-0"><Image src={msg.content} alt={t.image} width={1024} height={1024} className="rounded-lg object-contain max-h-[90vh] w-full" /></DialogContent>
+                                <DialogTrigger asChild><Image src={msg.content} alt={t.image || 'Image'} width={250} height={250} className="rounded-md cursor-pointer object-cover aspect-square" /></DialogTrigger>
+                                <DialogContent className="max-w-4xl p-0 bg-transparent border-0"><Image src={msg.content} alt={t.image || 'Image'} width={1024} height={1024} className="rounded-lg object-contain max-h-[90vh] w-full" /></DialogContent>
                             </Dialog>
                           )}
                           {msg.type === 'video' && <video src={msg.content} controls className="rounded-md w-full max-w-[250px]" />}
                         
                         <div className={cn("text-xs mt-1.5 flex justify-end items-center gap-1", msg.senderId === authUser?.uid ? "text-primary-foreground/70" : "text-muted-foreground")}>
                            {formatDate(msg.createdAt)}
-                           {msg.senderId === authUser?.uid && (isReadByOther ? <CheckCheck className="h-4 w-4 text-accent" /> : <Check className="h-4 w-4" />)}
+                           {msg.senderId === authUser?.uid && (isReadByOther ? <CheckCheck className="h-4 w-4 text-blue-400" /> : <Check className="h-4 w-4" />)}
                         </div>
                       </div>
                     </div>
@@ -448,5 +464,3 @@ export default function MessagesPage() {
     </div>
   );
 }
-
-    

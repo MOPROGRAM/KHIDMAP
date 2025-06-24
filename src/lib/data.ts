@@ -55,6 +55,17 @@ export interface Message {
     readBy: { [key:string]: boolean };
 }
 
+export interface Call {
+  id: string;
+  callerId: string;
+  callerName: string;
+  callerAvatar?: string | null;
+  calleeId: string;
+  status: 'ringing' | 'active' | 'declined' | 'ended' | 'unanswered';
+  createdAt: Timestamp;
+  // We will add offer, answer, and ICE candidates here later
+}
+
 
 // --- UserProfile Firestore Functions ---
 export const getUserProfileById = async (uid: string): Promise<UserProfile | null> => {
@@ -158,14 +169,12 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
             ...docSnap.data(),
         } as Rating));
 
+        // Sort client-side to avoid needing a composite index
         ratings.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
 
         return ratings;
     } catch (error: any) {
         console.error(`Error fetching ratings for user ${userId}. Code: ${error.code}. Message: ${error.message}`);
-        if (String(error.message).includes("index")) {
-             throw new Error("The database is being updated. Please try again in a few minutes.");
-        }
         throw error;
     }
 };
@@ -226,7 +235,7 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
         createdAt: serverTimestamp() as Timestamp,
         unreadCount: {
             [seekerId]: 0,
-            [providerId]: 0,
+            [providerId]: 1, // Start with 1 unread for the provider
         },
     };
 
@@ -331,4 +340,58 @@ export const markChatAsRead = async (chatId: string): Promise<void> => {
     }
 };
 
-    
+// --- Call Functions ---
+
+export const initiateCall = async (calleeId: string): Promise<string | null> => {
+    if (!db || !auth?.currentUser) {
+        throw new Error("User not authenticated or database is unavailable.");
+    }
+    const callerId = auth.currentUser.uid;
+    const callerName = auth.currentUser.displayName || "Unknown User";
+
+    if (calleeId === callerId) {
+        throw new Error("You cannot call yourself.");
+    }
+
+    try {
+        const userDoc = await getDoc(doc(db, "users", callerId));
+        const callerAvatar = userDoc.exists() ? (userDoc.data().images?.[0] || null) : null;
+        
+        const newCallData = {
+            callerId,
+            callerName,
+            callerAvatar,
+            calleeId,
+            status: 'ringing',
+            createdAt: serverTimestamp(),
+        };
+
+        const callDocRef = await addDoc(collection(db, "calls"), newCallData);
+        
+        // Add a timeout to automatically set the call to 'unanswered' if not picked up
+        setTimeout(async () => {
+            const currentCallDoc = await getDoc(callDocRef);
+            if (currentCallDoc.exists() && currentCallDoc.data().status === 'ringing') {
+                await updateDoc(callDocRef, { status: 'unanswered' });
+            }
+        }, 30000); // 30 seconds to answer
+
+        return callDocRef.id;
+    } catch (error) {
+        console.error("Error initiating call:", error);
+        throw error;
+    }
+}
+
+export const updateCallStatus = async (callId: string, status: Call['status']): Promise<void> => {
+     if (!db || !auth?.currentUser) {
+        throw new Error("User not authenticated or database is unavailable.");
+    }
+    try {
+        const callDocRef = doc(db, "calls", callId);
+        await updateDoc(callDocRef, { status });
+    } catch (error) {
+        console.error(`Error updating call ${callId} to ${status}:`, error);
+        throw error;
+    }
+}

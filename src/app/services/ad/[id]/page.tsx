@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useCallback, FormEvent, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
-import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, Rating, startOrGetChat } from '@/lib/data';
+import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, startOrGetChat, initiateCall } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -127,6 +127,8 @@ export default function ProviderDetailsPage() {
   const [ratingInput, setRatingInput] = useState(0);
   const [commentInput, setCommentInput] = useState('');
   const [isStartingChat, setIsStartingChat] = useState(false);
+  const [isInitiatingCall, setIsInitiatingCall] = useState(false);
+
 
   const fetchProviderData = useCallback(async () => {
      if (!db) {
@@ -152,6 +154,8 @@ export default function ProviderDetailsPage() {
         
         const foundRatings = await getRatingsForUser(providerId);
         if (foundRatings) {
+            // Sort client-side to avoid needing a composite index
+            foundRatings.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
             setRatings(foundRatings);
             if (foundRatings.length > 0) {
                 const totalRating = foundRatings.reduce((acc, r) => acc + (r.rating || 0), 0);
@@ -226,6 +230,22 @@ export default function ProviderDetailsPage() {
         toast({ variant: "destructive", title: t.startChatError, description: error.message });
     } finally {
         setIsStartingChat(false);
+    }
+  };
+  
+  const handleInitiateCall = async () => {
+    if (!authUser || !provider || isInitiatingCall) return;
+    setIsInitiatingCall(true);
+    try {
+      toast({ title: t.initiatingCall, description: `Calling ${provider.name}...` });
+      await initiateCall(provider.uid);
+      // The CallNotification component will handle the rest of the UI for the callee.
+      // We could add an "outgoing call" modal for the caller here in the future.
+    } catch (error: any) {
+      console.error("Error initiating call:", error);
+      toast({ variant: "destructive", title: t.callFailed, description: error.message });
+    } finally {
+      setIsInitiatingCall(false);
     }
   };
 
@@ -343,12 +363,18 @@ export default function ProviderDetailsPage() {
         <Separator/>
 
         <CardContent className="p-4 md:p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 my-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 my-4">
                 {authUser && userRole === 'seeker' && authUser.uid !== providerId && (
+                  <>
                   <Button onClick={handleStartChat} disabled={isStartingChat} size="lg" className="w-full group">
                       {isStartingChat ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : <MessageSquare className="ltr:mr-2 rtl:ml-2"/>}
                       {t.messageProvider?.replace('{providerName}', provider.name.split(' ')[0])}
                   </Button>
+                  <Button onClick={handleInitiateCall} disabled={isInitiatingCall} size="lg" className="w-full group">
+                      {isInitiatingCall ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : <VideoIcon className="ltr:mr-2 rtl:ml-2"/>}
+                      {t.videoCall}
+                  </Button>
+                  </>
                 )}
                  {provider.phoneNumber && (
                     <Button asChild size="lg" className="w-full group">
@@ -373,7 +399,7 @@ export default function ProviderDetailsPage() {
               <div className="md:col-span-2 space-y-8">
                   {provider.qualifications && (
                     <div>
-                      <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-3"><Sparkles/> {t.aboutProvider.replace('{name}', provider.name || 'الماهر')}</h2>
+                      <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-3"><Sparkles/> {t.aboutProvider?.replace('{name}', provider.name || 'الماهر')}</h2>
                       <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{provider.qualifications}</p>
                     </div>
                   )}

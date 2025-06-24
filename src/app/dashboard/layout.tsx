@@ -15,6 +15,7 @@ import { onAuthStateChanged, signOut, User as FirebaseUser, sendEmailVerificatio
 import { doc, getDoc } from 'firebase/firestore';
 import { useToast } from "@/hooks/use-toast";
 import { ADMIN_EMAIL } from '@/lib/config';
+import CallNotification from '@/components/chat/CallNotification';
 
 type UserRole = 'provider' | 'seeker' | 'admin';
 
@@ -207,6 +208,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
         {children}
       </main>
+      {authUser && <CallNotification />}
     </div>
   );
 }
