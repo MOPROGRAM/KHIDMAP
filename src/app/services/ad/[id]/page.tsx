@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState, useCallback, FormEvent, useMemo } from 'react';
@@ -238,13 +237,15 @@ export default function ProviderDetailsPage() {
     setIsInitiatingCall(true);
     try {
       toast({ title: t.initiatingCall, description: `Calling ${provider.name}...` });
-      await initiateCall(provider.uid);
-      // The CallNotification component will handle the rest of the UI for the callee.
-      // We could add an "outgoing call" modal for the caller here in the future.
+      const callId = await initiateCall(provider.uid);
+      if (callId) {
+        router.push(`/call/${callId}`);
+      } else {
+        throw new Error("Failed to get call ID");
+      }
     } catch (error: any) {
       console.error("Error initiating call:", error);
       toast({ variant: "destructive", title: t.callFailed, description: error.message });
-    } finally {
       setIsInitiatingCall(false);
     }
   };

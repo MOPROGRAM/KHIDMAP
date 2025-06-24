@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef, FormEvent, useMemo } from 'react';
@@ -180,13 +179,15 @@ export default function MessagesPage() {
     setIsInitiatingCall(true);
     try {
       toast({ title: t.initiatingCall, description: `Calling ${getOtherParticipant(selectedChat).name}...` });
-      await initiateCall(otherParticipantId);
-      // The CallNotification component will handle the rest of the UI for the callee.
-      // We could add an "outgoing call" modal for the caller here in the future.
+      const callId = await initiateCall(otherParticipantId);
+      if (callId) {
+        router.push(`/call/${callId}`);
+      } else {
+        throw new Error("Failed to get call ID");
+      }
     } catch (error: any) {
       console.error("Error initiating call:", error);
       toast({ variant: "destructive", title: t.callFailed, description: error.message });
-    } finally {
       setIsInitiatingCall(false);
     }
   };

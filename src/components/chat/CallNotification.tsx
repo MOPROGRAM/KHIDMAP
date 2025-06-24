@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -17,10 +16,12 @@ import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff, UserCircle } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 export default function CallNotification() {
   const t = useTranslation();
   const { toast } = useToast();
+  const router = useRouter();
   const [incomingCall, setIncomingCall] = useState<Call | null>(null);
 
   useEffect(() => {
@@ -52,9 +53,8 @@ export default function CallNotification() {
     if (!incomingCall) return;
     try {
         await updateCallStatus(incomingCall.id, 'active');
-        // Here you would navigate to the call screen. We'll add this later.
-        toast({ title: "Call Accepted", description: "Connecting..." });
-        setIncomingCall(null);
+        toast({ title: t.callAccepted, description: t.connecting });
+        router.push(`/call/${incomingCall.id}`);
     } catch(error) {
         toast({ variant: "destructive", title: "Error", description: "Failed to accept call." });
     }

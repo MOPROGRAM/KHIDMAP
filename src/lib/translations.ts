@@ -1,4 +1,3 @@
-
 export type Translations = {
   appName: string;
   tagline: string;
@@ -323,6 +322,14 @@ export type Translations = {
   decline?: string;
   callFailed?: string;
   initiatingCall?: string;
+  callAccepted?: string;
+  callEnded?: string;
+  callHasBeenTerminated?: string;
+  connecting?: string;
+  ringing?: string;
+  mediaAccessDeniedTitle?: string;
+  mediaAccessDeniedDescription?: string;
+  cameraAccessRequired?: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -630,6 +637,14 @@ export const translations: Record<'en' | 'ar', Translations> = {
     decline: "Decline",
     callFailed: "Call Failed",
     initiatingCall: "Initiating Call...",
+    callAccepted: "Call Accepted",
+    callEnded: "Call Ended",
+    callHasBeenTerminated: "The call has been terminated.",
+    connecting: "Connecting...",
+    ringing: "Ringing...",
+    mediaAccessDeniedTitle: "Media Access Denied",
+    mediaAccessDeniedDescription: "Please enable camera and microphone permissions in your browser to make calls.",
+    cameraAccessRequired: "Camera access is required to display your video.",
   },
   ar: {
     appName: "خدماب",
@@ -932,5 +947,13 @@ export const translations: Record<'en' | 'ar', Translations> = {
     decline: "رفض",
     callFailed: "فشل الاتصال",
     initiatingCall: "جاري بدء المكالمة...",
+    callAccepted: "تم قبول المكالمة",
+    callEnded: "انتهت المكالمة",
+    callHasBeenTerminated: "تم إنهاء المكالمة.",
+    connecting: "جاري الاتصال...",
+    ringing: "جاري الرنين...",
+    mediaAccessDeniedTitle: "تم رفض الوصول إلى الوسائط",
+    mediaAccessDeniedDescription: "يرجى تمكين أذونات الكاميرا والميكروفون في متصفحك لإجراء المكالمات.",
+    cameraAccessRequired: "الوصول إلى الكاميرا مطلوب لعرض الفيديو الخاص بك.",
   },
 };
