@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef, FormEvent, useMemo } from 'react';
@@ -457,10 +456,10 @@ export default function MessagesPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        <footer className="p-3 border-t bg-background shrink-0">
-          {selectedChat && (
+        <footer className="p-3 border-t bg-background shrink-0 h-16 flex items-center">
+          {selectedChat ? (
             isRecording ? (
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 w-full">
                     <Button variant="ghost" size="icon" onClick={handleCancelRecording} className="text-destructive"><Trash2 className="h-5 w-5" /></Button>
                     <div className="flex items-center gap-2 text-sm text-destructive font-mono">
                         <div className="w-3 h-3 rounded-full bg-destructive animate-pulse"></div>
@@ -469,7 +468,7 @@ export default function MessagesPage() {
                     <Button size="icon" onClick={handleStopRecording} className="bg-destructive hover:bg-destructive/90"><StopCircle className="h-5 w-5" /></Button>
                 </div>
             ) : (
-                <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2 w-full">
                     <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder={t.typeYourMessage} autoComplete="off" disabled={isSending} />
                     <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,video/*" />
                     <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isSending}><Paperclip className="h-4 w-4" /></Button>
@@ -482,9 +481,8 @@ export default function MessagesPage() {
                     )}
                 </form>
             )
-          )}
-          {!selectedChat && (
-            <div className="hidden md:flex items-center gap-2 w-full animate-pulse h-[40px]">
+          ) : (
+             <div className="hidden md:flex items-center gap-2 w-full animate-pulse">
                 <div className="h-10 rounded-md bg-muted flex-1" />
                 <div className="h-10 w-10 rounded-full bg-muted" />
             </div>
