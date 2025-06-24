@@ -279,23 +279,27 @@ export default function CallPage() {
       
       {/* Remote View Area */}
       <div className="flex-1 bg-black flex items-center justify-center overflow-hidden relative">
-        {/* Unconditional Video Element for the remote stream */}
-        {/* It will be visually hidden for audio calls but will play the audio track */}
+        {/* 
+          This video element handles the remote media stream.
+          It's always in the DOM to ensure audio plays correctly even in audio-only calls.
+          Visibility is controlled by opacity, not `display: none`, to prevent playback issues.
+        */}
         <video 
           ref={remoteVideoRef} 
           autoPlay 
           playsInline 
           className={cn(
-            "h-full w-full object-contain",
-            // Hide it if it's an audio call, or if it's a video call but the stream isn't active yet
-            isAudioCall || !remoteVideoActive ? "hidden" : "block"
+            "h-full w-full object-contain transition-opacity",
+            remoteVideoActive && !isAudioCall ? "opacity-100" : "opacity-0"
           )} 
         />
         
-        {/* Avatar/Placeholder UI */}
-        {/* Show this for audio calls, or for video calls before the stream is active */}
+        {/* 
+          Avatar/Placeholder UI is shown on top.
+          It's visible for audio calls, or for video calls before the remote video stream becomes active.
+        */}
         {(isAudioCall || !remoteVideoActive) && (
-           <div className="flex flex-col items-center gap-4">
+           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
             <Avatar className="h-40 w-40 border-4 border-gray-700">
               <AvatarImage src={otherParticipant.avatar || undefined} />
               <AvatarFallback className="bg-gray-800"><UserCircle className="h-24 w-24 text-gray-600" /></AvatarFallback>
