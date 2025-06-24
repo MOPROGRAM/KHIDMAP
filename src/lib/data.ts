@@ -63,7 +63,9 @@ export interface Call {
   calleeId: string;
   status: 'ringing' | 'active' | 'declined' | 'ended' | 'unanswered';
   createdAt: Timestamp;
-  // We will add offer, answer, and ICE candidates here later
+  // WebRTC signaling fields
+  offer?: { sdp: string; type: 'offer' };
+  answer?: { sdp: string; type: 'answer' };
 }
 
 
