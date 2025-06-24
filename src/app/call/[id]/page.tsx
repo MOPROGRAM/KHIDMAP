@@ -57,16 +57,21 @@ export default function CallPage() {
       return;
     }
 
-    pcRef.current = new RTCPeerConnection(servers);
-    
-    remoteStreamRef.current = new MediaStream();
-    pcRef.current.ontrack = (event) => {
-        event.streams[0].getTracks().forEach((track) => {
-            remoteStreamRef.current?.addTrack(track);
-        });
-        if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = remoteStreamRef.current;
-        }
+    const pc = new RTCPeerConnection(servers);
+    pcRef.current = pc;
+
+    // Create the remote stream instance and attach it to the video element proactively.
+    const remoteStream = new MediaStream();
+    remoteStreamRef.current = remoteStream;
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+
+    // Define the ontrack handler to populate the already-attached stream.
+    pc.ontrack = (event) => {
+      event.streams[0].getTracks().forEach((track) => {
+        remoteStream.addTrack(track);
+      });
     };
 
     const callDocRef = doc(db, 'calls', callId);
@@ -80,10 +85,14 @@ export default function CallPage() {
                 const constraints = { audio: true, video: callData.type === 'video' };
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 localStreamRef.current = stream;
+
+                stream.getTracks().forEach((track) => {
+                    pcRef.current?.addTrack(track, stream);
+                });
+
                  if (callData.type === 'video' && localVideoRef.current) {
                     localVideoRef.current.srcObject = stream;
                 }
-                stream.getTracks().forEach((track) => pcRef.current?.addTrack(track, stream));
             } catch (err) {
                 console.error('Failed to get local stream', err);
                 toast({ variant: 'destructive', title: t.mediaAccessDeniedTitle, description: t.mediaAccessDeniedDescription });
