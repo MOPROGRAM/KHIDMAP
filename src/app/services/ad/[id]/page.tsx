@@ -4,11 +4,11 @@
 import React, { useEffect, useState, useCallback, FormEvent, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
-import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, startOrGetChat, initiateCall } from '@/lib/data';
+import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, startOrGetChat } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  ArrowLeft, MapPin, Phone, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, SprayCan,
+  ArrowLeft, MapPin, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, SprayCan,
   GripVertical, HardHat, Layers, Star, Wrench, Zap, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall, Camera, Video as VideoIcon, MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
@@ -128,7 +128,6 @@ export default function ProviderDetailsPage() {
   const [ratingInput, setRatingInput] = useState(0);
   const [commentInput, setCommentInput] = useState('');
   const [isStartingChat, setIsStartingChat] = useState(false);
-  const [isInitiatingCall, setIsInitiatingCall] = useState(false);
 
 
   const fetchProviderData = useCallback(async () => {
@@ -234,26 +233,6 @@ export default function ProviderDetailsPage() {
         setIsStartingChat(false);
     }
   };
-  
-  const handleInitiateCall = async (callType: 'audio' | 'video') => {
-    if (!authUser || !provider || isInitiatingCall) return;
-    setIsInitiatingCall(true);
-    try {
-      toast({ title: t.initiatingCall, description: `Calling ${provider.name}...` });
-      const callId = await initiateCall(provider.uid, callType);
-      if (callId) {
-        router.push(`/call/${callId}`);
-      } else {
-        throw new Error("Failed to get call ID");
-      }
-    } catch (error: any) {
-      console.error("Error initiating call:", error);
-      toast({ variant: "destructive", title: t.callFailed, description: error.message });
-    } finally {
-      setIsInitiatingCall(false);
-    }
-  };
-
   
   const formatDate = (dateValue: Timestamp | { seconds: number; nanoseconds: number; } | undefined): string => {
     if (!dateValue) return 'N/A';
@@ -370,22 +349,10 @@ export default function ProviderDetailsPage() {
         <CardContent className="p-4 md:p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 my-4">
                 {authUser && userRole === 'seeker' && authUser.uid !== providerId && (
-                  <>
                   <Button onClick={handleStartChat} disabled={isStartingChat} size="lg" className="w-full group">
                       {isStartingChat ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : <MessageSquare className="ltr:mr-2 rtl:ml-2"/>}
                       {t.messageProvider?.replace('{providerName}', provider.name.split(' ')[0])}
                   </Button>
-                  <Button onClick={() => handleInitiateCall('audio')} disabled={isInitiatingCall} size="lg" className="w-full group">
-                      {isInitiatingCall ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : <Phone className="ltr:mr-2 rtl:ml-2"/>}
-                      {t.audioCall}
-                  </Button>
-                  {(provider.videoCallsEnabled ?? true) && (
-                    <Button onClick={() => handleInitiateCall('video')} disabled={isInitiatingCall} size="lg" className="w-full group">
-                        {isInitiatingCall ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : <VideoIcon className="ltr:mr-2 rtl:ml-2"/>}
-                        {t.videoCall}
-                    </Button>
-                  )}
-                  </>
                 )}
                  {provider.phoneNumber && (
                     <Button asChild size="lg" className="w-full group">
