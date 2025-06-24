@@ -1,25 +1,19 @@
-
 rules_version = '2';
-
 service firebase.storage {
   match /b/{bucket}/o {
-    // Files for provider portfolios
-    match /serviceAds/{userId}/{allPaths=**} {
+    // Allow read access to all files for anyone
+    match /{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Files for chat messages
+    // Allow writes (uploads) for authenticated users to their own portfolio
+    match /serviceAds/{userId}/{folder}/{fileName} {
+        allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow writes for chat files only if the user is a participant of the chat
     match /chats/{chatId}/{fileName} {
-      // Allow reading a chat file if the user is a participant in the corresponding chat document in Firestore.
-      allow read: if request.auth != null && 
-                   get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[request.auth.uid] == true;
-      
-      // Allow writing a chat file if the user is authenticated and is a participant in the chat.
-      allow write: if request.auth != null &&
-                    get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[request.auth.uid] == true;
+        allow write: if request.auth != null && exists(/databases/(default)/documents/messages/$(chatId)) && request.auth.uid in get(/databases/(default)/documents/messages/$(chatId)).data.participantIds;
     }
   }
 }
-
-    
