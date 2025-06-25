@@ -108,7 +108,6 @@ export default function MessagesPage() {
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       let convos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
       
-      // Sort client-side to avoid needing a composite index
       convos.sort((a, b) => (b.lastMessageAt?.toMillis() || 0) - (a.lastMessageAt?.toMillis() || 0));
       
       setChats(convos);
@@ -163,7 +162,9 @@ export default function MessagesPage() {
   }, [selectedChatId, authUser, messages]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   const handleSendMessage = async (e: FormEvent) => {
@@ -317,16 +318,15 @@ export default function MessagesPage() {
   const otherParticipantId = otherParticipant.id;
 
   return (
-    <div className="flex flex-1 w-full border rounded-lg shadow-xl bg-card relative overflow-x-hidden">
+    <div className="flex w-full h-full border rounded-lg shadow-xl bg-card overflow-hidden">
       {/* Chat List Panel */}
       <div
         className={cn(
-          "absolute top-0 left-0 w-full h-full transition-transform duration-300 ease-in-out flex flex-col",
-          "md:static md:w-1/3 lg:w-1/4 md:translate-x-0 md:border-r",
-          selectedChatId ? "-translate-x-full" : "translate-x-0"
+          "w-full flex-col border-r bg-background md:w-1/3 lg:w-1/4 md:flex",
+          selectedChatId ? 'hidden' : 'flex'
         )}
       >
-        <div className="p-4 border-b">
+        <div className="p-4 border-b shrink-0">
           <h2 className="text-xl font-bold font-headline">{t.conversations}</h2>
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -346,10 +346,7 @@ export default function MessagesPage() {
                   <li key={chat.id}>
                     <button
                       onClick={() => setSelectedChatId(chat.id)}
-                      className={cn(
-                        "w-full text-left p-3 hover:bg-muted/50 transition-colors flex items-center gap-3",
-                        selectedChatId === chat.id && "bg-muted"
-                      )}
+                      className="w-full text-left p-3 hover:bg-muted/50 transition-colors flex items-center gap-3"
                     >
                       <Avatar className="h-12 w-12 border">
                         <AvatarImage src={otherParticipantListItem.avatar} alt={otherParticipantListItem.name} />
@@ -385,11 +382,10 @@ export default function MessagesPage() {
       </div>
 
        {/* Message View Panel */}
-      <main
+      <div
         className={cn(
-          "absolute top-0 left-0 w-full h-full transition-transform duration-300 ease-in-out flex flex-col",
-          "md:static md:flex-1 md:translate-x-0",
-          selectedChatId ? "translate-x-0" : "translate-x-full"
+            "w-full flex-col bg-background md:flex md:flex-1",
+            selectedChatId ? 'flex' : 'hidden'
         )}
       >
         {selectedChat ? (
@@ -404,7 +400,6 @@ export default function MessagesPage() {
               </Avatar>
               <div className="flex-1 flex-col overflow-hidden">
                 <h3 className="font-semibold truncate">{otherParticipant.name}</h3>
-                {/* Call buttons are now in the footer */}
               </div>
             </header>
             
@@ -517,7 +512,10 @@ export default function MessagesPage() {
             )}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
+
+
+    
