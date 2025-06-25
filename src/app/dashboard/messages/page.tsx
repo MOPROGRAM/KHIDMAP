@@ -102,12 +102,13 @@ export default function MessagesPage() {
     setError(null);
     const q = query(
       collection(db, 'messages'),
-      where(`participantIds.${authUser.uid}`, '==', true),
-      orderBy('lastMessageAt', 'desc')
+      where(`participantIds.${authUser.uid}`, '==', true)
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const convos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
+      // Sort client-side to avoid needing a composite index in Firestore
+      convos.sort((a, b) => (b.lastMessageAt?.toMillis() || 0) - (a.lastMessageAt?.toMillis() || 0));
       setChats(convos);
       setIsLoadingChats(false);
     }, (err) => {
@@ -303,204 +304,206 @@ export default function MessagesPage() {
   };
   
   return (
-    <div className="flex w-full h-full border rounded-lg shadow-xl bg-card overflow-hidden">
-      {/* Chat List Panel */}
-      <div
-        className={cn(
-          "w-full md:w-1/3 lg:w-1/4 flex flex-col border-r bg-background",
-          isMobile && selectedChatId ? 'hidden' : 'flex'
-        )}
-      >
-        <div className="p-4 border-b shrink-0">
-          <h2 className="text-xl font-bold font-headline">{t.conversations}</h2>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {isLoadingChats ? (
-            <div className="p-4 text-center"><Loader2 className="mx-auto h-8 w-8 animate-spin" /></div>
-          ) : error ? (
-             <div className="p-6 text-center text-destructive">
-               <MessageSquare className="mx-auto h-12 w-12 mb-2" />
-               <p>{error}</p>
-             </div>
-          ) : chats.length > 0 ? (
-            <ul>
-              {chats.map(chat => {
-                const otherParticipantListItem = getOtherParticipant(chat);
-                const unreadCount = chat.unreadCount?.[authUser?.uid || ''] || 0;
-                return (
-                  <li key={chat.id}>
-                    <button
-                      onClick={() => setSelectedChatId(chat.id)}
-                      className={cn(
-                        "w-full text-left p-3 hover:bg-muted/50 transition-colors flex items-center gap-3",
-                        selectedChatId === chat.id && "bg-muted/50"
-                      )}
-                    >
-                      <Avatar className="h-12 w-12 border">
-                        <AvatarImage src={otherParticipantListItem.avatar || undefined} alt={otherParticipantListItem.name} />
-                        <AvatarFallback><UserCircle className="h-6 w-6" /></AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 overflow-hidden">
-                        <div className="flex justify-between items-center">
-                          <h3 className="font-semibold truncate">{otherParticipantListItem.name}</h3>
-                          <span className="text-xs text-muted-foreground">{formatDate(chat.lastMessageAt)}</span>
+    <div className="flex-1 flex w-full flex-col p-2 md:p-4">
+      <div className="flex w-full flex-1 border rounded-lg shadow-xl bg-card overflow-hidden">
+        {/* Chat List Panel */}
+        <div
+          className={cn(
+            "w-full md:w-1/3 lg:w-1/4 flex flex-col border-r bg-background",
+            isMobile && selectedChatId ? 'hidden' : 'flex'
+          )}
+        >
+          <div className="p-4 border-b shrink-0">
+            <h2 className="text-xl font-bold font-headline">{t.conversations}</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {isLoadingChats ? (
+              <div className="p-4 text-center"><Loader2 className="mx-auto h-8 w-8 animate-spin" /></div>
+            ) : error ? (
+              <div className="p-6 text-center text-destructive">
+                <MessageSquare className="mx-auto h-12 w-12 mb-2" />
+                <p>{error}</p>
+              </div>
+            ) : chats.length > 0 ? (
+              <ul>
+                {chats.map(chat => {
+                  const otherParticipantListItem = getOtherParticipant(chat);
+                  const unreadCount = chat.unreadCount?.[authUser?.uid || ''] || 0;
+                  return (
+                    <li key={chat.id}>
+                      <button
+                        onClick={() => setSelectedChatId(chat.id)}
+                        className={cn(
+                          "w-full text-left p-3 hover:bg-muted/50 transition-colors flex items-center gap-3",
+                          selectedChatId === chat.id && "bg-muted/50"
+                        )}
+                      >
+                        <Avatar className="h-12 w-12 border">
+                          <AvatarImage src={otherParticipantListItem.avatar || undefined} alt={otherParticipantListItem.name} />
+                          <AvatarFallback><UserCircle className="h-6 w-6" /></AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 overflow-hidden">
+                          <div className="flex justify-between items-center">
+                            <h3 className="font-semibold truncate">{otherParticipantListItem.name}</h3>
+                            <span className="text-xs text-muted-foreground">{formatDate(chat.lastMessageAt)}</span>
+                          </div>
+                          <div className="flex justify-between items-start mt-1">
+                            <p className="text-sm text-muted-foreground truncate pr-2 flex items-center gap-1">
+                              {chat.lastMessageSenderId === authUser?.uid && <span>{t.you}:</span>}
+                              {chat.lastMessage}
+                            </p>
+                            {unreadCount > 0 && (
+                              <Badge className="h-5 min-w-[1.25rem] text-xs justify-center rounded-full px-1.5">{unreadCount}</Badge>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex justify-between items-start mt-1">
-                          <p className="text-sm text-muted-foreground truncate pr-2 flex items-center gap-1">
-                             {chat.lastMessageSenderId === authUser?.uid && <span>{t.you}:</span>}
-                             {chat.lastMessage}
-                          </p>
-                          {unreadCount > 0 && (
-                            <Badge className="h-5 min-w-[1.25rem] text-xs justify-center rounded-full px-1.5">{unreadCount}</Badge>
-                          )}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : (
+              <div className="p-6 text-center text-muted-foreground">
+                <MessageSquare className="mx-auto h-12 w-12 mb-2" />
+                <p>{t.noConversations}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Message View Panel */}
+        <div
+          className={cn(
+              "w-full flex-1 flex flex-col bg-background",
+              isMobile && !selectedChatId ? 'hidden' : 'flex'
+          )}
+        >
+          {selectedChat ? (
+            <>
+              <header className="p-3 border-b flex items-center gap-3 shrink-0 h-[65px]">
+                <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSelectedChatId(null)}>
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <Avatar>
+                  <AvatarImage src={otherParticipant.avatar || undefined} />
+                  <AvatarFallback><UserCircle className="h-5 w-5" /></AvatarFallback>
+                </Avatar>
+                <div className="flex-1 flex-col overflow-hidden">
+                  <h3 className="font-semibold truncate">{otherParticipant.name}</h3>
+                </div>
+                <div className="flex items-center gap-1">
+                    <Button onClick={() => handleInitiateCall('audio')} variant="ghost" size="icon" disabled={isInitiatingCall}>
+                      <Phone className="h-5 w-5" />
+                      <span className="sr-only">{t.audioCall}</span>
+                    </Button>
+                    {otherParticipant.videoCallsEnabled && (
+                      <Button onClick={() => handleInitiateCall('video')} variant="ghost" size="icon" disabled={isInitiatingCall}>
+                        <VideoIcon className="h-5 w-5" />
+                        <span className="sr-only">{t.videoCall}</span>
+                      </Button>
+                    )}
+                </div>
+              </header>
+              
+              <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/20">
+                {isLoadingMessages ? (
+                  <div className="flex justify-center items-center h-full"> <Loader2 className="h-8 w-8 animate-spin" /> </div>
+                ) : (
+                  messages.map(msg => {
+                    const isReadByOther = otherParticipant.id ? msg.readBy?.[otherParticipant.id] : false;
+                    if (msg.type === 'system_call_status') {
+                      const callIcon = msg.content === 'unanswered' ? PhoneMissed : msg.content === 'declined' ? PhoneOff : Phone;
+                      const callTypeIcon = msg.callMetadata?.type === 'video' ? VideoIcon : Phone;
+                      const durationText = msg.callMetadata?.duration ? ` - ${formatCallDuration(msg.callMetadata.duration)}` : '';
+                      return (
+                          <div key={msg.id} className="flex items-center justify-center my-2">
+                              <div className="text-xs text-muted-foreground flex items-center gap-2 p-2 bg-background/50 rounded-full border">
+                                  {React.createElement(callIcon, { className: 'h-4 w-4' })}
+                                  <span>
+                                      {msg.content === 'unanswered' && t.missedCall}
+                                      {msg.content === 'ended' && t.callEnded}
+                                      {msg.content === 'declined' && t.callDeclined}
+                                  </span>
+                                  {React.createElement(callTypeIcon, { className: 'h-4 w-4' })}
+                                  {durationText && <span className="font-mono">{durationText}</span>}
+                              </div>
+                          </div>
+                      )
+                    }
+                    return (
+                      <div key={msg.id} className={cn("flex gap-2.5", msg.senderId === authUser?.uid ? "justify-end" : "justify-start")}>
+                        <div className={cn("p-2 rounded-lg max-w-sm lg:max-w-md shadow-sm", msg.senderId === authUser?.uid ? "bg-primary text-primary-foreground" : "bg-card border")}>
+                            {msg.type === 'text' && <p className="text-sm whitespace-pre-wrap px-1">{msg.content}</p>}
+                            {msg.type === 'audio' && <AudioPlayer src={msg.content} />}
+                            {msg.type === 'image' && (
+                              <Dialog>
+                                  <DialogTrigger asChild><Image src={msg.content} alt={t.image || 'Image'} width={250} height={250} className="rounded-md cursor-pointer object-cover aspect-square" /></DialogTrigger>
+                                  <DialogContent className="max-w-4xl p-0 bg-transparent border-0"><Image src={msg.content} alt={t.image || 'Image'} width={1024} height={1024} className="rounded-lg object-contain max-h-[90vh] w-full" /></DialogContent>
+                              </Dialog>
+                            )}
+                            {msg.type === 'video' && <video src={msg.content} controls className="rounded-md w-full max-w-[250px]" />}
+                          
+                          <div className={cn("text-xs mt-1.5 flex justify-end items-center gap-1", msg.senderId === authUser?.uid ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                            {formatDate(msg.createdAt)}
+                            {msg.senderId === authUser?.uid && (isReadByOther ? <CheckCheck className="h-4 w-4 text-blue-400" /> : <Check className="h-4 w-4" />)}
+                          </div>
                         </div>
                       </div>
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
+                    )
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              <footer className="p-3 border-t bg-background shrink-0 flex items-center gap-2 h-20">
+                {isRecording ? (
+                    <div className="flex items-center justify-between gap-2 w-full">
+                        <Button variant="ghost" size="icon" onClick={handleCancelRecording} className="text-destructive"><Trash2 className="h-5 w-5" /></Button>
+                        <div className="flex items-center gap-2 text-sm text-destructive font-mono">
+                            <div className="w-3 h-3 rounded-full bg-destructive animate-pulse"></div>
+                            <span>{formatRecordingTime(recordingTime)}</span>
+                        </div>
+                        <Button size="icon" onClick={handleStopRecording} className="bg-destructive hover:bg-destructive/90"><StopCircle className="h-5 w-5" /></Button>
+                    </div>
+                ) : (
+                  <>
+                    <form onSubmit={handleSendMessage} className="flex items-center gap-2 flex-1">
+                        <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder={t.typeYourMessage} autoComplete="off" disabled={isSending} />
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,video/*" />
+                        <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isSending}><Paperclip className="h-5 w-5" /></Button>
+                        {newMessage.trim() ? (
+                            <Button type="submit" size="icon" disabled={isSending}>
+                                {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                            </Button>
+                        ) : (
+                            <Button type="button" size="icon" onClick={handleStartRecording} disabled={isSending}><Mic className="h-5 w-5" /></Button>
+                        )}
+                    </form>
+                  </>
+                )}
+              </footer>
+            </>
           ) : (
-            <div className="p-6 text-center text-muted-foreground">
-              <MessageSquare className="mx-auto h-12 w-12 mb-2" />
-              <p>{t.noConversations}</p>
+            <div className="hidden md:flex flex-col justify-center items-center h-full text-center p-4">
+              {isLoadingChats ? (
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              ) : chats.length > 0 ? (
+                <>
+                  <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />
+                  <h2 className="text-xl font-semibold">{t.selectConversation}</h2>
+                  <p className="text-muted-foreground">{t.selectConversationDescription}</p>
+                </>
+              ) : (
+                <>
+                  <Frown className="h-16 w-16 text-muted-foreground mb-4" />
+                  <h2 className="text-xl font-semibold">{t.noConversations}</h2>
+                  <p className="text-muted-foreground">{t.noConversationsDescription}</p>
+                  <Button asChild className="mt-4"><Link href="/services/search">{t.browseServices}</Link></Button>
+                </>
+              )}
             </div>
           )}
         </div>
-      </div>
-
-       {/* Message View Panel */}
-      <div
-        className={cn(
-            "w-full flex-1 flex-col bg-background",
-            isMobile && !selectedChatId ? 'hidden' : 'flex'
-        )}
-      >
-        {selectedChat ? (
-          <>
-            <header className="p-3 border-b flex items-center gap-3 shrink-0 h-[65px]">
-              <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSelectedChatId(null)}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <Avatar>
-                <AvatarImage src={otherParticipant.avatar || undefined} />
-                <AvatarFallback><UserCircle className="h-5 w-5" /></AvatarFallback>
-              </Avatar>
-              <div className="flex-1 flex-col overflow-hidden">
-                <h3 className="font-semibold truncate">{otherParticipant.name}</h3>
-              </div>
-               <div className="flex items-center gap-1">
-                  <Button onClick={() => handleInitiateCall('audio')} variant="ghost" size="icon" disabled={isInitiatingCall}>
-                    <Phone className="h-5 w-5" />
-                    <span className="sr-only">{t.audioCall}</span>
-                  </Button>
-                  {otherParticipant.videoCallsEnabled && (
-                    <Button onClick={() => handleInitiateCall('video')} variant="ghost" size="icon" disabled={isInitiatingCall}>
-                      <VideoIcon className="h-5 w-5" />
-                      <span className="sr-only">{t.videoCall}</span>
-                    </Button>
-                  )}
-               </div>
-            </header>
-            
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/20">
-              {isLoadingMessages ? (
-                <div className="flex justify-center items-center h-full"> <Loader2 className="h-8 w-8 animate-spin" /> </div>
-              ) : (
-                messages.map(msg => {
-                  const isReadByOther = otherParticipant.id ? msg.readBy?.[otherParticipant.id] : false;
-                  if (msg.type === 'system_call_status') {
-                    const callIcon = msg.content === 'unanswered' ? PhoneMissed : msg.content === 'declined' ? PhoneOff : Phone;
-                    const callTypeIcon = msg.callMetadata?.type === 'video' ? VideoIcon : Phone;
-                    const durationText = msg.callMetadata?.duration ? ` - ${formatCallDuration(msg.callMetadata.duration)}` : '';
-                    return (
-                        <div key={msg.id} className="flex items-center justify-center my-2">
-                            <div className="text-xs text-muted-foreground flex items-center gap-2 p-2 bg-background/50 rounded-full border">
-                                {React.createElement(callIcon, { className: 'h-4 w-4' })}
-                                <span>
-                                    {msg.content === 'unanswered' && t.missedCall}
-                                    {msg.content === 'ended' && t.callEnded}
-                                    {msg.content === 'declined' && t.callDeclined}
-                                </span>
-                                {React.createElement(callTypeIcon, { className: 'h-4 w-4' })}
-                                {durationText && <span className="font-mono">{durationText}</span>}
-                            </div>
-                        </div>
-                    )
-                  }
-                  return (
-                    <div key={msg.id} className={cn("flex gap-2.5", msg.senderId === authUser?.uid ? "justify-end" : "justify-start")}>
-                      <div className={cn("p-2 rounded-lg max-w-sm lg:max-w-md shadow-sm", msg.senderId === authUser?.uid ? "bg-primary text-primary-foreground" : "bg-card border")}>
-                          {msg.type === 'text' && <p className="text-sm whitespace-pre-wrap px-1">{msg.content}</p>}
-                          {msg.type === 'audio' && <AudioPlayer src={msg.content} />}
-                          {msg.type === 'image' && (
-                            <Dialog>
-                                <DialogTrigger asChild><Image src={msg.content} alt={t.image || 'Image'} width={250} height={250} className="rounded-md cursor-pointer object-cover aspect-square" /></DialogTrigger>
-                                <DialogContent className="max-w-4xl p-0 bg-transparent border-0"><Image src={msg.content} alt={t.image || 'Image'} width={1024} height={1024} className="rounded-lg object-contain max-h-[90vh] w-full" /></DialogContent>
-                            </Dialog>
-                          )}
-                          {msg.type === 'video' && <video src={msg.content} controls className="rounded-md w-full max-w-[250px]" />}
-                        
-                        <div className={cn("text-xs mt-1.5 flex justify-end items-center gap-1", msg.senderId === authUser?.uid ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                          {formatDate(msg.createdAt)}
-                          {msg.senderId === authUser?.uid && (isReadByOther ? <CheckCheck className="h-4 w-4 text-blue-400" /> : <Check className="h-4 w-4" />)}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            <footer className="p-3 border-t bg-background shrink-0 flex items-center gap-2 h-20">
-              {isRecording ? (
-                  <div className="flex items-center justify-between gap-2 w-full">
-                      <Button variant="ghost" size="icon" onClick={handleCancelRecording} className="text-destructive"><Trash2 className="h-5 w-5" /></Button>
-                      <div className="flex items-center gap-2 text-sm text-destructive font-mono">
-                          <div className="w-3 h-3 rounded-full bg-destructive animate-pulse"></div>
-                          <span>{formatRecordingTime(recordingTime)}</span>
-                      </div>
-                      <Button size="icon" onClick={handleStopRecording} className="bg-destructive hover:bg-destructive/90"><StopCircle className="h-5 w-5" /></Button>
-                  </div>
-              ) : (
-                <>
-                  <form onSubmit={handleSendMessage} className="flex items-center gap-2 flex-1">
-                      <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder={t.typeYourMessage} autoComplete="off" disabled={isSending} />
-                      <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,video/*" />
-                      <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isSending}><Paperclip className="h-5 w-5" /></Button>
-                      {newMessage.trim() ? (
-                          <Button type="submit" size="icon" disabled={isSending}>
-                              {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-                          </Button>
-                      ) : (
-                          <Button type="button" size="icon" onClick={handleStartRecording} disabled={isSending}><Mic className="h-5 w-5" /></Button>
-                      )}
-                  </form>
-                </>
-              )}
-            </footer>
-          </>
-        ) : (
-          <div className="hidden md:flex flex-col justify-center items-center h-full text-center p-4">
-            {isLoadingChats ? (
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            ) : chats.length > 0 ? (
-              <>
-                <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />
-                <h2 className="text-xl font-semibold">{t.selectConversation}</h2>
-                <p className="text-muted-foreground">{t.selectConversationDescription}</p>
-              </>
-            ) : (
-              <>
-                <Frown className="h-16 w-16 text-muted-foreground mb-4" />
-                <h2 className="text-xl font-semibold">{t.noConversations}</h2>
-                <p className="text-muted-foreground">{t.noConversationsDescription}</p>
-                <Button asChild className="mt-4"><Link href="/services/search">{t.browseServices}</Link></Button>
-              </>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
