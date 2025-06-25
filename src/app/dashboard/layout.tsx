@@ -72,7 +72,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 localStorage.setItem('userEmail', userData.email || user.email || '');
               }
             } else {
-              console.warn("User profile not found in Firestore for UID:", user.uid, ". Logging out user.");
+              console.warn("User profile not found in Firestore for UID:", user.uid, ". Logging you out.");
               toast({ variant: "destructive", title: t.profileNotFoundTitle, description: t.profileNotFoundDescription });
               if(auth) await signOut(auth); 
             }
@@ -189,8 +189,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </Button>
       </aside>
       <main className={cn(
-        "flex-1 flex flex-col p-2 md:p-4",
-        isMessagesPage ? "overflow-hidden" : "overflow-y-auto"
+        "flex-1 flex flex-col",
+        isMessagesPage ? "overflow-hidden p-2 md:p-4" : "p-2 md:p-4 overflow-y-auto"
       )}>
         {authUser && !isEmailVerified && (
           <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-600 rounded-md shadow shrink-0">
