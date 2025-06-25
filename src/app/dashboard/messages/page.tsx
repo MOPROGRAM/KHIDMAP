@@ -315,8 +315,8 @@ export default function MessagesPage() {
   const otherParticipantId = otherParticipant.id;
 
   return (
-    <div className="flex w-full border rounded-lg shadow-xl bg-card animate-fadeIn overflow-hidden">
-      <aside className={cn("w-full md:w-1/3 lg:w-1/4 border-r flex flex-col", selectedChatId && "hidden md:flex")}>
+    <div className="flex flex-col flex-1 w-full border rounded-lg shadow-xl bg-card overflow-hidden">
+      <div className={cn("w-full md:w-1/3 lg:w-1/4 border-r flex-col", selectedChatId && "hidden md:flex")}>
         <div className="p-4 border-b">
           <h2 className="text-xl font-bold font-headline">{t.conversations}</h2>
         </div>
@@ -373,7 +373,7 @@ export default function MessagesPage() {
             </div>
           )}
         </div>
-      </aside>
+      </div>
 
       <main className={cn("flex-1 flex flex-col", !selectedChatId && "hidden md:flex")}>
         <header className="p-3 border-b flex items-center gap-3 shrink-0 h-[65px]">
