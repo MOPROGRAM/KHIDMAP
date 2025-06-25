@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef, FormEvent, useMemo } from 'react';
@@ -150,10 +149,6 @@ export default function MessagesPage() {
     }
   }, [selectedChatId, authUser, messages]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedChatId || !authUser) return;
@@ -304,8 +299,7 @@ export default function MessagesPage() {
   };
   
   return (
-    <div className="flex flex-col h-full w-full p-2 md:p-4">
-      <div className="flex w-full h-full border rounded-lg shadow-xl bg-card overflow-hidden">
+    <div className="flex h-full w-full border rounded-lg shadow-xl bg-card overflow-hidden">
         {/* Chat List Panel */}
         <div
           className={cn(
@@ -505,7 +499,6 @@ export default function MessagesPage() {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 }
