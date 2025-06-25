@@ -155,26 +155,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const filteredNavItems = userRole ? navItems.filter(item => item.roles.includes(userRole)) : navItems.filter(item => item.href === '/dashboard');
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
-      <aside className="w-64 border-r bg-background p-4 space-y-2 hidden md:flex flex-col sticky top-16 h-[calc(100vh-4rem)]">
-        <div className="px-2 py-1">
-          <Logo />
-        </div>
-        <Separator />
-        <nav className="flex-grow space-y-1">
-          {filteredNavItems.map((item) => (
-            <Button
-              key={item.href}
-              variant={pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard') ? 'secondary' : 'ghost'}
-              className="w-full justify-start"
-              asChild
-            >
-              <Link href={item.href}>
-                {React.cloneElement(item.icon, { className: cn("ltr:mr-2 rtl:ml-2 h-5 w-5", pathname.startsWith(item.href) ? "text-primary" : "") })}
-                {t[item.labelKey]}
-              </Link>
-            </Button>
-          ))}
+    <div className="flex h-screen flex-col">
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="w-64 border-r bg-background p-4 space-y-2 hidden md:flex flex-col h-full">
+          <div className="px-2 py-1">
+            <Logo />
+          </div>
+          <Separator />
+          <nav className="flex-grow space-y-1">
+            {filteredNavItems.map((item) => (
+              <Button
+                key={item.href}
+                variant={pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard') ? 'secondary' : 'ghost'}
+                className="w-full justify-start"
+                asChild
+              >
+                <Link href={item.href}>
+                  {React.cloneElement(item.icon, { className: cn("ltr:mr-2 rtl:ml-2 h-5 w-5", pathname.startsWith(item.href) ? "text-primary" : "") })}
+                  {t[item.labelKey]}
+                </Link>
+              </Button>
+            ))}
            {!userRole && authUser && ( 
             <div className="p-2 text-xs text-muted-foreground flex items-center gap-1.5">
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -188,31 +189,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {t.logout}
         </Button>
       </aside>
-      <main className={cn(
-        "flex-1 flex flex-col",
-        isMessagesPage ? "overflow-hidden p-2 md:p-4" : "p-2 md:p-4 overflow-y-auto"
-      )}>
-        {authUser && !isEmailVerified && (
-          <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-600 rounded-md shadow shrink-0">
-            <p className="font-medium">{t.verifyEmailPromptTitle}</p>
-            <p className="text-sm">{t.verifyEmailPromptMessage?.replace('{email}', authUser.email || '')}</p>
-            <Button variant="link" size="sm" className="p-0 h-auto text-yellow-700 dark:text-yellow-300 hover:underline font-semibold" onClick={async () => {
-              if (auth?.currentUser) {
-                try {
-                  await sendEmailVerification(auth.currentUser);
-                  toast({ title: t.verificationEmailResent, description: t.checkYourEmail});
-                } catch (error) {
-                  toast({ variant: "destructive", title: t.errorOccurred, description: t.errorResendingVerificationEmail});
+      <main className="flex-1 flex flex-col overflow-hidden">
+          {authUser && !isEmailVerified && (
+            <div className="shrink-0 p-3 m-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-600 rounded-md shadow">
+              <p className="font-medium">{t.verifyEmailPromptTitle}</p>
+              <p className="text-sm">{t.verifyEmailPromptMessage?.replace('{email}', authUser.email || '')}</p>
+              <Button variant="link" size="sm" className="p-0 h-auto text-yellow-700 dark:text-yellow-300 hover:underline font-semibold" onClick={async () => {
+                if (auth?.currentUser) {
+                  try {
+                    await sendEmailVerification(auth.currentUser);
+                    toast({ title: t.verificationEmailResent, description: t.checkYourEmail});
+                  } catch (error) {
+                    toast({ variant: "destructive", title: t.errorOccurred, description: t.errorResendingVerificationEmail});
+                  }
                 }
-              }
-            }}>
-              {t.resendVerificationEmail}
-            </Button>
+              }}>
+                {t.resendVerificationEmail}
+              </Button>
+            </div>
+          )}
+          <div className={cn(
+            "flex-1 flex flex-col",
+            isMessagesPage ? "overflow-hidden p-2 md:p-4" : "p-2 md:p-4 overflow-y-auto"
+          )}>
+            {children}
           </div>
-        )}
-        {children}
-      </main>
+        </main>
+      </div>
       {authUser && <CallNotification />}
     </div>
   );
 }
+

@@ -2,16 +2,16 @@
 "use client";
 
 import React, { useState, useEffect, useRef, FormEvent, useMemo } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslation } from '@/hooks/useTranslation';
-import { auth, db, storage } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { Chat, Message, sendMessage, markChatAsRead, initiateCall } from '@/lib/data';
 import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Send, MessageSquare, UserCircle, Frown, ArrowLeft, Mic, StopCircle, Trash2, Check, CheckCheck, Paperclip, Image as ImageIcon, Video as VideoIcon, Phone, PhoneOff, PhoneMissed } from 'lucide-react';
+import { Loader2, Send, MessageSquare, UserCircle, Frown, ArrowLeft, Mic, StopCircle, Trash2, Check, CheckCheck, Paperclip, Image as ImageIcon, Video as VideoIcon, Phone, PhoneMissed, PhoneOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import AudioPlayer from '@/components/chat/AudioPlayer';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 const formatDate = (date: Timestamp | undefined): string => {
@@ -47,9 +48,9 @@ const formatCallDuration = (seconds: number) => {
 export default function MessagesPage() {
   const t = useTranslation();
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
   const [chats, setChats] = useState<Chat[]>([]);
@@ -72,7 +73,6 @@ export default function MessagesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const initialSelectionDone = useRef(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -87,13 +87,13 @@ export default function MessagesPage() {
 
   useEffect(() => {
     const chatIdFromUrl = searchParams.get('chatId');
-    if (chatIdFromUrl && !initialSelectionDone.current) {
+    if (chatIdFromUrl) {
       setSelectedChatId(chatIdFromUrl);
-      initialSelectionDone.current = true;
-      const newUrl = pathname;
-      router.replace(newUrl, {scroll: false});
+      // Clean URL after selection
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
     }
-  }, [searchParams, router, pathname]);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!authUser || !db) return;
@@ -102,24 +102,14 @@ export default function MessagesPage() {
     setError(null);
     const q = query(
       collection(db, 'messages'),
-      where(`participantIds.${authUser.uid}`, '==', true)
+      where(`participantIds.${authUser.uid}`, '==', true),
+      orderBy('lastMessageAt', 'desc')
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      let convos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
-      
-      convos.sort((a, b) => (b.lastMessageAt?.toMillis() || 0) - (a.lastMessageAt?.toMillis() || 0));
-      
+      const convos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
       setChats(convos);
       setIsLoadingChats(false);
-      
-      if (!initialSelectionDone.current && convos.length > 0) {
-        const chatIdFromUrl = searchParams.get('chatId');
-        if (chatIdFromUrl) {
-            setSelectedChatId(chatIdFromUrl);
-        }
-        initialSelectionDone.current = true;
-      }
     }, (err) => {
       console.error("Error fetching chats:", err);
       setError(t.errorOccurred);
@@ -127,7 +117,7 @@ export default function MessagesPage() {
     });
 
     return () => unsubscribe();
-  }, [authUser, t, searchParams]);
+  }, [authUser, t]);
 
   useEffect(() => {
     if (!selectedChatId || !db) {
@@ -142,13 +132,11 @@ export default function MessagesPage() {
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const msgs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-      
       setMessages(msgs);
       setIsLoadingMessages(false);
     }, (err) => {
       console.error(`Error fetching messages for ${selectedChatId}:`, err);
-      let errorMessage = "Could not load messages.";
-      toast({ variant: "destructive", title: t.errorOccurred, description: errorMessage, duration: 20000 });
+      toast({ variant: "destructive", title: t.errorOccurred, description: "Could not load messages." });
       setIsLoadingMessages(false);
     });
 
@@ -162,9 +150,7 @@ export default function MessagesPage() {
   }, [selectedChatId, authUser, messages]);
 
   useEffect(() => {
-    if (messages.length) {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleSendMessage = async (e: FormEvent) => {
@@ -183,12 +169,27 @@ export default function MessagesPage() {
     }
   };
   
+  const selectedChat = useMemo(() => chats.find(c => c.id === selectedChatId), [chats, selectedChatId]);
+
+  const getOtherParticipant = (chat: Chat | undefined) => {
+    if (!chat || !authUser) return { id: '', name: 'Unknown User', avatar: undefined, videoCallsEnabled: true };
+    const otherId = Object.keys(chat.participantIds).find(p => p !== authUser.uid);
+    return {
+      id: otherId || '',
+      name: chat.participantNames?.[otherId || ''] || 'Unknown User',
+      avatar: chat.participantAvatars?.[otherId || ''] || undefined,
+      videoCallsEnabled: chat.participantSettings?.[otherId || '']?.videoCallsEnabled ?? true,
+    };
+  };
+  
+  const otherParticipant = useMemo(() => getOtherParticipant(selectedChat), [selectedChat, authUser]);
+  
   const handleInitiateCall = async (callType: 'audio' | 'video') => {
-    if (!otherParticipantId || isInitiatingCall || !selectedChatId) return;
+    if (!otherParticipant.id || isInitiatingCall || !selectedChatId) return;
     setIsInitiatingCall(true);
     try {
-        toast({ title: t.initiatingCall, description: `Calling ${getOtherParticipant(selectedChat).name}...` });
-        const callId = await initiateCall(selectedChatId, otherParticipantId, callType);
+        toast({ title: t.initiatingCall, description: `${t.isCallingYou?.replace('{userName}', otherParticipant.name)}` });
+        const callId = await initiateCall(selectedChatId, otherParticipant.id, callType);
         if (callId) {
             router.push(`/call/${callId}`);
         } else {
@@ -300,30 +301,14 @@ export default function MessagesPage() {
     const remainingSeconds = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
-
-  const selectedChat = chats.find(c => c.id === selectedChatId);
-
-  const getOtherParticipant = (chat: Chat | undefined) => {
-    if (!chat || !authUser) return { id: '', name: 'Unknown User', avatar: undefined, videoCallsEnabled: true };
-    const otherId = Object.keys(chat.participantIds).find(p => p !== authUser.uid);
-    return {
-      id: otherId || '',
-      name: chat.participantNames?.[otherId || ''] || 'Unknown User',
-      avatar: chat.participantAvatars?.[otherId || ''] || undefined,
-      videoCallsEnabled: chat.participantSettings?.[otherId || '']?.videoCallsEnabled ?? true,
-    };
-  };
   
-  const otherParticipant = useMemo(() => getOtherParticipant(selectedChat), [selectedChat, authUser]);
-  const otherParticipantId = otherParticipant.id;
-
   return (
     <div className="flex w-full h-full border rounded-lg shadow-xl bg-card overflow-hidden">
       {/* Chat List Panel */}
       <div
         className={cn(
-          "w-full flex-col border-r bg-background md:w-1/3 lg:w-1/4 md:flex",
-          selectedChatId ? 'hidden' : 'flex'
+          "w-full md:w-1/3 lg:w-1/4 flex flex-col border-r bg-background",
+          isMobile && selectedChatId ? 'hidden' : 'flex'
         )}
       >
         <div className="p-4 border-b shrink-0">
@@ -346,10 +331,13 @@ export default function MessagesPage() {
                   <li key={chat.id}>
                     <button
                       onClick={() => setSelectedChatId(chat.id)}
-                      className="w-full text-left p-3 hover:bg-muted/50 transition-colors flex items-center gap-3"
+                      className={cn(
+                        "w-full text-left p-3 hover:bg-muted/50 transition-colors flex items-center gap-3",
+                        selectedChatId === chat.id && "bg-muted/50"
+                      )}
                     >
                       <Avatar className="h-12 w-12 border">
-                        <AvatarImage src={otherParticipantListItem.avatar} alt={otherParticipantListItem.name} />
+                        <AvatarImage src={otherParticipantListItem.avatar || undefined} alt={otherParticipantListItem.name} />
                         <AvatarFallback><UserCircle className="h-6 w-6" /></AvatarFallback>
                       </Avatar>
                       <div className="flex-1 overflow-hidden">
@@ -384,8 +372,8 @@ export default function MessagesPage() {
        {/* Message View Panel */}
       <div
         className={cn(
-            "w-full flex-col bg-background md:flex md:flex-1",
-            selectedChatId ? 'flex' : 'hidden'
+            "w-full flex-1 flex-col bg-background",
+            isMobile && !selectedChatId ? 'hidden' : 'flex'
         )}
       >
         {selectedChat ? (
@@ -395,12 +383,24 @@ export default function MessagesPage() {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <Avatar>
-                <AvatarImage src={otherParticipant.avatar} />
+                <AvatarImage src={otherParticipant.avatar || undefined} />
                 <AvatarFallback><UserCircle className="h-5 w-5" /></AvatarFallback>
               </Avatar>
               <div className="flex-1 flex-col overflow-hidden">
                 <h3 className="font-semibold truncate">{otherParticipant.name}</h3>
               </div>
+               <div className="flex items-center gap-1">
+                  <Button onClick={() => handleInitiateCall('audio')} variant="ghost" size="icon" disabled={isInitiatingCall}>
+                    <Phone className="h-5 w-5" />
+                    <span className="sr-only">{t.audioCall}</span>
+                  </Button>
+                  {otherParticipant.videoCallsEnabled && (
+                    <Button onClick={() => handleInitiateCall('video')} variant="ghost" size="icon" disabled={isInitiatingCall}>
+                      <VideoIcon className="h-5 w-5" />
+                      <span className="sr-only">{t.videoCall}</span>
+                    </Button>
+                  )}
+               </div>
             </header>
             
             <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/20">
@@ -408,7 +408,7 @@ export default function MessagesPage() {
                 <div className="flex justify-center items-center h-full"> <Loader2 className="h-8 w-8 animate-spin" /> </div>
               ) : (
                 messages.map(msg => {
-                  const isReadByOther = otherParticipantId ? msg.readBy?.[otherParticipantId] : false;
+                  const isReadByOther = otherParticipant.id ? msg.readBy?.[otherParticipant.id] : false;
                   if (msg.type === 'system_call_status') {
                     const callIcon = msg.content === 'unanswered' ? PhoneMissed : msg.content === 'declined' ? PhoneOff : Phone;
                     const callTypeIcon = msg.callMetadata?.type === 'video' ? VideoIcon : Phone;
@@ -465,17 +465,6 @@ export default function MessagesPage() {
                   </div>
               ) : (
                 <>
-                  <Button onClick={() => handleInitiateCall('audio')} variant="ghost" size="icon" disabled={isInitiatingCall}>
-                    <Phone className="h-5 w-5" />
-                    <span className="sr-only">{t.audioCall}</span>
-                  </Button>
-                  {otherParticipant.videoCallsEnabled && (
-                    <Button onClick={() => handleInitiateCall('video')} variant="ghost" size="icon" disabled={isInitiatingCall}>
-                      <VideoIcon className="h-5 w-5" />
-                      <span className="sr-only">{t.videoCall}</span>
-                    </Button>
-                  )}
-
                   <form onSubmit={handleSendMessage} className="flex items-center gap-2 flex-1">
                       <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder={t.typeYourMessage} autoComplete="off" disabled={isSending} />
                       <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,video/*" />
@@ -516,6 +505,3 @@ export default function MessagesPage() {
     </div>
   );
 }
-
-
-    
