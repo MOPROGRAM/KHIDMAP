@@ -52,6 +52,8 @@ export default function CallPage() {
 
   const signalingStarted = useRef(false);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [localStreamReady, setLocalStreamReady] = useState(false);
+
 
   // Effect to check for speakerphone support
   useEffect(() => {
@@ -100,6 +102,8 @@ export default function CallPage() {
                 stream.getTracks().forEach((track) => {
                     pcRef.current?.addTrack(track, stream);
                 });
+                
+                setLocalStreamReady(true);
 
                  if (callData.type === 'video' && localVideoRef.current) {
                     localVideoRef.current.srcObject = stream;
@@ -142,7 +146,7 @@ export default function CallPage() {
   
   // Effect for handling WebRTC signaling
   useEffect(() => {
-    if (!pcRef.current || !auth.currentUser || !callId || !call || signalingStarted.current) return;
+    if (!pcRef.current || !auth.currentUser || !callId || !call || signalingStarted.current || !localStreamReady) return;
 
     const handleSignaling = async () => {
         const currentUserId = auth.currentUser!.uid;
@@ -196,7 +200,7 @@ export default function CallPage() {
          handleSignaling();
          signalingStarted.current = true;
     }
-  }, [call, callId]);
+  }, [call, callId, localStreamReady]);
   
   // Effect for handling the call timer
   useEffect(() => {
