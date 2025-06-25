@@ -210,7 +210,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
            <div className={cn(
             "flex-1",
-            isMessagesPage ? "flex flex-col" : "overflow-y-auto p-2 md:p-4"
+            isMessagesPage ? "flex flex-col overflow-hidden" : "overflow-y-auto p-2 md:p-4"
           )}>
             {children}
           </div>

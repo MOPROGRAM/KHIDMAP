@@ -113,7 +113,7 @@ export default function MessagesPage() {
       setIsLoadingChats(false);
     }, (err) => {
       console.error("Error fetching chats:", err);
-      setError(t.errorOccurred);
+      setError(t.firestoreIndexError);
       setIsLoadingChats(false);
     });
 
@@ -304,8 +304,8 @@ export default function MessagesPage() {
   };
   
   return (
-    <div className="flex-1 flex w-full flex-col p-2 md:p-4">
-      <div className="flex w-full flex-1 border rounded-lg shadow-xl bg-card overflow-hidden">
+    <div className="flex flex-col h-full w-full p-2 md:p-4">
+      <div className="flex w-full h-full border rounded-lg shadow-xl bg-card overflow-hidden">
         {/* Chat List Panel */}
         <div
           className={cn(
@@ -323,6 +323,7 @@ export default function MessagesPage() {
               <div className="p-6 text-center text-destructive">
                 <MessageSquare className="mx-auto h-12 w-12 mb-2" />
                 <p>{error}</p>
+                 <Button onClick={() => window.location.reload()} variant="outline" className="mt-4">{t.tryAgain}</Button>
               </div>
             ) : chats.length > 0 ? (
               <ul>
