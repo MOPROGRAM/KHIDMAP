@@ -315,7 +315,7 @@ export default function MessagesPage() {
   const otherParticipantId = otherParticipant.id;
 
   return (
-    <div className="flex w-full h-full border rounded-lg shadow-xl bg-card animate-fadeIn overflow-hidden">
+    <div className="flex w-full border rounded-lg shadow-xl bg-card animate-fadeIn overflow-hidden">
       <aside className={cn("w-full md:w-1/3 lg:w-1/4 border-r flex flex-col", selectedChatId && "hidden md:flex")}>
         <div className="p-4 border-b">
           <h2 className="text-xl font-bold font-headline">{t.conversations}</h2>

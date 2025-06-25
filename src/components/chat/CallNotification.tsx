@@ -24,7 +24,6 @@ export default function CallNotification() {
   const { toast } = useToast();
   const router = useRouter();
   const [incomingCall, setIncomingCall] = useState<Call | null>(null);
-  const ringtoneRef = useRef<HTMLAudioElement>(null);
 
   // Effect to listen for incoming call documents from Firestore
   useEffect(() => {
@@ -53,26 +52,6 @@ export default function CallNotification() {
     return () => unsubscribe();
   }, [toast, t]);
 
-  // Effect to handle playing the ringtone sound based on the incomingCall state
-  useEffect(() => {
-    if (incomingCall && ringtoneRef.current) {
-      ringtoneRef.current.play().catch(e => {
-        console.warn("Ringtone play failed. This may be due to browser autoplay policies.", e);
-      });
-    } else if (!incomingCall && ringtoneRef.current) {
-      ringtoneRef.current.pause();
-      ringtoneRef.current.currentTime = 0;
-    }
-
-    // Cleanup to ensure sound stops if component unmounts
-    return () => {
-        if (ringtoneRef.current) {
-            ringtoneRef.current.pause();
-            ringtoneRef.current.currentTime = 0;
-        }
-    }
-  }, [incomingCall]);
-
   const handleAccept = async () => {
     if (!incomingCall) return;
     try {
@@ -99,7 +78,6 @@ export default function CallNotification() {
 
   return (
     <>
-      <audio ref={ringtoneRef} src="/sounds/ringing.mp3" loop preload="auto" playsInline />
       <AlertDialog open={!!incomingCall}>
         <AlertDialogContent>
           <AlertDialogHeader className="items-center text-center">

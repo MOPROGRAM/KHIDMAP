@@ -64,6 +64,8 @@ service cloud.firestore {
         allow get, list: if isUserAuthenticated() && isParticipant(chatId, 'messages');
         // Allow participants to create messages. Sender must be the authenticated user.
         allow create: if isUserAuthenticated() && isParticipant(chatId, 'messages') && request.resource.data.senderId == request.auth.uid;
+        // Allow participants to update messages (e.g. for read receipts).
+        allow update: if isUserAuthenticated() && isParticipant(chatId, 'messages');
       }
     }
 

@@ -48,7 +48,6 @@ export default function CallPage() {
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const ringtoneRef = useRef<HTMLAudioElement>(null);
 
   const signalingStarted = useRef(false);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -76,6 +75,7 @@ export default function CallPage() {
     pc.ontrack = (event) => {
         if (remoteVideoRef.current && remoteVideoRef.current.srcObject !== event.streams[0]) {
             remoteVideoRef.current.srcObject = event.streams[0];
+            remoteVideoRef.current.play().catch(e => console.error("Remote video play failed", e));
             const videoTrack = event.streams[0].getVideoTracks()[0];
             if (videoTrack) {
                 videoTrack.onunmute = () => setIsRemoteVideoActive(true);
@@ -137,10 +137,6 @@ export default function CallPage() {
       localStreamRef.current?.getTracks().forEach(track => track.stop());
       pcRef.current?.close();
       if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
-      if (ringtoneRef.current) {
-        ringtoneRef.current.pause();
-        ringtoneRef.current.currentTime = 0;
-      }
     };
   }, [callId, router, t, toast]);
   
@@ -217,18 +213,6 @@ export default function CallPage() {
         if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
     };
   }, [call?.status]);
-
-  // Effect for handling outgoing ringtone for the caller
-  useEffect(() => {
-    const isCaller = call?.callerId === auth.currentUser?.uid;
-    if (isCaller && call?.status === 'ringing' && ringtoneRef.current) {
-        ringtoneRef.current.play().catch(e => {
-            console.warn("Ringtone play failed. This may be due to browser autoplay policies.", e);
-        });
-    } else if (ringtoneRef.current) {
-        ringtoneRef.current.pause();
-    }
-  }, [call?.status, call?.callerId]);
 
   const handleEndCall = async () => {
     if (callId) {
@@ -317,7 +301,6 @@ export default function CallPage() {
 
   return (
     <div className="h-screen w-full bg-gray-900 text-white flex flex-col relative">
-      <audio ref={ringtoneRef} src="/sounds/ringing.mp3" loop playsInline />
       
       {/* Remote View Area */}
       <div className="flex-1 bg-black flex items-center justify-center overflow-hidden relative">
