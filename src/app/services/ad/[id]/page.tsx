@@ -327,14 +327,19 @@ export default function ProviderDetailsPage() {
                        <UserCircle className="w-full h-full text-muted" />
                     </AvatarFallback>
                 </Avatar>
-                <div className="space-y-2">
+                <div className="space-y-1">
                     <h1 className="text-3xl md:text-4xl font-bold font-headline text-foreground">{provider.name || ''}</h1>
+                    {provider.username && (
+                        <p className="text-lg text-muted-foreground">
+                            @{provider.username}
+                        </p>
+                    )}
                     {serviceCategories?.[0] && (
                         <p className="text-lg text-primary font-semibold">
                             {t[(serviceCategories[0]).toLowerCase() as keyof Translations] || serviceCategories[0]}
                         </p>
                     )}
-                    <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <div className="flex items-center justify-center sm:justify-start gap-2 pt-1">
                         <StarRating rating={averageRating} />
                         <span className="text-sm text-muted-foreground">
                             {averageRating > 0 ? `${averageRating.toFixed(1)} (${ratings.length} ${t.reviews})` : t.noReviewsYet}
