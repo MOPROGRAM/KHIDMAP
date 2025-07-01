@@ -102,12 +102,15 @@ export default function MessagesPage() {
     setError(null);
     const q = query(
       collection(db, 'messages'),
-      where('participantIds', 'array-contains', authUser.uid),
-      orderBy('lastMessageAt', 'desc')
+      where('participantIds', 'array-contains', authUser.uid)
+      // The orderBy('lastMessageAt', 'desc') clause was removed to avoid needing a composite index.
+      // Sorting is now handled client-side after fetching the documents.
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const convos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chat));
+      // Client-side sorting:
+      convos.sort((a, b) => (b.lastMessageAt?.toMillis() || 0) - (a.lastMessageAt?.toMillis() || 0));
       setChats(convos);
       setIsLoadingChats(false);
     }, (err) => {
@@ -503,3 +506,4 @@ export default function MessagesPage() {
     </div>
   );
 }
+
