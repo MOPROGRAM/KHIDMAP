@@ -154,7 +154,7 @@ export default function ProviderDetailsPage() {
         
         const foundRatings = await getRatingsForUser(providerId);
         if (foundRatings) {
-            // Sort client-side to avoid needing a composite index
+            // Sort client-side now that the Firestore query doesn't order them.
             foundRatings.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
             setRatings(foundRatings);
             if (foundRatings.length > 0) {

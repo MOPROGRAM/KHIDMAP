@@ -193,10 +193,11 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
         return null;
     }
     try {
+        // The orderBy clause was removed to avoid needing a composite index.
+        // The sorting is handled client-side in the component that calls this function.
         const ratingsQuery = query(
             collection(db, "ratings"),
-            where("ratedUserId", "==", userId),
-            orderBy("createdAt", "desc")
+            where("ratedUserId", "==", userId)
         );
         const querySnapshot = await getDocs(ratingsQuery);
         return querySnapshot.docs.map(docSnap => ({
