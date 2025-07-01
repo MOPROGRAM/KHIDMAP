@@ -54,17 +54,16 @@ service cloud.firestore {
 
     // Orders
     match /orders/{orderId} {
-      allow get, update: if isUserAuthenticated() && (
+      // Allow read/update if the user is a participant in the order or an admin.
+      allow read, update: if isUserAuthenticated() && (
         request.auth.uid == resource.data.seekerId ||
         request.auth.uid == resource.data.providerId ||
         isAdmin()
       );
-      // Allow authenticated users to query the orders collection.
-      // The client-side code correctly filters by the current user's ID.
-      allow list: if isUserAuthenticated();
-      
-      // Corrected: Allow create if the user submitting the request is the seeker in the order
+      // Allow create if the user submitting the request is the seeker in the order
       allow create: if isUserAuthenticated() && request.auth.uid == request.resource.data.seekerId;
+      // Allow list for authenticated users. Logic in the app filters by user.
+      allow list: if isUserAuthenticated();
       allow delete: if isAdmin();
     }
 

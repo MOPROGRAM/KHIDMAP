@@ -106,9 +106,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 localStorage.setItem('userEmail', userData.email || user.email || '');
               }
             } else {
-              console.warn("User profile not found in Firestore for UID:", user.uid, ". Logging you out.");
-              toast({ variant: "destructive", title: t.profileNotFoundTitle, description: t.profileNotFoundDescription });
-              if(auth) await signOut(auth); 
+              // Handle case where user is authenticated but has no firestore doc
+              // This can happen for admin user if they don't have a regular user profile
+              if (user.email === ADMIN_EMAIL) {
+                setUserRole('admin');
+                localStorage.setItem('userRole', 'admin');
+              } else {
+                console.warn("User profile not found in Firestore for UID:", user.uid, ". Logging you out.");
+                toast({ variant: "destructive", title: t.profileNotFoundTitle, description: t.profileNotFoundDescription });
+                if(auth) await signOut(auth); 
+              }
             }
           } catch (error) {
             console.error("Error fetching user role from Firestore:", error);
@@ -189,7 +196,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
   
-  const filteredNavItems = userRole ? navItems.filter(item => item.roles.includes(userRole)) : navItems.filter(item => item.href === '/dashboard');
+  const filteredNavItems = userRole ? navItems.filter(item => item.roles.includes(userRole)) : [];
   
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
@@ -226,11 +233,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <span className="sr-only">Toggle navigation menu</span>
                         </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="flex flex-col">
-                        <div className="flex h-14 items-center px-4 lg:h-[60px] lg:px-6">
+                    <SheetContent side="left" className="flex flex-col p-0">
+                        <div className="flex h-14 shrink-0 items-center border-b px-4 lg:h-[60px] lg:px-6">
                              <Logo />
                         </div>
-                        <Separator />
                         <div className="flex-1 overflow-auto py-2">
                           <NavContent navItems={filteredNavItems} pathname={pathname} t={t} isMobile={true} closeSheet={closeMobileMenu} />
                         </div>
