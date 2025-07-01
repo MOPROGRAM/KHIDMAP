@@ -4,10 +4,10 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, User, Search, History, LogOut, Settings, MessageSquare, Loader2, ShieldCheck, AlertTriangle, ServerCrash, Briefcase, DollarSign } from 'lucide-react';
+import { Home, User, Search, History, LogOut, Settings, MessageSquare, Loader2, ShieldCheck, AlertTriangle, ServerCrash, Briefcase, DollarSign, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useTranslation, Translations } from '@/hooks/useTranslation';
 import Logo from '@/components/shared/Logo';
 import { Separator } from '@/components/ui/separator';
 import { auth, db } from '@/lib/firebase'; 
@@ -16,15 +16,48 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useToast } from "@/hooks/use-toast";
 import { ADMIN_EMAIL } from '@/lib/config';
 import CallNotification from '@/components/chat/CallNotification';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 type UserRole = 'provider' | 'seeker' | 'admin';
 
 interface NavItem {
   href: string;
-  labelKey: keyof ReturnType<typeof useTranslation>;
+  labelKey: keyof Translations;
   icon: React.ReactElement;
   roles: UserRole[];
 }
+
+const NavContent = ({
+  navItems,
+  pathname,
+  t,
+  isMobile = false,
+  closeSheet,
+}: {
+  navItems: NavItem[],
+  pathname: string,
+  t: Translations,
+  isMobile?: boolean,
+  closeSheet?: () => void,
+}) => (
+  <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+    {navItems.map((item) => (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={() => isMobile && closeSheet?.()}
+        className={cn(
+          "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+          pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard') && "bg-muted text-primary"
+        )}
+      >
+        {React.cloneElement(item.icon, { className: 'h-4 w-4' })}
+        {t[item.labelKey]}
+      </Link>
+    ))}
+  </nav>
+);
+
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const t = useTranslation();
@@ -37,6 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isLoading, setIsLoading] = useState(true);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [isCoreServicesAvailable, setIsCoreServicesAvailable] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isMessagesPage = pathname.startsWith('/dashboard/messages');
 
@@ -114,6 +148,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ];
   
   const handleLogout = async () => {
+    setIsMobileMenuOpen(false);
     if (!auth) {
       toast({ variant: "destructive", title: t.errorOccurred, description: t.authServiceUnavailable });
       return;
@@ -155,70 +190,91 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
   
   const filteredNavItems = userRole ? navItems.filter(item => item.roles.includes(userRole)) : navItems.filter(item => item.href === '/dashboard');
+  
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
 
   return (
-    <div className="flex h-screen flex-col">
-      <div className="flex flex-1 overflow-hidden">
-        <aside className="w-64 border-r bg-background p-4 space-y-2 hidden md:flex flex-col h-full">
-          <div className="px-2 py-1">
-            <Logo />
-          </div>
-          <Separator />
-          <nav className="flex-grow space-y-1">
-            {filteredNavItems.map((item) => (
-              <Button
-                key={item.href}
-                variant={pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard') ? 'secondary' : 'ghost'}
-                className="w-full justify-start"
-                asChild
-              >
-                <Link href={item.href}>
-                  {React.cloneElement(item.icon, { className: cn("ltr:mr-2 rtl:ml-2 h-5 w-5", pathname.startsWith(item.href) ? "text-primary" : "") })}
-                  {t[item.labelKey]}
-                </Link>
-              </Button>
-            ))}
-           {!userRole && authUser && ( 
-            <div className="p-2 text-xs text-muted-foreground flex items-center gap-1.5">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                <span>{t.verifyingUserRole}</span>
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+        <div className="hidden border-r bg-background md:block">
+            <div className="flex h-full max-h-screen flex-col gap-2">
+                <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+                    <Logo />
+                </div>
+                <div className="flex-1 overflow-auto py-2">
+                    <NavContent navItems={filteredNavItems} pathname={pathname} t={t} closeSheet={closeMobileMenu}/>
+                </div>
+                <div className="mt-auto p-4">
+                     <Separator className="my-2"/>
+                    <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
+                        <LogOut className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                        {t.logout}
+                    </Button>
+                </div>
             </div>
-          )}
-        </nav>
-        <Separator />
-        <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
-          <LogOut className="ltr:mr-2 rtl:ml-2 h-5 w-5" />
-          {t.logout}
-        </Button>
-      </aside>
-      <main className="flex-1 flex flex-col overflow-hidden">
-          {authUser && !isEmailVerified && (
-            <div className="shrink-0 p-3 m-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-600 rounded-md shadow">
-              <p className="font-medium">{t.verifyEmailPromptTitle}</p>
-              <p className="text-sm">{t.verifyEmailPromptMessage?.replace('{email}', authUser.email || '')}</p>
-              <Button variant="link" size="sm" className="p-0 h-auto text-yellow-700 dark:text-yellow-300 hover:underline font-semibold" onClick={async () => {
-                if (auth?.currentUser) {
-                  try {
-                    await sendEmailVerification(auth.currentUser);
-                    toast({ title: t.verificationEmailResent, description: t.checkYourEmail});
-                  } catch (error) {
-                    toast({ variant: "destructive", title: t.errorOccurred, description: t.errorResendingVerificationEmail});
-                  }
-                }
-              }}>
-                {t.resendVerificationEmail}
-              </Button>
-            </div>
-          )}
-           <div className={cn(
-            "flex-1",
-            isMessagesPage ? "flex flex-col overflow-hidden" : "overflow-y-auto p-2 md:p-4"
-          )}>
-            {children}
-          </div>
-        </main>
-      </div>
-      {authUser && <CallNotification />}
+        </div>
+        <div className="flex flex-col">
+            <header className="flex h-14 items-center gap-4 border-b bg-background/95 px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
+                <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                    <SheetTrigger asChild>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="shrink-0 md:hidden"
+                        >
+                            <Menu className="h-5 w-5" />
+                            <span className="sr-only">Toggle navigation menu</span>
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="flex flex-col">
+                        <div className="flex h-14 items-center px-4 lg:h-[60px] lg:px-6">
+                             <Logo />
+                        </div>
+                        <Separator />
+                        <div className="flex-1 overflow-auto py-2">
+                          <NavContent navItems={filteredNavItems} pathname={pathname} t={t} isMobile={true} closeSheet={closeMobileMenu} />
+                        </div>
+                        <div className="mt-auto p-4 border-t">
+                            <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
+                                <LogOut className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                                {t.logout}
+                            </Button>
+                        </div>
+                    </SheetContent>
+                </Sheet>
+                 <div className="w-full flex-1">
+                    {/* Optionally, a search bar can go here */}
+                 </div>
+                 {/* Other header items like user menu can go here */}
+            </header>
+            <main className="flex flex-1 flex-col overflow-hidden">
+                 {authUser && !isEmailVerified && (
+                    <div className="shrink-0 p-3 m-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-600 rounded-md shadow">
+                        <p className="font-medium">{t.verifyEmailPromptTitle}</p>
+                        <p className="text-sm">{t.verifyEmailPromptMessage?.replace('{email}', authUser.email || '')}</p>
+                        <Button variant="link" size="sm" className="p-0 h-auto text-yellow-700 dark:text-yellow-300 hover:underline font-semibold" onClick={async () => {
+                            if (auth?.currentUser) {
+                            try {
+                                await sendEmailVerification(auth.currentUser);
+                                toast({ title: t.verificationEmailResent, description: t.checkYourEmail});
+                            } catch (error) {
+                                toast({ variant: "destructive", title: t.errorOccurred, description: t.errorResendingVerificationEmail});
+                            }
+                            }
+                        }}>
+                            {t.resendVerificationEmail}
+                        </Button>
+                    </div>
+                )}
+                <div className={cn(
+                    "flex-1",
+                    isMessagesPage ? "flex flex-col overflow-hidden" : "overflow-y-auto p-2 md:p-4"
+                )}>
+                    {children}
+                </div>
+            </main>
+        </div>
+        {authUser && <CallNotification />}
     </div>
   );
 }
