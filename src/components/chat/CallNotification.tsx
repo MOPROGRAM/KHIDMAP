@@ -32,7 +32,7 @@ export default function CallNotification() {
 
     const q = query(
       collection(db, "calls"),
-      where(`participantIds.${currentUser.uid}`, "==", true),
+      where("participantIds", "array-contains", currentUser.uid),
       where("status", "==", "ringing")
     );
 

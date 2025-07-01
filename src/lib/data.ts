@@ -39,7 +39,7 @@ export interface Rating {
 
 export interface Chat {
     id: string;
-    participantIds: { [key: string]: true };
+    participantIds: string[];
     participantNames: { [key: string]: string };
     participantAvatars: { [key: string]: string | null };
     participantSettings: { [key: string]: { videoCallsEnabled: boolean } };
@@ -75,7 +75,7 @@ export interface Call {
   calleeAvatar?: string | null;
   status: 'ringing' | 'active' | 'declined' | 'ended' | 'unanswered';
   type: 'video' | 'audio';
-  participantIds: { [key: string]: true };
+  participantIds: string[];
   createdAt: Timestamp;
   startedAt?: Timestamp; // To calculate duration
   // WebRTC signaling fields
@@ -195,18 +195,15 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
     try {
         const ratingsQuery = query(
             collection(db, "ratings"),
-            where("ratedUserId", "==", userId)
+            where("ratedUserId", "==", userId),
+            orderBy("createdAt", "desc")
         );
         const querySnapshot = await getDocs(ratingsQuery);
-        const ratings = querySnapshot.docs.map(docSnap => ({
+        return querySnapshot.docs.map(docSnap => ({
             id: docSnap.id,
             ...docSnap.data(),
         } as Rating));
 
-        // Sort client-side to avoid needing a composite index
-        ratings.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-
-        return ratings;
     } catch (error: any) {
         console.error(`Error fetching ratings for user ${userId}. Code: ${error.code}. Message: ${error.message}`);
         throw error;
@@ -222,7 +219,6 @@ const logCallEventInChat = async (
     duration: number = 0
 ) => {
     if (!db || !auth?.currentUser) return;
-    const senderId = auth.currentUser.uid;
 
     const chatRef = doc(db, 'messages', chatId);
     const messagesCollectionRef = collection(chatRef, 'messages');
@@ -265,13 +261,15 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
     if (providerId === seekerId) {
         throw new Error("Cannot start a chat with yourself.");
     }
+    
+    // Create a deterministic chat ID by sorting UIDs
+    const participants = [seekerId, providerId].sort();
 
     const messagesRef = collection(db, 'messages');
     
     const q = query(
         messagesRef, 
-        where(`participantIds.${seekerId}`, '==', true),
-        where(`participantIds.${providerId}`, '==', true),
+        where('participantIds', '==', participants),
         limit(1)
     );
     
@@ -291,10 +289,7 @@ export const startOrGetChat = async (providerId: string): Promise<string> => {
     }
 
     const newChatData: Omit<Chat, 'id'> = {
-        participantIds: {
-            [seekerId]: true,
-            [providerId]: true,
-        },
+        participantIds: participants,
         participantNames: {
             [seekerId]: seekerProfile.name || "User",
             [providerId]: providerProfile.name || "Provider",
@@ -359,7 +354,7 @@ export const sendMessage = async (
     if (!chatSnap.exists()) throw new Error("Chat does not exist.");
     
     const chatData = chatSnap.data() as Chat;
-    const receiverId = Object.keys(chatData.participantIds).find(id => id !== senderId);
+    const receiverId = chatData.participantIds.find(id => id !== senderId);
     if (!receiverId) throw new Error("Could not find recipient for the message.");
 
     const messagesCollectionRef = collection(chatRef, "messages");
@@ -441,7 +436,7 @@ export const initiateCall = async (chatId: string, calleeId: string, callType: '
         const calleeName = calleeDoc.exists() ? (calleeDoc.data().name || "User") : "User";
         const calleeAvatar = calleeDoc.exists() ? (calleeDoc.data().images?.[0] || null) : null;
         
-        const newCallData = {
+        const newCallData: Omit<Call, 'id'> = {
             chatId,
             callerId,
             callerName,
@@ -451,11 +446,8 @@ export const initiateCall = async (chatId: string, calleeId: string, callType: '
             calleeAvatar,
             status: 'ringing',
             type: callType,
-            participantIds: {
-              [callerId]: true,
-              [calleeId]: true,
-            },
-            createdAt: serverTimestamp(),
+            participantIds: [callerId, calleeId],
+            createdAt: serverTimestamp() as Timestamp,
         };
 
         const callDocRef = await addDoc(collection(db, "calls"), newCallData);

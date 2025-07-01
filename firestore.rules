@@ -3,87 +3,48 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user is authenticated
-    function isUserAuthenticated() {
-      return request.auth != null;
-    }
-
-    // Helper function to check if the requesting user is a participant in a document
-    function isParticipant(docId, collectionName) {
-      return request.auth.uid in get(/databases/$(database)/documents/$(collectionName)/$(docId)).data.participantIds;
-    }
-
-    // USERS collection: Public profiles for providers, private for others.
+    // Users: Public can read, only owner can write/delete.
     match /users/{userId} {
-      // Anyone can read a provider's profile. Seekers/Admins can read their own.
-      allow get: if get(/databases/$(database)/documents/users/$(userId)).data.role == 'provider'
-                  || (isUserAuthenticated() && request.auth.uid == userId);
-      
-      // All authenticated users can list providers for the search page.
-      allow list: if isUserAuthenticated();
-
-      // Users can only create and update their own profile.
-      allow create, update: if isUserAuthenticated() && request.auth.uid == userId;
-
-      // Users can only delete their own profile.
-      allow delete: if isUserAuthenticated() && request.auth.uid == userId;
+      allow read: if true;
+      allow write, delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    // USERNAMES collection: Ensures username uniqueness.
+    // Usernames: Used to ensure username uniqueness.
+    // Only the user can create their own username doc.
     match /usernames/{username} {
-      // Anyone can check if a username exists.
-      allow get;
-      // Only the user themselves can claim a username.
-      allow create: if isUserAuthenticated() && request.resource.data.uid == request.auth.uid;
-      // Only the user themselves can delete their username document.
-      allow delete: if isUserAuthenticated() && resource.data.uid == request.auth.uid;
+       allow read: if true;
+       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+       allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
     }
 
-    // RATINGS collection: For user reviews.
+    // Orders: Seeker/Provider can read/update, Admin can read/update.
+    match /orders/{orderId} {
+      allow create: if request.auth != null;
+      allow read, update: if request.auth != null && (request.auth.uid == resource.data.seekerId || request.auth.uid == resource.data.providerId || request.auth.token.email == 'mobusinessarena@gmail.com');
+    }
+
+    // Ratings: Anyone can read, only authenticated users can create.
     match /ratings/{ratingId} {
-      // Anyone can read/list ratings.
-      allow get, list;
-      // Only authenticated users can create ratings for others.
-      allow create: if isUserAuthenticated() && request.resource.data.raterUserId == request.auth.uid;
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.raterUserId;
     }
 
-    // MESSAGES collection: Represents a chat conversation.
-    match /messages/{chatId} {
-      // Allow GET, UPDATE, DELETE only for participants of the chat.
-      allow get, update, delete: if isUserAuthenticated() && isParticipant(chatId, 'messages');
-      
-      // Allow LIST for authenticated users (client-side query must enforce filtering).
-      allow list: if isUserAuthenticated();
-
-      // Allow CREATE if the creator is a participant.
-      allow create: if isUserAuthenticated() && request.resource.data.participantIds[request.auth.uid] == true;
-
-      // MESSAGES subcollection: The actual messages within a chat.
-      match /messages/{messageId} {
-        // Allow participants to list and get messages.
-        allow get, list: if isUserAuthenticated() && isParticipant(chatId, 'messages');
-        // Allow participants to create messages. Sender must be the authenticated user.
-        allow create: if isUserAuthenticated() && isParticipant(chatId, 'messages') && request.resource.data.senderId == request.auth.uid;
-        // Allow participants to update messages (e.g. for read receipts).
-        allow update: if isUserAuthenticated() && isParticipant(chatId, 'messages');
-      }
-    }
-
-    // CALLS collection: For WebRTC signaling.
+    // Calls: Only participants can access.
     match /calls/{callId} {
-      // Allow CREATE if the caller is the authenticated user.
-      allow create: if isUserAuthenticated() && request.resource.data.callerId == request.auth.uid;
+        allow read, write: if request.auth != null && request.auth.uid in resource.data.participantIds;
 
-      // Allow participants to read or update the call document (e.g., status, answer).
-      allow get, update: if isUserAuthenticated() && isParticipant(callId, 'calls');
-      
-      // Allow list for participants (e.g., to find ringing calls).
-      allow list: if isUserAuthenticated();
+        // ICE candidates subcollections
+        match /{subcollection}/{candidateId} {
+            allow read, write: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/calls/$(callId)).data.participantIds;
+        }
+    }
 
-      // ICE CANDIDATES subcollections.
-      match /{candidatesCollection}/{candidateId} {
-        // Allow participants of the parent call to read and create ICE candidates.
-        allow get, list, create: if isUserAuthenticated() && isParticipant(callId, 'calls');
+    // Chats & Messages: Only participants can read/write.
+    match /messages/{chatId} {
+      allow read, write: if request.auth != null && request.auth.uid in resource.data.participantIds;
+
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null && get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[request.auth.uid] == true;
       }
     }
   }
