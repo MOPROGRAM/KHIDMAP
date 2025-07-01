@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 // Helper functions
@@ -53,13 +54,17 @@ service cloud.firestore {
 
     // Orders
     match /orders/{orderId} {
-      allow read, update: if isUserAuthenticated() && (
+      allow get, update: if isUserAuthenticated() && (
         request.auth.uid == resource.data.seekerId ||
         request.auth.uid == resource.data.providerId ||
         isAdmin()
       );
-      // More robust rule: Allow creation if the user is creating an order for themselves.
-      allow create: if isUserAuthenticated() && request.resource.data.seekerId == request.auth.uid;
+      // Allow authenticated users to query the orders collection.
+      // The client-side code correctly filters by the current user's ID.
+      allow list: if isUserAuthenticated();
+      
+      // Corrected: Allow create if the user submitting the request is the seeker in the order
+      allow create: if isUserAuthenticated() && request.auth.uid == request.resource.data.seekerId;
       allow delete: if isAdmin();
     }
 

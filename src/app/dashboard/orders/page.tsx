@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Briefcase, Loader2, AlertTriangle, ArrowRight, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Briefcase, Loader2, AlertTriangle, ArrowRight, CheckCircle, Clock, AlertCircle, DollarSign } from 'lucide-react';
 import { Order, getOrdersForUser, OrderStatus } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
