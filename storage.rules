@@ -3,39 +3,47 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Helper function to check if the user is authenticated
-    function isUserAuthenticated() {
-      return request.auth != null;
+    // Helper function to get order data from Firestore
+    function getOrder(orderId) {
+      return get(/databases/$(database)/documents/orders/$(orderId));
+    }
+    
+    // Helper function to check if a user is an admin
+    function isAdmin(userId) {
+       return exists(/databases/$(database)/documents/users/$(userId)) &&
+              get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin';
     }
 
-    // Helper function to check if the user ID from the path matches the authenticated user's ID
-    function isOwner(userId) {
-      return isUserAuthenticated() && request.auth.uid == userId;
+    // Allow seekers to upload their own payment proofs
+    match /payment_proofs/{orderId}/{userId}/{fileName} {
+      // User must be authenticated and their ID must match the one in the path.
+      // They must also be the seeker for the specified order.
+      allow write: if request.auth != null && 
+                      request.auth.uid == userId &&
+                      getOrder(orderId).data.seekerId == request.auth.uid;
+      
+      // Allow participants of the order (seeker, provider) or an admin to read the proof.
+      allow read: if request.auth != null &&
+                   (request.auth.uid == getOrder(orderId).data.seekerId ||
+                    request.auth.uid == getOrder(orderId).data.providerId ||
+                    isAdmin(request.auth.uid));
     }
-
-    // Rules for user-uploaded portfolio images and videos
-    // Path: /serviceAds/{userId}/{fileType}/{fileName}
-    match /serviceAds/{userId}/{fileType}/{fileName} {
-      // Anyone can read public portfolio content
-      allow get;
-      // The `write` permission covers create, update, and delete.
-      // Only the owner of the profile can upload or delete their files.
-      allow write: if isOwner(userId);
+    
+    // Portfolio images and videos for providers
+    match /serviceAds/{providerId}/{mediaType}/{fileName} {
+        // Allow write only if the providerId matches the authenticated user's ID
+        allow write: if request.auth != null && request.auth.uid == providerId;
+        // Allow anyone to read portfolio images/videos
+        allow read: if true;
     }
-
-    // Rules for files uploaded in chats (images, videos, audio)
-    // Path: /chats/{chatId}/{fileName}
+    
+    // Chat media
     match /chats/{chatId}/{fileName} {
-        // Only authenticated users can read chat files. The unguessable URL provides security.
-        allow get: if isUserAuthenticated();
-        
-        // Only authenticated users can upload to a chat.
-        // A more secure rule would verify they are a participant by reading Firestore,
-        // but this is sufficient and more performant for this use case.
-        allow create: if isUserAuthenticated();
-
-        // Disallow updates and deletes to keep chat history immutable.
-        allow update, delete: if false;
+      // Allow write if the user is a participant of the chat
+      allow write: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds;
+      // Allow read if the user is a participant of the chat
+      allow read: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds;
     }
+
   }
 }
