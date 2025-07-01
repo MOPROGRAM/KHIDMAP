@@ -1,53 +1,50 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Helper function to check if a user is authenticated
-    function isUserAuthenticated() {
-      return request.auth != null;
+    // Helper functions to check user roles from Firestore
+    function getUserData(userId) {
+      return get(/databases/(default)/documents/users/$(userId)).data;
     }
 
-    // --- Profile/Portfolio Images & Videos ---
-    // Path: /serviceAds/{userId}/{image|video}/{fileName}
-    match /serviceAds/{userId}/{mediaType}/{fileName} {
-      // Allow anyone to read portfolio images/videos
-      allow read: if true;
-
-      // Allow write (create, update, delete) only if the user is authenticated
-      // and their UID matches the {userId} in the path.
-      allow write: if isUserAuthenticated() && request.auth.uid == userId;
+    function getOrderData(orderId) {
+      return get(/databases/(default)/documents/orders/$(orderId)).data;
     }
 
-    // --- Chat Media ---
-    // Path: /chats/{chatId}/{fileName}
-    match /chats/{chatId}/{fileName} {
-      // Allow read/write only if the user is a participant in the chat.
-      // This requires a Firestore read to check participation.
-      allow read, write: if isUserAuthenticated() &&
-                          exists(/databases/$(database)/documents/messages/$(chatId)) &&
-                          request.auth.uid in get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds;
+    // Profile images and videos in 'serviceAds' folder
+    // Allow any authenticated user to upload to their own folder.
+    match /serviceAds/{userId}/{fileType}/{fileName} {
+      allow read: if true; // Publicly readable portfolio items
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // --- Payment Proofs ---
-    // Path: /payment_proofs/{orderId}/{userId}/{fileName}
+    // Payment proofs
+    // Path: payment_proofs/{orderId}/{userId}/{fileName}
     match /payment_proofs/{orderId}/{userId}/{fileName} {
-       // Allow write (upload) only if the user is authenticated and their UID matches the {userId} in the path.
-       // The app logic ensures that {userId} is the seeker's ID.
-      allow create: if isUserAuthenticated() && request.auth.uid == userId;
-
-      // Allow read only if the user is a participant in the order (seeker or provider) or an admin.
-      // This requires a Firestore read.
-      allow read: if isUserAuthenticated() && (
-                    exists(/databases/$(database)/documents/orders/$(orderId)) &&
-                    (request.auth.uid == get(/databases/$(database)/documents/orders/$(orderId)).data.seekerId ||
-                     request.auth.uid == get(/databases/$(database)/documents/orders/$(orderId)).data.providerId ||
-                     request.auth.token.email == "mobusinessarena@gmail.com")
+      allow read: if request.auth != null && (
+                    request.auth.uid == getOrderData(orderId).seekerId ||
+                    request.auth.uid == getOrderData(orderId).providerId ||
+                    get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin'
                   );
-      
-      // Do not allow update or delete of payment proofs to prevent tampering.
-      allow update, delete: if false;
+      // Only the seeker can upload a proof for their order.
+      allow write: if request.auth != null &&
+                     request.auth.uid == userId &&
+                     request.auth.uid == getOrderData(orderId).seekerId;
+    }
+
+    // Chat media files
+    // Path: chats/{chatId}/{fileName}
+    match /chats/{chatId}/{fileName} {
+      // Allow read/write if the user is a participant in the chat.
+      // This requires reading the chat document from Firestore.
+      allow read, write: if request.auth != null &&
+                           request.auth.uid in get(/databases/(default)/documents/messages/$(chatId)).data.participantIds;
+    }
+
+    // Default deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }
