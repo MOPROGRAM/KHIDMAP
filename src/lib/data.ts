@@ -91,6 +91,7 @@ export interface Order {
     providerName: string;
     serviceDescription: string;
     amount: number;
+    currency: string;
     commission: number;
     payoutAmount: number;
     status: OrderStatus;
@@ -509,7 +510,7 @@ export const updateCallStatus = async (callId: string, status: Call['status']): 
 
 // --- Order Management Functions ---
 
-export async function createOrder(providerId: string, serviceDescription: string, amount: number): Promise<string> {
+export async function createOrder(providerId: string, serviceDescription: string, amount: number, currency: string): Promise<string> {
   if (!db || !auth.currentUser) throw new Error("Authentication or database error.");
   
   const seekerId = auth.currentUser.uid;
@@ -533,6 +534,7 @@ export async function createOrder(providerId: string, serviceDescription: string
     providerName: providerProfile.name,
     serviceDescription,
     amount,
+    currency,
     commission,
     payoutAmount,
     status: 'pending_approval',

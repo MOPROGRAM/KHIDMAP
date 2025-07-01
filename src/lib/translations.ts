@@ -399,6 +399,14 @@ export type Translations = {
   statusPendingApprovalDescriptionProvider: string;
   statusDeclinedTitle: string;
   statusDeclinedDescription: string;
+  
+  // Currency
+  currency: string;
+  USD: string;
+  SAR: string;
+  EGP: string;
+  AED: string;
+  QAR: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -776,6 +784,12 @@ export const translations: Record<'en' | 'ar', Translations> = {
     statusPendingApprovalDescriptionProvider: "A new service has been requested. Review the details and accept or decline.",
     statusDeclinedTitle: "Order Declined",
     statusDeclinedDescription: "This order request was declined.",
+    currency: "Currency",
+    USD: "US Dollar",
+    SAR: "Saudi Riyal",
+    EGP: "Egyptian Pound",
+    AED: "UAE Dirham",
+    QAR: "Qatari Riyal",
   },
   ar: {
     appName: "خدماب",
@@ -1148,5 +1162,11 @@ export const translations: Record<'en' | 'ar', Translations> = {
     statusPendingApprovalDescriptionProvider: "تم طلب خدمة جديدة. راجع التفاصيل وقم بالقبول أو الرفض.",
     statusDeclinedTitle: "تم رفض الطلب",
     statusDeclinedDescription: "تم رفض طلب الخدمة هذا.",
+    currency: "العملة",
+    USD: "دولار أمريكي",
+    SAR: "ريال سعودي",
+    EGP: "جنيه مصري",
+    AED: "درهم إماراتي",
+    QAR: "ريال قطري",
   },
 };

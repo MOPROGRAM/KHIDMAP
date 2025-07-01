@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ThemeSwitcher } from '@/components/shared/ThemeSwitcher';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { CurrencySwitcher } from '@/components/shared/CurrencySwitcher';
 import Logo from '@/components/shared/Logo';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -109,6 +110,7 @@ export default function Header() {
         <div className="container flex h-16 items-center justify-between">
           <Logo />
           <div className="flex items-center gap-2">
+            <CurrencySwitcher />
             <LanguageSwitcher />
             <ThemeSwitcher />
           </div>
@@ -124,10 +126,12 @@ export default function Header() {
         <Logo />
         <nav className="hidden items-center gap-1 md:flex">
           <NavLinkItems />
+          <CurrencySwitcher />
           <LanguageSwitcher />
           <ThemeSwitcher />
         </nav>
         <div className="flex items-center gap-1 md:hidden">
+          <CurrencySwitcher />
           <LanguageSwitcher />
           <ThemeSwitcher />
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>

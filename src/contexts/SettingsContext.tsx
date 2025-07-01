@@ -5,14 +5,17 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 type Language = 'en' | 'ar';
 type Theme = 'light' | 'dark';
+export type Currency = 'USD' | 'SAR' | 'EGP' | 'AED' | 'QAR';
 
 interface SettingsContextProps {
   language: Language;
   theme: Theme;
+  currency: Currency;
   toggleLanguage: () => void;
   setLanguage: (lang: Language) => void;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
+  setCurrency: (currency: Currency) => void;
   isMounted: boolean;
 }
 
@@ -21,12 +24,14 @@ const SettingsContext = createContext<SettingsContextProps | undefined>(undefine
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguageState] = useState<Language>('en');
   const [theme, setThemeState] = useState<Theme>('light');
+  const [currency, setCurrencyState] = useState<Currency>('USD');
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
     const storedLang = localStorage.getItem('language') as Language | null;
     const storedTheme = localStorage.getItem('theme') as Theme | null;
+    const storedCurrency = localStorage.getItem('currency') as Currency | null;
 
     if (storedLang) {
       setLanguageState(storedLang);
@@ -44,6 +49,11 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       setThemeState(initialTheme);
       document.documentElement.classList.toggle('dark', initialTheme === 'dark');
     }
+    
+    if (storedCurrency) {
+      setCurrencyState(storedCurrency);
+    }
+
   }, []);
 
   const setLanguage = (lang: Language) => {
@@ -69,6 +79,11 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     setTheme(newTheme);
   };
   
+  const setCurrency = (newCurrency: Currency) => {
+    setCurrencyState(newCurrency);
+    localStorage.setItem('currency', newCurrency);
+  };
+  
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
   }, [language]);
@@ -79,7 +94,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <SettingsContext.Provider value={{ language, theme, toggleLanguage, setLanguage, toggleTheme, setTheme, isMounted }}>
+    <SettingsContext.Provider value={{ language, theme, currency, setCurrency, toggleLanguage, setLanguage, toggleTheme, setTheme, isMounted }}>
       {children}
     </SettingsContext.Provider>
   );

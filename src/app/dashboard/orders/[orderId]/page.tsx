@@ -86,6 +86,14 @@ export default function OrderDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<FirebaseUser | null>(null);
+  
+  const currencySymbols: Record<string, string> = {
+    USD: '$',
+    SAR: 'ر.س',
+    EGP: 'ج.م',
+    AED: 'د.إ',
+    QAR: 'ر.ق',
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -222,6 +230,7 @@ export default function OrderDetailPage() {
   const showPaymentBox = isSeeker && order.status === 'pending_payment';
   const showSeekerActionBox = isSeeker && order.status === 'paid';
   const showProviderActionBox = isProvider && order.status === 'pending_approval';
+  const currencySymbol = currencySymbols[order.currency] || order.currency;
 
   return (
     <div className="max-w-3xl mx-auto space-y-4">
@@ -254,10 +263,10 @@ export default function OrderDetailPage() {
             <Card className="bg-background">
               <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><DollarSign className="h-5 w-5"/>Financial Summary</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
-                  <div className="flex justify-between items-center"><span className="text-muted-foreground">{t.serviceAmount}</span> <span className="font-mono font-medium">${order.amount.toFixed(2)}</span></div>
-                  <div className="flex justify-between items-center"><span className="text-muted-foreground">{t.platformCommission} (5%)</span> <span className="font-mono font-medium">${order.commission.toFixed(2)}</span></div>
+                  <div className="flex justify-between items-center"><span className="text-muted-foreground">{t.serviceAmount}</span> <span className="font-mono font-medium">{currencySymbol}{order.amount.toFixed(2)}</span></div>
+                  <div className="flex justify-between items-center"><span className="text-muted-foreground">{t.platformCommission} (5%)</span> <span className="font-mono font-medium">{currencySymbol}{order.commission.toFixed(2)}</span></div>
                   <Separator/>
-                  <div className="flex justify-between items-center font-semibold"><span className="text-muted-foreground">{t.providerPayout}</span> <span className="font-mono">${order.payoutAmount.toFixed(2)}</span></div>
+                  <div className="flex justify-between items-center font-semibold"><span className="text-muted-foreground">{t.providerPayout}</span> <span className="font-mono">{currencySymbol}{order.payoutAmount.toFixed(2)}</span></div>
               </CardContent>
             </Card>
             
@@ -291,7 +300,7 @@ export default function OrderDetailPage() {
                             <h4 className="font-semibold flex items-center gap-2"><Landmark className="h-4 w-4"/>Bank Transfer Details</h4>
                             <p className="text-sm text-muted-foreground">Bank Name: Khidmap National Bank</p>
                             <p className="text-sm text-muted-foreground">Account Number: 123-456-7890</p>
-                            <p className="text-sm text-muted-foreground">Amount: <strong className="font-mono">${order.amount.toFixed(2)}</strong></p>
+                            <p className="text-sm text-muted-foreground">Amount: <strong className="font-mono">{currencySymbol}{order.amount.toFixed(2)}</strong></p>
                         </div>
                         <Separator />
                          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/jpeg,image/png,application/pdf" />

@@ -20,6 +20,14 @@ export default function AdminPaymentsPage() {
   const [error, setError] = useState<string | null>(null);
   const [approvingOrderId, setApprovingOrderId] = useState<string | null>(null);
 
+  const currencySymbols: Record<string, string> = {
+    USD: '$',
+    SAR: 'ر.س',
+    EGP: 'ج.م',
+    AED: 'د.إ',
+    QAR: 'ر.ق',
+  };
+
   const fetchPendingPayments = async () => {
     setIsLoading(true);
     try {
@@ -98,46 +106,49 @@ export default function AdminPaymentsPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {orders.map((order) => (
-                <Card key={order.id} className="grid md:grid-cols-3 gap-4 p-4 items-center">
-                  <div className="md:col-span-2 space-y-2">
-                    <p className="text-sm text-muted-foreground">Order ID: <Badge variant="secondary">{order.id}</Badge></p>
-                    <p><strong>Seeker:</strong> {order.seekerName}</p>
-                    <p><strong>Provider:</strong> {order.providerName}</p>
-                    <p><strong>Amount:</strong> <span className="font-mono">${order.amount.toFixed(2)}</span></p>
-                    <p className="text-sm text-muted-foreground pt-2"><strong>Description:</strong> {order.serviceDescription}</p>
-                  </div>
-                  <div className="space-y-3 flex flex-col items-center">
-                    {order.proofOfPaymentUrl ? (
-                      <>
-                        <Link href={order.proofOfPaymentUrl} target="_blank" rel="noopener noreferrer" className="block relative w-40 h-40 group">
-                          <Image src={order.proofOfPaymentUrl} alt="Payment Proof" layout="fill" className="rounded-md object-cover border" />
-                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
-                                <ExternalLink className="h-8 w-8 text-white" />
-                           </div>
-                        </Link>
-                        <Button 
-                          onClick={() => handleApprove(order.id)} 
-                          disabled={approvingOrderId === order.id}
-                          className="w-full"
-                        >
-                          {approvingOrderId === order.id ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                          )}
-                          Approve Payment
-                        </Button>
-                      </>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center text-center p-4 bg-muted rounded-md h-full w-full">
-                            <ImageIcon className="h-8 w-8 text-muted-foreground mb-2"/>
-                            <p className="text-sm text-muted-foreground">No proof uploaded yet.</p>
-                        </div>
-                    )}
-                  </div>
-                </Card>
-              ))}
+              {orders.map((order) => {
+                const currencySymbol = currencySymbols[order.currency] || order.currency;
+                return (
+                  <Card key={order.id} className="grid md:grid-cols-3 gap-4 p-4 items-center">
+                    <div className="md:col-span-2 space-y-2">
+                      <p className="text-sm text-muted-foreground">Order ID: <Badge variant="secondary">{order.id}</Badge></p>
+                      <p><strong>Seeker:</strong> {order.seekerName}</p>
+                      <p><strong>Provider:</strong> {order.providerName}</p>
+                      <p><strong>Amount:</strong> <span className="font-mono">{currencySymbol}{order.amount.toFixed(2)}</span></p>
+                      <p className="text-sm text-muted-foreground pt-2"><strong>Description:</strong> {order.serviceDescription}</p>
+                    </div>
+                    <div className="space-y-3 flex flex-col items-center">
+                      {order.proofOfPaymentUrl ? (
+                        <>
+                          <Link href={order.proofOfPaymentUrl} target="_blank" rel="noopener noreferrer" className="block relative w-40 h-40 group">
+                            <Image src={order.proofOfPaymentUrl} alt="Payment Proof" layout="fill" className="rounded-md object-cover border" />
+                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
+                                  <ExternalLink className="h-8 w-8 text-white" />
+                             </div>
+                          </Link>
+                          <Button 
+                            onClick={() => handleApprove(order.id)} 
+                            disabled={approvingOrderId === order.id}
+                            className="w-full"
+                          >
+                            {approvingOrderId === order.id ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                            )}
+                            Approve Payment
+                          </Button>
+                        </>
+                      ) : (
+                          <div className="flex flex-col items-center justify-center text-center p-4 bg-muted rounded-md h-full w-full">
+                              <ImageIcon className="h-8 w-8 text-muted-foreground mb-2"/>
+                              <p className="text-sm text-muted-foreground">No proof uploaded yet.</p>
+                          </div>
+                      )}
+                    </div>
+                  </Card>
+                )
+              })}
             </div>
           )}
         </CardContent>

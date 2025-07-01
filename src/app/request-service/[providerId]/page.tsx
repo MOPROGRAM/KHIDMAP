@@ -11,15 +11,17 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, getUserProfileById, createOrder } from '@/lib/data';
 import { auth } from '@/lib/firebase';
-import { Loader2, Send, UserCircle, ArrowLeft, DollarSign } from 'lucide-react';
+import { Loader2, Send, UserCircle, ArrowLeft, CircleDollarSign } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Label } from '@/components/ui/label';
+import { useSettings } from '@/contexts/SettingsContext';
 
 export default function RequestServicePage() {
   const t = useTranslation();
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
+  const { currency } = useSettings();
 
   const providerId = Array.isArray(params.providerId) ? params.providerId[0] : params.providerId;
 
@@ -84,7 +86,7 @@ export default function RequestServicePage() {
 
     setIsSubmitting(true);
     try {
-        const orderId = await createOrder(providerId, description, serviceAmount);
+        const orderId = await createOrder(providerId, description, serviceAmount, currency);
         toast({
             title: t.orderCreatedSuccessTitle,
             description: t.orderCreatedAwaitingApprovalDescription
@@ -150,7 +152,7 @@ export default function RequestServicePage() {
                 {t.serviceAmount}
               </Label>
               <div className="relative">
-                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                 <CircleDollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                  <Input
                     id="amount"
                     type="number"
@@ -159,9 +161,12 @@ export default function RequestServicePage() {
                     placeholder="0.00"
                     required
                     disabled={isSubmitting}
-                    className="pl-9"
+                    className="pl-9 pr-14"
                     step="0.01"
                   />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                     <span className="text-muted-foreground sm:text-sm">{currency}</span>
+                  </div>
               </div>
                <p className="text-xs text-muted-foreground mt-2">{t.enterServiceAmount}</p>
             </div>
