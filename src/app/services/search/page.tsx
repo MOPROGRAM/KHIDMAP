@@ -14,7 +14,7 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import type { GeoPoint } from 'firebase/firestore';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 
 type UserProfileWithDistance = UserProfile & { distance?: number };
@@ -106,7 +106,7 @@ export default function ServiceSearchPage() {
     localStorage.setItem('fullSearchHistory', JSON.stringify(newHistory));
   };
   
-  const updateDisplayedProviders = (query: string, providers: UserProfile[], location: {latitude: number, longitude: number} | null) => {
+  const updateDisplayedProviders = useCallback((query: string, providers: UserProfile[], location: {latitude: number, longitude: number} | null) => {
       let results: UserProfileWithDistance[] = providers;
 
       // 1. Filter by search term
@@ -135,14 +135,16 @@ export default function ServiceSearchPage() {
                   }
                   return { ...p, distance: Infinity }; // Put providers without location at the end
               })
-              .sort((a, b) => a.distance! - b.distance!);
+              .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
           setIsSortedByLocation(true);
       } else {
           setIsSortedByLocation(false);
+          // Default sort if no location (e.g., by name or recently updated)
+          results.sort((a, b) => a.name.localeCompare(b.name));
       }
 
       setFilteredProviders(results);
-  };
+  }, [t]);
   
   useEffect(() => {
     if (!isLoading) { // Avoid running on initial data load
@@ -154,13 +156,13 @@ export default function ServiceSearchPage() {
       if (searchTerm.trim()) {
           updateSearchHistory(searchTerm);
           router.push(`/services/search?q=${encodeURIComponent(searchTerm)}`, { scroll: false });
-      } else {
+      } else if (searchParams.get('q')) { // Clear URL if search term is cleared
           router.push(`/services/search`, { scroll: false });
       }
     }, 500);
 
     return () => clearTimeout(handler);
-  }, [searchTerm, seekerLocation, allProviders]); // Rerun when search, location, or provider list changes
+  }, [searchTerm, seekerLocation, allProviders, isLoading, router, updateDisplayedProviders, searchParams]);
 
 
   const handleFindNearMe = () => {
@@ -304,16 +306,18 @@ export default function ServiceSearchPage() {
                 <CardHeader>
                    <div className="flex items-center gap-4">
                      <Avatar className="h-14 w-14">
-                       <AvatarFallback className="text-2xl">
+                       <AvatarImage src={provider.images?.[0]} alt={provider.name} />
+                       <AvatarFallback className="text-2xl bg-muted">
                          <UserCircle/>
                        </AvatarFallback>
                      </Avatar>
-                     <div className='flex-1'>
+                     <div className='flex-1 overflow-hidden'>
                        <CardTitle className="text-base font-semibold truncate hover:text-primary transition-colors" title={provider.name}>
                           <Link href={`/services/ad/${provider.uid}`}>{provider.name}</Link>
                        </CardTitle>
-                       <div className="flex items-center gap-2 mt-1">
+                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         {(provider.serviceCategories || []).slice(0, 1).map(cat => {
+                            if (!cat) return null;
                             const CatIcon = categoryIcons[cat] || Briefcase;
                             return (
                                 <Badge key={cat} variant="secondary" className="font-normal">
