@@ -12,7 +12,7 @@ import {
   GripVertical, HardHat, Layers, Star, Wrench, Zap, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall, Camera, Video as VideoIcon, MessageSquare, PlusCircle
 } from 'lucide-react';
 import Link from 'next/link';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, doc, getDoc } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
 import { db, auth } from '@/lib/firebase';
 import { useToast } from "@/hooks/use-toast";
@@ -173,9 +173,29 @@ export default function ProviderDetailsPage() {
   }, [providerId, t]);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      setAuthUser(user);
-      setUserRole(user ? localStorage.getItem('userRole') : null);
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setAuthUser(user);
+        // Fetch definitive role from Firestore to ensure button visibility is correct
+        try {
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            const role = userData.role;
+            setUserRole(role);
+            localStorage.setItem('userRole', role); // Keep localStorage in sync
+          } else {
+             setUserRole(null); // No profile, no role
+          }
+        } catch (e) {
+            console.error("Error fetching user role for details page:", e);
+            setUserRole(null);
+        }
+      } else {
+        setAuthUser(null);
+        setUserRole(null);
+      }
       setIsAuthLoading(false);
     });
     
