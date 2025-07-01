@@ -1,9 +1,8 @@
-
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, onSnapshot, collection, addDoc, updateDoc, Timestamp, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, addDoc, updateDoc, Timestamp, getDoc, writeBatch } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { Call, updateCallStatus } from '@/lib/data';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -36,9 +35,11 @@ export default function CallPage() {
   
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const remoteStreamRef = useRef<MediaStream | null>(null);
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null); // For robust audio playback
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -56,15 +57,36 @@ export default function CallPage() {
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     if (callData?.status === 'active') {
-      const startTime = callData.startedAt?.seconds || Date.now() / 1000;
+      const startTime = callData.startedAt?.toMillis() || Date.now();
       interval = setInterval(() => {
-        setCallDuration(Math.floor(Date.now() / 1000 - startTime));
+        setCallDuration(Math.floor((Date.now() - startTime) / 1000));
       }, 1000);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
   }, [callData?.status, callData?.startedAt]);
+  
+  // Cleanup function
+  const cleanupCall = useCallback(() => {
+      console.log("Cleaning up call resources.");
+      // Stop local media tracks
+      localStreamRef.current?.getTracks().forEach(track => {
+        track.stop();
+      });
+      localStreamRef.current = null;
+      
+      // Close peer connection
+      if (pcRef.current?.connectionState !== 'closed') {
+        pcRef.current?.close();
+      }
+      pcRef.current = null;
+
+      // Nullify video element sources
+      if (localVideoRef.current) localVideoRef.current.srcObject = null;
+      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+      if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
+  }, []);
 
   // Main effect to set up the call
   useEffect(() => {
@@ -80,22 +102,21 @@ export default function CallPage() {
     // 1. Initialize Peer Connection
     const pc = new RTCPeerConnection(servers);
     pcRef.current = pc;
+    remoteStreamRef.current = new MediaStream();
 
     // 2. Get User Media and start signaling
     const setupCall = async () => {
       try {
         const docSnap = await getDoc(callDocRef);
-        if (!docSnap.exists()) {
-          throw new Error("Call not found.");
-        }
+        if (!docSnap.exists()) throw new Error("Call not found.");
         const initialCallData = { id: docSnap.id, ...docSnap.data() } as Call;
+        setCallData(initialCallData);
 
-        // Get media stream first
         const constraints = { audio: true, video: initialCallData.type === 'video' };
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         localStreamRef.current = stream;
 
-        // Add tracks to peer connection
+        // Add local tracks to peer connection
         stream.getTracks().forEach(track => {
           pc.addTrack(track, stream);
         });
@@ -107,9 +128,16 @@ export default function CallPage() {
 
         // Handle remote tracks
         pc.ontrack = (event) => {
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = event.streams[0];
-          }
+            console.log('Received remote track:', event.track.kind);
+            event.streams[0].getTracks().forEach(track => {
+                remoteStreamRef.current?.addTrack(track);
+            });
+            if (remoteVideoRef.current) {
+                remoteVideoRef.current.srcObject = remoteStreamRef.current;
+            }
+            if (remoteAudioRef.current) {
+                remoteAudioRef.current.srcObject = remoteStreamRef.current;
+            }
         };
 
         // Handle ICE candidates
@@ -120,6 +148,13 @@ export default function CallPage() {
               : collection(callDocRef, 'calleeCandidates');
             addDoc(candidatesCollection, event.candidate.toJSON());
           }
+        };
+        
+        pc.onconnectionstatechange = () => {
+            console.log("Connection State:", pc.connectionState);
+            if (pc.connectionState === "failed") {
+                setError("Call connection failed.");
+            }
         };
 
         // Listen for remote ICE candidates
@@ -135,8 +170,8 @@ export default function CallPage() {
             }
           });
         });
-
-        // Start offer/answer process now that media is ready
+        
+        // Start offer/answer process if we are the caller
         if (currentUserId === initialCallData.callerId) {
           const offerDescription = await pc.createOffer();
           await pc.setLocalDescription(offerDescription);
@@ -144,7 +179,6 @@ export default function CallPage() {
         }
         
         setLoading(false);
-
       } catch (err) {
         console.error("Failed to setup call", err);
         toast({ variant: 'destructive', title: t.mediaAccessDeniedTitle, description: t.mediaAccessDeniedDescription });
@@ -157,33 +191,36 @@ export default function CallPage() {
     
     // Listen for call document changes (answers, status, etc.)
     const unsubscribeCall = onSnapshot(callDocRef, async (docSnap) => {
-      if (!docSnap.exists()) {
-        toast({ title: t.callEnded, description: "Call document was deleted." });
-        if(pcRef.current?.connectionState !== 'closed') router.push('/dashboard');
+      const latestCallData = docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Call : null;
+      if (!latestCallData) {
+        toast({ title: t.callEnded });
+        router.push('/dashboard/messages');
         return;
       }
-
-      const latestCallData = { id: docSnap.id, ...docSnap.data() } as Call;
+      
       setCallData(latestCallData);
       
       if (['ended', 'declined', 'unanswered'].includes(latestCallData.status)) {
         toast({ title: t.callEnded, description: t.callHasBeenTerminated });
-        if(pcRef.current?.connectionState !== 'closed') {
-          setTimeout(() => router.push(`/dashboard/messages?chatId=${latestCallData.chatId}`), 2000);
-        }
+        setTimeout(() => router.push(`/dashboard/messages?chatId=${latestCallData.chatId}`), 2000);
       }
       
+      const pc = pcRef.current;
+      if (!pc) return;
+
       // Callee logic: handle offer and create answer
       if (currentUserId === latestCallData.calleeId && latestCallData.offer && !pc.currentRemoteDescription) {
         try {
           await pc.setRemoteDescription(new RTCSessionDescription(latestCallData.offer));
           const answerDescription = await pc.createAnswer();
           await pc.setLocalDescription(answerDescription);
-          await updateDoc(callDocRef, {
+          const batch = writeBatch(db);
+          batch.update(callDocRef, {
             answer: { sdp: answerDescription.sdp, type: answerDescription.type },
             status: 'active',
-            startedAt: Timestamp.now()
+            startedAt: serverTimestamp()
           });
+          await batch.commit();
         } catch (e) {
           console.error("Error setting remote description or creating answer:", e);
         }
@@ -199,14 +236,13 @@ export default function CallPage() {
       }
     });
 
-    // Cleanup
+    // Cleanup on unmount
     return () => {
       unsubscribeCall();
-      localStreamRef.current?.getTracks().forEach(track => track.stop());
-      pcRef.current?.close();
+      cleanupCall();
     };
 
-  }, [callId, router, t, toast]);
+  }, [callId, router, t, toast, cleanupCall]);
 
 
   const handleEndCall = async () => {
@@ -228,10 +264,13 @@ export default function CallPage() {
       setIsVideoOff(!track.enabled);
     });
   }
-
+  
   const toggleSpeakerphone = () => {
-    // This is a placeholder for a more complex feature.
     setIsSpeakerphoneOn(prev => !prev);
+    if(remoteAudioRef.current){
+        // @ts-ignore some browsers use this property
+        remoteAudioRef.current.setSinkId?.(isSpeakerphoneOn ? 'default' : 'speaker')
+    }
     toast({ title: !isSpeakerphoneOn ? "Speaker On" : "Speaker Off" });
   };
   
@@ -247,8 +286,7 @@ export default function CallPage() {
   const isCallActive = callData?.status === 'active';
   const isRinging = callData?.status === 'ringing';
 
-  const isRemoteVideoActive = remoteVideoRef.current?.srcObject && (remoteVideoRef.current?.srcObject as MediaStream).getVideoTracks().some(t => t.enabled && !t.muted);
-
+  const isRemoteVideoActive = remoteStreamRef.current && remoteStreamRef.current.getVideoTracks().some(t => t.enabled && !t.muted);
 
   if (loading) {
     return (
@@ -271,11 +309,15 @@ export default function CallPage() {
 
   return (
     <div className="h-screen w-full bg-gray-900 text-white flex flex-col relative">
+      {/* This audio element is crucial for reliable audio playback on all devices */}
+      <audio ref={remoteAudioRef} autoPlay playsInline />
+
       <div className="flex-1 bg-black flex items-center justify-center overflow-hidden relative">
         <video 
           ref={remoteVideoRef} 
           autoPlay 
           playsInline
+          muted // The remote audio is handled by the <audio> tag, video should be muted
           className="h-full w-full object-contain" 
         />
         {(isAudioCall || !isRemoteVideoActive) && (
