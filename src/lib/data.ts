@@ -5,6 +5,8 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
 export type UserRole = 'provider' | 'seeker' | 'admin';
+export type OrderStatus = 'pending_payment' | 'paid' | 'completed' | 'disputed';
+
 
 export interface UserProfile {
   uid: string;
@@ -79,6 +81,20 @@ export interface Call {
   // WebRTC signaling fields
   offer?: { sdp: string; type: 'offer' };
   answer?: { sdp: string; type: 'answer' };
+}
+
+export interface Order {
+    id: string;
+    seekerId: string;
+    providerId: string;
+    seekerName: string;
+    providerName: string;
+    serviceDescription: string;
+    status: OrderStatus;
+    proofOfPaymentUrl?: string;
+    createdAt: Timestamp;
+    paymentApprovedAt?: Timestamp;
+    completedAt?: Timestamp;
 }
 
 
@@ -490,4 +506,115 @@ export const updateCallStatus = async (callId: string, status: Call['status']): 
         console.error(`Error updating call ${callId} to ${status}:`, error);
         throw error;
     }
+}
+
+
+// --- Order Management Functions ---
+
+export async function createOrder(providerId: string, serviceDescription: string): Promise<string> {
+  if (!db || !auth.currentUser) throw new Error("Authentication or database error.");
+  
+  const seekerId = auth.currentUser.uid;
+  const [seekerProfile, providerProfile] = await Promise.all([
+    getUserProfileById(seekerId),
+    getUserProfileById(providerId),
+  ]);
+
+  if (!seekerProfile || !providerProfile) {
+    throw new Error("Could not find profiles for one or both users.");
+  }
+
+  const orderData = {
+    seekerId,
+    providerId,
+    seekerName: seekerProfile.name,
+    providerName: providerProfile.name,
+    serviceDescription,
+    status: 'pending_payment',
+    createdAt: serverTimestamp(),
+  };
+
+  const orderRef = await addDoc(collection(db, 'orders'), orderData);
+  return orderRef.id;
+}
+
+
+export async function getOrderById(orderId: string): Promise<Order | null> {
+  if (!db) throw new Error("Database not initialized.");
+  const orderRef = doc(db, "orders", orderId);
+  const orderSnap = await getDoc(orderRef);
+  return orderSnap.exists() ? { id: orderSnap.id, ...orderSnap.data() } as Order : null;
+}
+
+export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: File): Promise<void> {
+    if (!db || !storage || !auth.currentUser) throw new Error("Services not available.");
+
+    const filePath = `payment_proofs/${orderId}/${auth.currentUser.uid}/${file.name}`;
+    const fileRef = ref(storage, filePath);
+
+    await uploadBytes(fileRef, file);
+    const downloadURL = await getDownloadURL(fileRef);
+
+    const orderRef = doc(db, "orders", orderId);
+    await updateDoc(orderRef, {
+        proofOfPaymentUrl: downloadURL
+    });
+}
+
+export async function getOrdersForUser(userId: string): Promise<Order[]> {
+    if (!db) throw new Error("Database not initialized.");
+    
+    const seekerQuery = query(collection(db, "orders"), where("seekerId", "==", userId));
+    const providerQuery = query(collection(db, "orders"), where("providerId", "==", userId));
+
+    const [seekerSnap, providerSnap] = await Promise.all([getDocs(seekerQuery), getDocs(providerQuery)]);
+    
+    const orders = [
+        ...seekerSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order)),
+        ...providerSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order))
+    ];
+    
+    // Remove duplicates and sort by date
+    const uniqueOrders = Array.from(new Map(orders.map(o => [o.id, o])).values());
+    uniqueOrders.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+    
+    return uniqueOrders;
+}
+
+export async function getPendingPaymentOrders(): Promise<Order[]> {
+    if (!db) throw new Error("Database not initialized.");
+    const q = query(
+        collection(db, "orders"), 
+        where("status", "==", "pending_payment"),
+        orderBy("createdAt", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+}
+
+export async function approvePayment(orderId: string): Promise<void> {
+    if (!db) throw new Error("Database not initialized.");
+    const orderRef = doc(db, "orders", orderId);
+    await updateDoc(orderRef, {
+        status: 'paid',
+        paymentApprovedAt: serverTimestamp()
+    });
+    // In a real app, you would also trigger a notification to the provider here.
+}
+
+export async function markOrderAsCompleted(orderId: string): Promise<void> {
+    if (!db) throw new Error("Database not initialized.");
+    const orderRef = doc(db, "orders", orderId);
+    await updateDoc(orderRef, {
+        status: 'completed',
+        completedAt: serverTimestamp()
+    });
+}
+
+export async function disputeOrder(orderId: string): Promise<void> {
+    if (!db) throw new Error("Database not initialized.");
+    const orderRef = doc(db, "orders", orderId);
+    await updateDoc(orderRef, {
+        status: 'disputed'
+    });
 }

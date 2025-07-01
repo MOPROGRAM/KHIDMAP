@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft, MapPin, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, SprayCan,
-  GripVertical, HardHat, Layers, Star, Wrench, Zap, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall, Camera, Video as VideoIcon, MessageSquare
+  GripVertical, HardHat, Layers, Star, Wrench, Zap, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall, Camera, Video as VideoIcon, MessageSquare, PlusCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { Timestamp } from 'firebase/firestore';
@@ -354,10 +354,12 @@ export default function ProviderDetailsPage() {
         <CardContent className="p-4 md:p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 my-4">
                 {authUser && userRole === 'seeker' && authUser.uid !== providerId && (
-                  <Button onClick={handleStartChat} disabled={isStartingChat} size="lg" className="w-full group">
-                      {isStartingChat ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : <MessageSquare className="ltr:mr-2 rtl:ml-2"/>}
-                      {t.messageProvider?.replace('{providerName}', provider.name.split(' ')[0])}
-                  </Button>
+                    <Button asChild size="lg" className="w-full group">
+                        <Link href={`/request-service/${providerId}`}>
+                            <PlusCircle className="ltr:mr-2 rtl:ml-2"/>
+                            {t.requestService}
+                        </Link>
+                    </Button>
                 )}
                  {provider.phoneNumber && (
                     <Button asChild size="lg" className="w-full group">
@@ -366,12 +368,11 @@ export default function ProviderDetailsPage() {
                         </a>
                     </Button>
                 )}
-                 {provider.phoneNumber && (
-                    <Button asChild size="lg" variant="outline" className="w-full group">
-                        <a href={`https://wa.me/${cleanPhoneNumber}?text=${whatsappMessage}`} target="_blank" rel="noopener noreferrer">
-                          <BotMessageSquare className="ltr:mr-2 rtl:ml-2" /> {t.contactOnWhatsApp}
-                        </a>
-                    </Button>
+                 {authUser && userRole === 'seeker' && authUser.uid !== providerId && (
+                  <Button onClick={handleStartChat} disabled={isStartingChat} size="lg" variant="outline" className="w-full group">
+                      {isStartingChat ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : <MessageSquare className="ltr:mr-2 rtl:ml-2"/>}
+                      {t.messageProvider?.replace('{providerName}', provider.name.split(' ')[0])}
+                  </Button>
                 )}
             </div>
             
