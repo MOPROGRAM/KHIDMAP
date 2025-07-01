@@ -8,41 +8,56 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { auth, storage } from '@/lib/firebase';
-import { Order, getOrderById, OrderStatus, uploadPaymentProofAndUpdateOrder, markOrderAsCompleted, disputeOrder } from '@/lib/data';
+import { Order, getOrderById, OrderStatus, uploadPaymentProofAndUpdateOrder, markOrderAsCompleted, disputeOrder, acceptOrder, declineOrder } from '@/lib/data';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { Loader2, ArrowLeft, Clock, CheckCircle, AlertCircle, Upload, Send, ShieldQuestion, FileCheck, DollarSign, Banknote, Landmark } from 'lucide-react';
+import { Loader2, ArrowLeft, Clock, CheckCircle, AlertCircle, Upload, Send, ShieldQuestion, FileCheck, DollarSign, Banknote, Landmark, Hourglass, XCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 
-const StatusInfo = ({ status, t }: { status: OrderStatus; t: Translations }) => {
-    const info = {
+const StatusInfo = ({ status, t, isProvider }: { status: OrderStatus; t: Translations; isProvider: boolean }) => {
+    const infoMap: Record<OrderStatus, { icon: React.ElementType, titleKey: keyof Translations, descKey: keyof Translations, style: string }> = {
+        pending_approval: {
+            icon: Hourglass,
+            titleKey: 'statusPendingApprovalTitle',
+            descKey: isProvider ? 'statusPendingApprovalDescriptionProvider' : 'statusPendingApprovalDescriptionSeeker',
+            style: 'bg-orange-100 border-orange-300 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+        },
         pending_payment: {
             icon: Clock,
             titleKey: 'paymentPendingTitle',
             descKey: 'paymentPendingDescription',
-            style: 'bg-yellow-100 border-yellow-300 text-yellow-800'
+            style: 'bg-yellow-100 border-yellow-300 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
         },
         paid: {
             icon: CheckCircle,
             titleKey: 'paymentApprovedTitle',
             descKey: 'paymentApprovedDescription',
-            style: 'bg-blue-100 border-blue-300 text-blue-800'
+            style: 'bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
         },
         completed: {
             icon: CheckCircle,
             titleKey: 'orderCompletedTitle',
             descKey: 'orderCompletedDescription',
-            style: 'bg-green-100 border-green-300 text-green-800'
+            style: 'bg-green-100 border-green-300 text-green-800 dark:bg-green-900/30 dark:text-green-300'
         },
         disputed: {
             icon: AlertCircle,
             titleKey: 'orderDisputedTitle',
             descKey: 'orderDisputedDescription',
-            style: 'bg-red-100 border-red-300 text-red-800'
+            style: 'bg-red-100 border-red-300 text-red-800 dark:bg-red-900/30 dark:text-red-300'
         },
-    }[status];
+        declined: {
+            icon: XCircle,
+            titleKey: 'statusDeclinedTitle',
+            descKey: 'statusDeclinedDescription',
+            style: 'bg-gray-200 border-gray-400 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+        }
+    };
+
+    const info = infoMap[status];
+    if (!info) return null;
 
     const Icon = info.icon;
 
@@ -160,6 +175,35 @@ export default function OrderDetailPage() {
     }
   }
 
+  const handleAcceptOrder = async () => {
+    if(!order) return;
+    setIsSubmitting(true);
+    try {
+      await acceptOrder(order.id);
+      const updatedOrder = await getOrderById(order.id);
+      setOrder(updatedOrder);
+      toast({ title: t.orderAccepted, description: t.orderAcceptedDescription });
+    } catch(err: any) {
+      toast({ variant: "destructive", title: "Error", description: err.message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  const handleDeclineOrder = async () => {
+    if(!order) return;
+    setIsSubmitting(true);
+    try {
+      await declineOrder(order.id);
+      const updatedOrder = await getOrderById(order.id);
+      setOrder(updatedOrder);
+      toast({ title: t.orderDeclined, description: t.orderDeclinedDescription });
+    } catch(err: any) {
+      toast({ variant: "destructive", title: "Error", description: err.message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   if (isLoading || !user) {
     return <div className="flex justify-center items-center h-96"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -174,8 +218,10 @@ export default function OrderDetailPage() {
   }
 
   const isSeeker = user.uid === order.seekerId;
+  const isProvider = user.uid === order.providerId;
   const showPaymentBox = isSeeker && order.status === 'pending_payment';
   const showSeekerActionBox = isSeeker && order.status === 'paid';
+  const showProviderActionBox = isProvider && order.status === 'pending_approval';
 
   return (
     <div className="max-w-3xl mx-auto space-y-4">
@@ -190,12 +236,13 @@ export default function OrderDetailPage() {
           <CardDescription>Order ID: {order.id}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-            <StatusInfo status={order.status} t={t} />
+            <StatusInfo status={order.status} t={t} isProvider={isProvider}/>
 
             <div className="grid grid-cols-2 gap-4 text-sm">
                 <div><strong className="block text-muted-foreground">Provider</strong> {order.providerName}</div>
                 <div><strong className="block text-muted-foreground">Seeker</strong> {order.seekerName}</div>
                 <div><strong className="block text-muted-foreground">Order Date</strong> {new Date(order.createdAt.seconds * 1000).toLocaleDateString()}</div>
+                {order.approvedByProviderAt && <div><strong className="block text-muted-foreground">Request Approved</strong> {new Date(order.approvedByProviderAt.seconds * 1000).toLocaleDateString()}</div>}
                 {order.paymentApprovedAt && <div><strong className="block text-muted-foreground">Payment Approved</strong> {new Date(order.paymentApprovedAt.seconds * 1000).toLocaleDateString()}</div>}
             </div>
 
@@ -213,6 +260,25 @@ export default function OrderDetailPage() {
                   <div className="flex justify-between items-center font-semibold"><span className="text-muted-foreground">{t.providerPayout}</span> <span className="font-mono">${order.payoutAmount.toFixed(2)}</span></div>
               </CardContent>
             </Card>
+            
+            {showProviderActionBox && (
+                <Card className="bg-background border-primary">
+                    <CardHeader>
+                        <CardTitle>New Service Request</CardTitle>
+                        <CardDescription>Review the details below and respond to the seeker.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col sm:flex-row gap-2">
+                        <Button className="w-full bg-green-600 hover:bg-green-700" onClick={handleAcceptOrder} disabled={isSubmitting}>
+                             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ThumbsUp className="mr-2 h-4 w-4"/>}
+                            {t.acceptOrder}
+                        </Button>
+                        <Button variant="destructive" className="w-full" onClick={handleDeclineOrder} disabled={isSubmitting}>
+                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ThumbsDown className="mr-2 h-4 w-4"/>}
+                            {t.declineOrder}
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
             
             {showPaymentBox && (
                 <Card className="bg-background border-primary">

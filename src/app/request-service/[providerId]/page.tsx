@@ -87,7 +87,7 @@ export default function RequestServicePage() {
         const orderId = await createOrder(providerId, description, serviceAmount);
         toast({
             title: t.orderCreatedSuccessTitle,
-            description: t.orderCreatedSuccessDescription
+            description: t.orderCreatedAwaitingApprovalDescription
         });
         router.push(`/dashboard/orders/${orderId}`);
     } catch (err: any) {

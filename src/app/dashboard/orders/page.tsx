@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Briefcase, Loader2, AlertTriangle, ArrowRight, CheckCircle, Clock, AlertCircle, DollarSign } from 'lucide-react';
+import { Briefcase, Loader2, AlertTriangle, ArrowRight, CheckCircle, Clock, AlertCircle, DollarSign, XCircle, Hourglass } from 'lucide-react';
 import { Order, getOrdersForUser, OrderStatus } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -17,22 +17,28 @@ import { useRouter } from 'next/navigation';
 
 const StatusBadge = ({ status, t }: { status: OrderStatus; t: any }) => {
   const statusStyles: Record<OrderStatus, string> = {
-    pending_payment: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    paid: 'bg-blue-100 text-blue-800 border-blue-300',
-    completed: 'bg-green-100 text-green-800 border-green-300',
-    disputed: 'bg-red-100 text-red-800 border-red-300',
+    pending_approval: 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/50 dark:text-orange-300',
+    pending_payment: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/50 dark:text-yellow-300',
+    paid: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300',
+    completed: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-300',
+    disputed: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/50 dark:text-red-300',
+    declined: 'bg-gray-200 text-gray-800 border-gray-400 dark:bg-gray-700 dark:text-gray-300',
   };
   const statusIcons: Record<OrderStatus, React.ElementType> = {
-    pending_payment: Clock,
-    paid: DollarSign,
+    pending_approval: Hourglass,
+    pending_payment: DollarSign,
+    paid: CheckCircle,
     completed: CheckCircle,
     disputed: AlertCircle,
+    declined: XCircle,
   };
   const statusText: Record<OrderStatus, string> = {
+    pending_approval: t.pendingApproval,
     pending_payment: t.pendingPayment,
     paid: t.paid,
     completed: t.completed,
     disputed: t.disputed,
+    declined: t.declined,
   };
   
   const Icon = statusIcons[status];

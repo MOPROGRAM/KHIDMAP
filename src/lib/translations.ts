@@ -383,6 +383,22 @@ export type Translations = {
   failedToCreateOrder: string;
   loginToRequestService: string;
   backToProfile: string;
+
+  // New keys for order approval flow
+  pendingApproval: string;
+  declined: string;
+  orderCreatedAwaitingApprovalDescription: string;
+  acceptOrder: string;
+  declineOrder: string;
+  orderAccepted: string;
+  orderDeclined: string;
+  orderAcceptedDescription: string;
+  orderDeclinedDescription: string;
+  statusPendingApprovalTitle: string;
+  statusPendingApprovalDescriptionSeeker: string;
+  statusPendingApprovalDescriptionProvider: string;
+  statusDeclinedTitle: string;
+  statusDeclinedDescription: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -742,10 +758,24 @@ export const translations: Record<'en' | 'ar', Translations> = {
     invalidAmount: "Invalid Amount",
     enterValidServiceAmount: "Please enter a valid service amount.",
     orderCreatedSuccessTitle: "Order Created Successfully!",
-    orderCreatedSuccessDescription: "You will now be redirected to the order page to complete payment.",
+    orderCreatedSuccessDescription: "Your request has been sent. You will now be redirected to the order page.",
     failedToCreateOrder: "Failed to Create Order",
     loginToRequestService: "Please log in to request a service.",
     backToProfile: "Back to Profile",
+    pendingApproval: "Pending Approval",
+    declined: "Declined",
+    orderCreatedAwaitingApprovalDescription: "Your request has been sent to the provider. You will be notified when they respond.",
+    acceptOrder: "Accept Order",
+    declineOrder: "Decline Order",
+    orderAccepted: "Order Accepted",
+    orderDeclined: "Order Declined",
+    orderAcceptedDescription: "The provider has accepted your request. The seeker will now proceed with payment.",
+    orderDeclinedDescription: "You have declined this service request.",
+    statusPendingApprovalTitle: "Waiting for Provider Approval",
+    statusPendingApprovalDescriptionSeeker: "The service provider is reviewing your request. You will be notified once they respond.",
+    statusPendingApprovalDescriptionProvider: "A new service has been requested. Review the details and accept or decline.",
+    statusDeclinedTitle: "Order Declined",
+    statusDeclinedDescription: "This order request was declined.",
   },
   ar: {
     appName: "خدماب",
@@ -1100,9 +1130,23 @@ export const translations: Record<'en' | 'ar', Translations> = {
     invalidAmount: "مبلغ غير صالح",
     enterValidServiceAmount: "يرجى إدخال مبلغ خدمة صالح.",
     orderCreatedSuccessTitle: "تم إنشاء الطلب بنجاح!",
-    orderCreatedSuccessDescription: "سيتم الآن توجيهك إلى صفحة الطلب لإتمام الدفع.",
+    orderCreatedSuccessDescription: "تم إرسال طلبك. سيتم الآن توجيهك إلى صفحة الطلب.",
     failedToCreateOrder: "فشل إنشاء الطلب",
     loginToRequestService: "يرجى تسجيل الدخول لطلب خدمة.",
     backToProfile: "العودة إلى الملف الشخصي",
+    pendingApproval: "بانتظار الموافقة",
+    declined: "مرفوض",
+    orderCreatedAwaitingApprovalDescription: "تم إرسال طلبك إلى مقدم الخدمة. سيتم إعلامك عندما يرد.",
+    acceptOrder: "قبول الطلب",
+    declineOrder: "رفض الطلب",
+    orderAccepted: "تم قبول الطلب",
+    orderDeclined: "تم رفض الطلب",
+    orderAcceptedDescription: "لقد قبل مقدم الخدمة طلبك. سيقوم الباحث عن الخدمة الآن بالدفع.",
+    orderDeclinedDescription: "لقد رفضت طلب الخدمة هذا.",
+    statusPendingApprovalTitle: "بانتظار موافقة مقدم الخدمة",
+    statusPendingApprovalDescriptionSeeker: "يقوم مقدم الخدمة بمراجعة طلبك. سيتم إعلامك بمجرد رده.",
+    statusPendingApprovalDescriptionProvider: "تم طلب خدمة جديدة. راجع التفاصيل وقم بالقبول أو الرفض.",
+    statusDeclinedTitle: "تم رفض الطلب",
+    statusDeclinedDescription: "تم رفض طلب الخدمة هذا.",
   },
 };

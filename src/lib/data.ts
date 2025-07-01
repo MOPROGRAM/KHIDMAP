@@ -5,7 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
 export type UserRole = 'provider' | 'seeker' | 'admin';
-export type OrderStatus = 'pending_payment' | 'paid' | 'completed' | 'disputed';
+export type OrderStatus = 'pending_approval' | 'pending_payment' | 'paid' | 'completed' | 'disputed' | 'declined';
 
 
 export interface UserProfile {
@@ -96,8 +96,10 @@ export interface Order {
     status: OrderStatus;
     proofOfPaymentUrl?: string;
     createdAt: Timestamp;
+    approvedByProviderAt?: Timestamp;
     paymentApprovedAt?: Timestamp;
     completedAt?: Timestamp;
+    declinedAt?: Timestamp;
 }
 
 
@@ -533,7 +535,7 @@ export async function createOrder(providerId: string, serviceDescription: string
     amount,
     commission,
     payoutAmount,
-    status: 'pending_payment',
+    status: 'pending_approval',
     createdAt: serverTimestamp(),
   };
 
@@ -619,5 +621,23 @@ export async function disputeOrder(orderId: string): Promise<void> {
     const orderRef = doc(db, "orders", orderId);
     await updateDoc(orderRef, {
         status: 'disputed'
+    });
+}
+
+export async function acceptOrder(orderId: string): Promise<void> {
+    if (!db) throw new Error("Database not initialized.");
+    const orderRef = doc(db, "orders", orderId);
+    await updateDoc(orderRef, {
+        status: 'pending_payment',
+        approvedByProviderAt: serverTimestamp()
+    });
+}
+
+export async function declineOrder(orderId: string): Promise<void> {
+    if (!db) throw new Error("Database not initialized.");
+    const orderRef = doc(db, "orders", orderId);
+    await updateDoc(orderRef, {
+        status: 'declined',
+        declinedAt: serverTimestamp()
     });
 }
