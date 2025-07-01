@@ -343,10 +343,46 @@ export type Translations = {
   callDuration: string;
   videoCallLog: string;
   audioCallLog: string;
+  
+  // Orders & Payments
   serviceAmount: string;
   enterServiceAmount: string;
   platformCommission: string;
   providerPayout: string;
+  myOrders: string;
+  myOrdersDescriptionSeeker: string;
+  myOrdersDescriptionProvider: string;
+  noOrdersYet: string;
+  noOrdersYetDescription: string;
+  pendingPayment: string;
+  paid: string;
+  completed: string;
+  disputed: string;
+  paymentApprovals: string;
+  paymentPendingTitle: string;
+  paymentPendingDescription: string;
+  paymentApprovedTitle: string;
+  paymentApprovedDescription: string;
+  orderCompletedTitle: string;
+  orderCompletedDescription: string;
+  orderDisputedTitle: string;
+  orderDisputedDescription: string;
+  
+  // Request Service Page
+  requestService: string;
+  requestingServiceFrom: string;
+  serviceDescription: string;
+  describeJobDetailPlaceholder: string;
+  providerWillSeeDescription: string;
+  submitRequest: string;
+  descriptionRequired: string;
+  invalidAmount: string;
+  enterValidServiceAmount: string;
+  orderCreatedSuccessTitle: string;
+  orderCreatedSuccessDescription: string;
+  failedToCreateOrder: string;
+  loginToRequestService: string;
+  backToProfile: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -678,6 +714,38 @@ export const translations: Record<'en' | 'ar', Translations> = {
     enterServiceAmount: "Enter the amount agreed upon with the provider.",
     platformCommission: "Platform Commission",
     providerPayout: "Provider Payout",
+    myOrders: "My Orders",
+    myOrdersDescriptionSeeker: "Track and manage your service orders.",
+    myOrdersDescriptionProvider: "View and manage your incoming job orders.",
+    noOrdersYet: "No Orders Yet",
+    noOrdersYetDescription: "When you request a service, it will appear here.",
+    pendingPayment: "Pending Payment",
+    paid: "Paid",
+    completed: "Completed",
+    disputed: "Disputed",
+    paymentApprovals: "Payment Approvals",
+    paymentPendingTitle: "Payment Pending",
+    paymentPendingDescription: "The seeker needs to upload proof of payment.",
+    paymentApprovedTitle: "Payment Approved",
+    paymentApprovedDescription: "The service provider can now begin the work.",
+    orderCompletedTitle: "Order Completed",
+    orderCompletedDescription: "This service has been successfully completed.",
+    orderDisputedTitle: "Order Disputed",
+    orderDisputedDescription: "There is an issue with this order. Admin will investigate.",
+    requestService: "Request Service",
+    requestingServiceFrom: "Requesting Service from",
+    serviceDescription: "Service Description",
+    describeJobDetailPlaceholder: "Please describe the job you need done in detail...",
+    providerWillSeeDescription: "The provider will see this description. Be as clear as possible.",
+    submitRequest: "Submit Request",
+    descriptionRequired: "Description Required",
+    invalidAmount: "Invalid Amount",
+    enterValidServiceAmount: "Please enter a valid service amount.",
+    orderCreatedSuccessTitle: "Order Created Successfully!",
+    orderCreatedSuccessDescription: "You will now be redirected to the order page to complete payment.",
+    failedToCreateOrder: "Failed to Create Order",
+    loginToRequestService: "Please log in to request a service.",
+    backToProfile: "Back to Profile",
   },
   ar: {
     appName: "خدماب",
@@ -1004,5 +1072,37 @@ export const translations: Record<'en' | 'ar', Translations> = {
     enterServiceAmount: "أدخل المبلغ المتفق عليه مع مقدم الخدمة.",
     platformCommission: "عمولة المنصة",
     providerPayout: "مستحقات مقدم الخدمة",
+    myOrders: "طلباتي",
+    myOrdersDescriptionSeeker: "تتبع وإدارة طلبات الخدمة الخاصة بك.",
+    myOrdersDescriptionProvider: "عرض وإدارة طلبات العمل الواردة الخاصة بك.",
+    noOrdersYet: "لا توجد طلبات بعد",
+    noOrdersYetDescription: "عندما تطلب خدمة، ستظهر هنا.",
+    pendingPayment: "بانتظار الدفع",
+    paid: "مدفوع",
+    completed: "مكتمل",
+    disputed: "متنازع عليه",
+    paymentApprovals: "الموافقات المالية",
+    paymentPendingTitle: "الدفع معلق",
+    paymentPendingDescription: "يحتاج الباحث عن الخدمة إلى تحميل إثبات الدفع.",
+    paymentApprovedTitle: "تمت الموافقة على الدفع",
+    paymentApprovedDescription: "يمكن لمقدم الخدمة الآن بدء العمل.",
+    orderCompletedTitle: "اكتمل الطلب",
+    orderCompletedDescription: "تم إكمال هذه الخدمة بنجاح.",
+    orderDisputedTitle: "الطلب متنازع عليه",
+    orderDisputedDescription: "هناك مشكلة في هذا الطلب. سيقوم المسؤول بالتحقيق.",
+    requestService: "اطلب خدمة",
+    requestingServiceFrom: "طلب خدمة من",
+    serviceDescription: "وصف الخدمة",
+    describeJobDetailPlaceholder: "يرجى وصف العمل الذي تحتاجه بالتفصيل...",
+    providerWillSeeDescription: "سيطلع مقدم الخدمة على هذا الوصف. كن واضحًا قدر الإمكان.",
+    submitRequest: "إرسال الطلب",
+    descriptionRequired: "الوصف مطلوب",
+    invalidAmount: "مبلغ غير صالح",
+    enterValidServiceAmount: "يرجى إدخال مبلغ خدمة صالح.",
+    orderCreatedSuccessTitle: "تم إنشاء الطلب بنجاح!",
+    orderCreatedSuccessDescription: "سيتم الآن توجيهك إلى صفحة الطلب لإتمام الدفع.",
+    failedToCreateOrder: "فشل إنشاء الطلب",
+    loginToRequestService: "يرجى تسجيل الدخول لطلب خدمة.",
+    backToProfile: "العودة إلى الملف الشخصي",
   },
 };

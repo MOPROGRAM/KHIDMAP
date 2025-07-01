@@ -61,7 +61,7 @@ export default function RequestServicePage() {
         toast({
           variant: 'destructive',
           title: t.authError,
-          description: "Please log in to request a service.",
+          description: t.loginToRequestService,
         });
         router.push('/login');
       }
@@ -74,11 +74,11 @@ export default function RequestServicePage() {
     e.preventDefault();
     const serviceAmount = parseFloat(amount);
     if (!description.trim()) {
-      toast({ variant: 'destructive', title: "Description Required", description: "Please describe the service you need." });
+      toast({ variant: 'destructive', title: t.descriptionRequired, description: "Please describe the service you need." });
       return;
     }
     if (isNaN(serviceAmount) || serviceAmount <= 0) {
-      toast({ variant: 'destructive', title: "Invalid Amount", description: "Please enter a valid service amount." });
+      toast({ variant: 'destructive', title: t.invalidAmount, description: t.enterValidServiceAmount });
       return;
     }
 
@@ -86,14 +86,14 @@ export default function RequestServicePage() {
     try {
         const orderId = await createOrder(providerId, description, serviceAmount);
         toast({
-            title: "Order Created Successfully!",
-            description: "You will now be redirected to the order page to complete payment."
+            title: t.orderCreatedSuccessTitle,
+            description: t.orderCreatedSuccessDescription
         });
         router.push(`/dashboard/orders/${orderId}`);
     } catch (err: any) {
         toast({
             variant: 'destructive',
-            title: "Failed to Create Order",
+            title: t.failedToCreateOrder,
             description: err.message
         });
         setIsSubmitting(false);
@@ -112,7 +112,7 @@ export default function RequestServicePage() {
     <div className="max-w-2xl mx-auto py-6 animate-fadeIn">
        <Button variant="outline" onClick={() => router.back()} className="mb-4 group">
         <ArrowLeft className="ltr:mr-2 rtl:ml-2 h-4 w-4 group-hover:text-primary transition-colors group-hover:translate-x-[-2px]" />
-        Back to Profile
+        {t.backToProfile}
       </Button>
       <Card className="shadow-xl">
         <CardHeader>
@@ -122,7 +122,7 @@ export default function RequestServicePage() {
                 <AvatarFallback><UserCircle className="h-8 w-8"/></AvatarFallback>
              </Avatar>
              <div>
-                <CardDescription>Requesting Service from</CardDescription>
+                <CardDescription>{t.requestingServiceFrom}</CardDescription>
                 <CardTitle className="text-2xl font-headline">{provider.name}</CardTitle>
              </div>
           </div>
@@ -131,18 +131,18 @@ export default function RequestServicePage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="description" className="block text-sm font-medium text-foreground mb-2">
-                Service Description
+                {t.serviceDescription}
               </Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Please describe the job you need done in detail..."
+                placeholder={t.describeJobDetailPlaceholder}
                 rows={5}
                 required
                 disabled={isSubmitting}
               />
-              <p className="text-xs text-muted-foreground mt-2">The provider will see this description. Be as clear as possible.</p>
+              <p className="text-xs text-muted-foreground mt-2">{t.providerWillSeeDescription}</p>
             </div>
             
             <div>
@@ -172,7 +172,7 @@ export default function RequestServicePage() {
               ) : (
                 <Send className="ltr:mr-2 rtl:ml-2 h-5 w-5" />
               )}
-              Submit Request
+              {t.submitRequest}
             </Button>
           </form>
         </CardContent>
