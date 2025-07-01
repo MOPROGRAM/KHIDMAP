@@ -13,14 +13,18 @@ function isAdmin() {
   return isUserAuthenticated() && request.auth.token.email == "mobusinessarena@gmail.com";
 }
 
+// More robust role check: ensures user document exists before trying to access its data.
 function isProvider() {
-  return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'provider';
+  let userDocPath = /databases/$(database)/documents/users/$(request.auth.uid);
+  return exists(userDocPath) && get(userDocPath).data.role == 'provider';
 }
 
 function isSeeker() {
-  return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'seeker';
+  let userDocPath = /databases/$(database)/documents/users/$(request.auth.uid);
+  return exists(userDocPath) && get(userDocPath).data.role == 'seeker';
 }
 
+// Checks if the requesting user's ID is in the participantIds array of a resource.
 function isParticipant(resource) {
   return request.auth.uid in resource.data.participantIds;
 }
@@ -50,6 +54,7 @@ service cloud.firestore {
         request.auth.uid == resource.data.providerId ||
         isAdmin()
       );
+      // The create rule was correct, but isSeeker() function is now more robust
       allow create: if isUserAuthenticated() && isSeeker();
       allow delete: if isAdmin();
     }
@@ -63,7 +68,12 @@ service cloud.firestore {
 
     // Messages (Chat documents)
     match /messages/{chatId} {
+      // Add a create rule: a user can create a chat if their ID is in the new document's participant list
+      allow create: if isUserAuthenticated() && isParticipant(request.resource);
+      // Existing rules for get/update
       allow get, update: if isUserAuthenticated() && (isParticipant(resource) || isAdmin());
+      // List rule allows any authenticated user to query for chats. 
+      // The client-side code MUST filter these queries to only show chats the user is part of.
       allow list: if isUserAuthenticated();
 
       // Subcollection: individual messages
