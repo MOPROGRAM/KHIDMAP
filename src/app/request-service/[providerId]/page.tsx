@@ -4,14 +4,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, getUserProfileById, createOrder } from '@/lib/data';
 import { auth } from '@/lib/firebase';
-import { Loader2, Send, UserCircle, ArrowLeft } from 'lucide-react';
+import { Loader2, Send, UserCircle, ArrowLeft, DollarSign } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Label } from '@/components/ui/label';
 
 export default function RequestServicePage() {
   const t = useTranslation();
@@ -23,6 +25,7 @@ export default function RequestServicePage() {
 
   const [provider, setProvider] = useState<UserProfile | null>(null);
   const [description, setDescription] = useState('');
+  const [amount, setAmount] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,16 +72,22 @@ export default function RequestServicePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const serviceAmount = parseFloat(amount);
     if (!description.trim()) {
       toast({ variant: 'destructive', title: "Description Required", description: "Please describe the service you need." });
       return;
     }
+    if (isNaN(serviceAmount) || serviceAmount <= 0) {
+      toast({ variant: 'destructive', title: "Invalid Amount", description: "Please enter a valid service amount." });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-        const orderId = await createOrder(providerId, description);
+        const orderId = await createOrder(providerId, description, serviceAmount);
         toast({
             title: "Order Created Successfully!",
-            description: "You will now be redirected to the payment page."
+            description: "You will now be redirected to the order page to complete payment."
         });
         router.push(`/dashboard/orders/${orderId}`);
     } catch (err: any) {
@@ -121,20 +130,42 @@ export default function RequestServicePage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-foreground mb-2">
+              <Label htmlFor="description" className="block text-sm font-medium text-foreground mb-2">
                 Service Description
-              </label>
+              </Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Please describe the job you need done in detail..."
-                rows={6}
+                rows={5}
                 required
                 disabled={isSubmitting}
               />
               <p className="text-xs text-muted-foreground mt-2">The provider will see this description. Be as clear as possible.</p>
             </div>
+            
+            <div>
+              <Label htmlFor="amount" className="block text-sm font-medium text-foreground mb-2">
+                {t.serviceAmount}
+              </Label>
+              <div className="relative">
+                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                 <Input
+                    id="amount"
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0.00"
+                    required
+                    disabled={isSubmitting}
+                    className="pl-9"
+                    step="0.01"
+                  />
+              </div>
+               <p className="text-xs text-muted-foreground mt-2">{t.enterServiceAmount}</p>
+            </div>
+
             <Button type="submit" className="w-full text-lg py-3 group" disabled={isSubmitting}>
               {isSubmitting ? (
                 <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" />

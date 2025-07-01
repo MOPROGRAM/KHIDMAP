@@ -10,10 +10,11 @@ import { useToast } from '@/hooks/use-toast';
 import { auth, storage } from '@/lib/firebase';
 import { Order, getOrderById, OrderStatus, uploadPaymentProofAndUpdateOrder, markOrderAsCompleted, disputeOrder } from '@/lib/data';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { Loader2, ArrowLeft, Clock, CheckCircle, AlertCircle, Upload, Send, ShieldQuestion, FileCheck } from 'lucide-react';
+import { Loader2, ArrowLeft, Clock, CheckCircle, AlertCircle, Upload, Send, ShieldQuestion, FileCheck, DollarSign, Banknote, Landmark } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { Separator } from '@/components/ui/separator';
 
 const StatusInfo = ({ status, t }: { status: OrderStatus; t: Translations }) => {
     const info = {
@@ -202,19 +203,29 @@ export default function OrderDetailPage() {
                 <strong className="block text-sm font-medium text-muted-foreground">Service Description</strong>
                 <p className="p-3 bg-muted/50 rounded-md mt-1 whitespace-pre-wrap">{order.serviceDescription}</p>
             </div>
+
+            <Card className="bg-background">
+              <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><DollarSign className="h-5 w-5"/>Financial Summary</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center"><span className="text-muted-foreground">{t.serviceAmount}</span> <span className="font-mono font-medium">${order.amount.toFixed(2)}</span></div>
+                  <div className="flex justify-between items-center"><span className="text-muted-foreground">{t.platformCommission} (5%)</span> <span className="font-mono font-medium">${order.commission.toFixed(2)}</span></div>
+                  <Separator/>
+                  <div className="flex justify-between items-center font-semibold"><span className="text-muted-foreground">{t.providerPayout}</span> <span className="font-mono">${order.payoutAmount.toFixed(2)}</span></div>
+              </CardContent>
+            </Card>
             
             {showPaymentBox && (
                 <Card className="bg-background border-primary">
                     <CardHeader>
-                        <CardTitle>Payment Required</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Banknote className="h-5 w-5"/>Payment Required</CardTitle>
                         <CardDescription>Please complete the payment and upload proof to proceed.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div>
-                            <h4 className="font-semibold">Bank Transfer Details</h4>
+                            <h4 className="font-semibold flex items-center gap-2"><Landmark className="h-4 w-4"/>Bank Transfer Details</h4>
                             <p className="text-sm text-muted-foreground">Bank Name: Khidmap National Bank</p>
                             <p className="text-sm text-muted-foreground">Account Number: 123-456-7890</p>
-                            <p className="text-sm text-muted-foreground">Amount: (To be agreed upon)</p>
+                            <p className="text-sm text-muted-foreground">Amount: <strong className="font-mono">${order.amount.toFixed(2)}</strong></p>
                         </div>
                         <Separator />
                          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/jpeg,image/png,application/pdf" />

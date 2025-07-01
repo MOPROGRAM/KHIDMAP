@@ -104,6 +104,7 @@ export default function AdminPaymentsPage() {
                     <p className="text-sm text-muted-foreground">Order ID: <Badge variant="secondary">{order.id}</Badge></p>
                     <p><strong>Seeker:</strong> {order.seekerName}</p>
                     <p><strong>Provider:</strong> {order.providerName}</p>
+                    <p><strong>Amount:</strong> <span className="font-mono">${order.amount.toFixed(2)}</span></p>
                     <p className="text-sm text-muted-foreground pt-2"><strong>Description:</strong> {order.serviceDescription}</p>
                   </div>
                   <div className="space-y-3 flex flex-col items-center">

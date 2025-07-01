@@ -90,6 +90,9 @@ export interface Order {
     seekerName: string;
     providerName: string;
     serviceDescription: string;
+    amount: number;
+    commission: number;
+    payoutAmount: number;
     status: OrderStatus;
     proofOfPaymentUrl?: string;
     createdAt: Timestamp;
@@ -511,7 +514,7 @@ export const updateCallStatus = async (callId: string, status: Call['status']): 
 
 // --- Order Management Functions ---
 
-export async function createOrder(providerId: string, serviceDescription: string): Promise<string> {
+export async function createOrder(providerId: string, serviceDescription: string, amount: number): Promise<string> {
   if (!db || !auth.currentUser) throw new Error("Authentication or database error.");
   
   const seekerId = auth.currentUser.uid;
@@ -524,12 +527,19 @@ export async function createOrder(providerId: string, serviceDescription: string
     throw new Error("Could not find profiles for one or both users.");
   }
 
+  const commissionRate = 0.05; // 5%
+  const commission = amount * commissionRate;
+  const payoutAmount = amount - commission;
+
   const orderData = {
     seekerId,
     providerId,
     seekerName: seekerProfile.name,
     providerName: providerProfile.name,
     serviceDescription,
+    amount,
+    commission,
+    payoutAmount,
     status: 'pending_payment',
     createdAt: serverTimestamp(),
   };

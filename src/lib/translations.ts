@@ -343,6 +343,10 @@ export type Translations = {
   callDuration: string;
   videoCallLog: string;
   audioCallLog: string;
+  serviceAmount: string;
+  enterServiceAmount: string;
+  platformCommission: string;
+  providerPayout: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -670,6 +674,10 @@ export const translations: Record<'en' | 'ar', Translations> = {
     callDuration: "Call duration",
     videoCallLog: "Video call",
     audioCallLog: "Audio call",
+    serviceAmount: "Service Amount",
+    enterServiceAmount: "Enter the amount agreed upon with the provider.",
+    platformCommission: "Platform Commission",
+    providerPayout: "Provider Payout",
   },
   ar: {
     appName: "خدماب",
@@ -992,5 +1000,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     callDuration: "مدة المكالمة",
     videoCallLog: "مكالمة فيديو",
     audioCallLog: "مكالمة صوتية",
+    serviceAmount: "مبلغ الخدمة",
+    enterServiceAmount: "أدخل المبلغ المتفق عليه مع مقدم الخدمة.",
+    platformCommission: "عمولة المنصة",
+    providerPayout: "مستحقات مقدم الخدمة",
   },
 };
