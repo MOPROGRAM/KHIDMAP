@@ -90,13 +90,17 @@ export default function LoginPage() {
     } catch (error: any) {
       console.error("Firebase login error:", error);
       let errorMessage = t.loginFailedGeneric;
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+      
+      // Per Firebase docs, auth/invalid-credential is now the standard error
+      // for wrong password, non-existent user, etc. to prevent user enumeration.
+      if (error.code === 'auth/invalid-credential') {
         errorMessage = t.invalidCredentials;
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = t.invalidEmail;
       } else if (error.code === 'auth/network-request-failed'){
         errorMessage = t.networkError;
       }
+
       toast({
         variant: "destructive",
         title: t.loginFailedTitle,

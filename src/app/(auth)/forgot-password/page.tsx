@@ -33,20 +33,23 @@ export default function ForgotPasswordPage() {
 
     try {
       await sendPasswordResetEmail(auth, email);
+      // We always show the success message to prevent email enumeration attacks.
       setIsSubmitted(true);
     } catch (error: any) {
-      console.error("Forgot password error:", error);
-      let errorMessage = t.loginFailedGeneric;
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        errorMessage = t.userNotFound;
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = t.invalidEmail;
+      // We only catch genuine errors (like invalid email format), not "user not found".
+      // Firebase itself will still throw an error for a malformed email.
+      if (error.code === 'auth/invalid-email') {
+         toast({
+            variant: "destructive",
+            title: t.resetPasswordErrorTitle,
+            description: t.invalidEmail,
+          });
+      } else {
+        // For any other error (including user-not-found), we still show the success message to the user,
+        // but log the error for debugging. This is a security best practice.
+        console.error("Forgot password error (gracefully handled):", error);
+        setIsSubmitted(true);
       }
-      toast({
-        variant: "destructive",
-        title: t.resetPasswordErrorTitle,
-        description: errorMessage,
-      });
     } finally {
       setIsLoading(false);
     }
