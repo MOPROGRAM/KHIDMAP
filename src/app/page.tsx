@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -6,6 +7,9 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { ArrowRight, Wrench, Zap, Hammer, Brush, SprayCan, HardHat, Layers, GripVertical } from 'lucide-react';
 import React from 'react';
 import { useSettings } from '@/contexts/SettingsContext';
+import Image from 'next/image';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 export default function HomePage() {
   const t = useTranslation();
@@ -90,6 +94,25 @@ export default function HomePage() {
                 {serviceCards.map((service, index) => renderServiceCard(service, index))}
             </ul>
           </div>
+        </section>
+      </div>
+
+       {/* Ad Section */}
+       <div className="w-full border-t">
+        <section className="w-full container mx-auto bg-background py-16 border-x">
+          <Card className="max-w-4xl mx-auto p-6 grid md:grid-cols-2 items-center gap-6 bg-accent/5 border-primary/20 shadow-lg">
+            <div className="space-y-3">
+              <Badge variant="outline">{t.advertisement}</Badge>
+              <h3 className="text-2xl font-bold text-foreground">{t.adPlaceholderTitle}</h3>
+              <p className="text-muted-foreground">{t.adPlaceholderDescription}</p>
+              <Button asChild>
+                <Link href="/advertise">{t.advertiseWithUs}</Link>
+              </Button>
+            </div>
+            <div className="relative h-48 w-full rounded-lg overflow-hidden hidden md:block">
+              <Image src="https://placehold.co/600x400.png" alt="Advertisement placeholder" layout="fill" objectFit="cover" data-ai-hint="business marketing" />
+            </div>
+          </Card>
         </section>
       </div>
 

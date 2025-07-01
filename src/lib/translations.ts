@@ -407,6 +407,26 @@ export type Translations = {
   EGP: string;
   AED: string;
   QAR: string;
+
+  // FAQ & Ads
+  howToUse: string;
+  advertiseWithUs: string;
+  faqTitle: string;
+  faqDescription: string;
+  faqQ1: string;
+  faqA1: string;
+  faqQ2: string;
+  faqA2: string;
+  faqQ3: string;
+  faqA3: string;
+  faqQ4: string;
+  faqA4: string;
+  advertiseTitle: string;
+  advertiseDescription: string;
+  adInquiryPlaceholder: string;
+  advertisement: string;
+  adPlaceholderTitle: string;
+  adPlaceholderDescription: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -790,6 +810,24 @@ export const translations: Record<'en' | 'ar', Translations> = {
     EGP: "Egyptian Pound",
     AED: "UAE Dirham",
     QAR: "Qatari Riyal",
+    howToUse: "How to Use",
+    advertiseWithUs: "Advertise with Us",
+    faqTitle: "Frequently Asked Questions",
+    faqDescription: "Find answers to common questions about using Khidmap.",
+    faqQ1: "How do I find a service provider?",
+    faqA1: "Use the search bar on the 'Services' page. You can search by service type (e.g., 'plumbing'), name, or use the 'Find Near Me' button to see providers closest to you.",
+    faqQ2: "How do I register as a service provider?",
+    faqA2: "Click the 'Register' button on the homepage, choose 'Service Provider' during registration, and then fill out your profile from the dashboard. A complete profile with photos and a good bio attracts more customers.",
+    faqQ3: "How does the payment system work?",
+    faqA3: "After you request a service and the provider accepts, you'll be prompted to make payment and upload proof. We notify the provider once payment is approved, and they can begin the work.",
+    faqQ4: "What if I have a problem with a service?",
+    faqA4: "If you are not satisfied with the service, do not mark the order as 'Completed'. Instead, use the 'Report a Problem' button on the order details page. This will mark the order as 'Disputed', and our support team will investigate the issue.",
+    advertiseTitle: "Advertise with Us",
+    advertiseDescription: "Reach thousands of potential customers. Fill out the form below to inquire about our advertising options.",
+    adInquiryPlaceholder: "Tell us about your business and what you'd like to advertise...",
+    advertisement: "Advertisement",
+    adPlaceholderTitle: "Your Ad Here",
+    adPlaceholderDescription: "Promote your service or product to a targeted audience of users looking for solutions.",
   },
   ar: {
     appName: "خدماب",
@@ -1168,5 +1206,23 @@ export const translations: Record<'en' | 'ar', Translations> = {
     EGP: "جنيه مصري",
     AED: "درهم إماراتي",
     QAR: "ريال قطري",
+    howToUse: "كيفية الاستخدام",
+    advertiseWithUs: "أعلن معنا",
+    faqTitle: "الأسئلة الشائعة",
+    faqDescription: "ابحث عن إجابات للأسئلة الشائعة حول استخدام خدماب.",
+    faqQ1: "كيف أجد مقدم خدمة؟",
+    faqA1: "استخدم شريط البحث في صفحة 'الخدمات'. يمكنك البحث حسب نوع الخدمة (مثل 'سباكة')، أو الاسم، أو استخدام زر 'البحث بالقرب مني' لرؤية مقدمي الخدمات الأقرب إليك.",
+    faqQ2: "كيف أسجل كمقدم خدمة؟",
+    faqA2: "انقر على زر 'تسجيل' في الصفحة الرئيسية، واختر 'مقدم خدمة' أثناء التسجيل، ثم املأ تفاصيل ملفك الشخصي من لوحة التحكم. الملف الشخصي المكتمل بالصور والسيرة الذاتية الجيدة يجذب المزيد من العملاء.",
+    faqQ3: "كيف يعمل نظام الدفع؟",
+    faqA3: "بعد طلب الخدمة وقبول مقدم الخدمة، سيُطلب منك الدفع وتحميل إثبات الدفع. نقوم بإعلام مقدم الخدمة بمجرد الموافقة على الدفع، ويمكنه بعد ذلك بدء العمل.",
+    faqQ4: "ماذا لو واجهت مشكلة مع الخدمة؟",
+    faqA4: "إذا لم تكن راضيًا عن الخدمة، لا تقم بتأكيد الطلب على أنه 'مكتمل'. بدلاً من ذلك، استخدم زر 'الإبلاغ عن مشكلة' في صفحة تفاصيل الطلب. سيؤدي هذا إلى وضع الطلب في حالة 'متنازع عليه'، وسيقوم فريق الدعم لدينا بالتحقيق في المشكلة.",
+    advertiseTitle: "أعلن معنا",
+    advertiseDescription: "تواصل مع آلاف العملاء المحتملين. املأ النموذج أدناه للاستفسار عن خياراتنا الإعلانية.",
+    adInquiryPlaceholder: "أخبرنا عن عملك وما تود الإعلان عنه...",
+    advertisement: "إعلان",
+    adPlaceholderTitle: "إعلانك هنا",
+    adPlaceholderDescription: "روّج لخدمتك أو منتجك لجمهور مستهدف من المستخدمين الباحثين عن حلول.",
   },
 };

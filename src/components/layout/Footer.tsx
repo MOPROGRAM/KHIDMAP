@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useTranslation } from '@/hooks/useTranslation';
@@ -19,6 +20,8 @@ export default function Footer() {
             <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t.home}</Link>
             <Link href="/services/search" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t.services}</Link>
             <Link href="/contact" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t.contactUs}</Link>
+            <Link href="/faq" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t.howToUse}</Link>
+            <Link href="/advertise" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t.advertiseWithUs}</Link>
           </nav>
         </div>
       </div>
