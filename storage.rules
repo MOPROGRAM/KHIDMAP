@@ -1,47 +1,52 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Helper function to check if the user is authenticated and owns the resource.
-    function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
+    // Helper function to get order data from Firestore
+    function getOrderData(orderId) {
+      return get(/databases/$(database)/documents/orders/$(orderId)).data;
     }
 
-    // --- Rules for Payment Proofs ---
-    // Path: /payment_proofs/{orderId}/{seekerId}/{fileName}
+    // Payment Proofs:
+    // - Path: payment_proofs/{orderId}/{seekerId}/{fileName}
+    // - Rule: The uploading user's ID must match the seekerId in the path,
+    //         AND that seekerId must match the one in the corresponding Firestore order document.
     match /payment_proofs/{orderId}/{seekerId}/{fileName} {
-      
-      // READ access:
-      // Allowed if the user is an admin OR is a participant in the order.
-      allow read: if request.auth.token.email == "mobusinessarena@gmail.com" || 
-                     (request.auth.uid == get(/databases/$(database)/documents/orders/$(orderId)).data.seekerId || 
-                      request.auth.uid == get(/databases/$(database)/documents/orders/$(orderId)).data.providerId);
-      
-      // WRITE access (UPLOAD):
-      // Allowed ONLY if the user's UID matches the seekerId in the path AND
-      // that same UID matches the seekerId in the corresponding Firestore order document.
-      allow write: if isOwner(seekerId) && isOwner(get(/databases/$(database)/documents/orders/$(orderId)).data.seekerId);
-    }
-    
-    // --- Rules for Provider Portfolio ---
-    // Path: /serviceAds/{userId}/{mediaType}/{fileName}
-    match /serviceAds/{userId}/{mediaType}/{fileName} {
-      // Anyone can read the portfolio.
-      allow read: if true;
-      // Only the owner can write/delete their portfolio items.
-      allow write, delete: if isOwner(userId);
-    }
-    
-    // --- Rules for Chat Media ---
-    // Path: /chats/{chatId}/{fileName}
-    match /chats/{chatId}/{fileName} {
-      // Only chat participants can read or write media.
-      allow read, write: if request.auth != null && request.auth.uid in get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds;
+      allow read: if request.auth != null && (request.auth.uid == getOrderData(orderId).seekerId || request.auth.uid == getOrderData(orderId).providerId || request.auth.token.email == "mobusinessarena@gmail.com");
+      allow write: if request.auth != null && request.auth.uid == seekerId && request.auth.uid == getOrderData(orderId).seekerId;
     }
 
-    // Default deny all other paths for security.
+    // Portfolio Images and Videos for Providers:
+    // - Naming convention: serviceAds/{userId}/{'images' or 'videos'}/{fileName}
+    // - Only the owner (provider) can write/delete.
+    // - Anyone can read (public portfolio).
+    match /serviceAds/{userId}/{mediaType}/{fileName} {
+      allow read: if true;
+      allow write, delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Chat media:
+    // - Path: chats/{chatId}/{fileName}
+    // - Write: User must be authenticated and their UID must match the 'senderId' in the file's custom metadata.
+    //          The chatId in the path must also match the one in metadata. This prevents race conditions with Firestore.
+    // - Read: User must be a participant in the chat document in Firestore.
+    match /chats/{chatId}/{fileName} {
+      function isChatParticipant() {
+        let chatPath = /databases/$(database)/documents/messages/$(chatId);
+        // Check existence first to prevent errors on new chats.
+        return exists(chatPath) && request.auth.uid in get(chatPath).data.participantIds;
+      }
+      
+      allow read: if request.auth != null && isChatParticipant();
+
+      // Authorize write based on metadata sent with the upload, not a DB read.
+      allow write: if request.auth != null &&
+                      request.auth.uid == request.resource.metadata.senderId &&
+                      chatId == request.resource.metadata.chatId;
+    }
+
+    // Default deny all other paths
     match /{allPaths=**} {
       allow read, write: if false;
     }

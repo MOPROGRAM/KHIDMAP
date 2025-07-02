@@ -341,9 +341,20 @@ export const sendMessage = async (
     if (content instanceof File || content instanceof Blob) {
         if (!storage) throw new Error("Storage service is not available.");
         
-        const filePath = `chats/${chatId}/${new Date().getTime()}_${(content instanceof File ? content.name : type)}`;
+        const originalName = content instanceof File ? content.name : "media";
+        const safeFileName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const filePath = `chats/${chatId}/${new Date().getTime()}_${safeFileName}`;
         const fileRef = ref(storage, filePath);
-        await uploadBytes(fileRef, content);
+
+        // Add custom metadata for security rules to prevent race conditions
+        const metadata = {
+          customMetadata: {
+            'senderId': senderId,
+            'chatId': chatId
+          }
+        };
+
+        await uploadBytes(fileRef, content, metadata); // Pass metadata
         messageContent = await getDownloadURL(fileRef);
 
         if (type === 'image') lastMessageText = "📷 Image";
