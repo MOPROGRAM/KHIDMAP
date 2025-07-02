@@ -562,9 +562,12 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
 }
 
 export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: File): Promise<void> {
-    if (!db || !storage || !auth.currentUser) throw new Error("Services not available.");
-
-    const filePath = `payment_proofs/${orderId}/${auth.currentUser.uid}/${file.name}`;
+    if (!db || !storage || !auth.currentUser) {
+        throw new Error("Authentication session is invalid or services are unavailable. Please log in again.");
+    }
+    // Sanitize filename to prevent path traversal issues
+    const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const filePath = `payment_proofs/${orderId}/${auth.currentUser.uid}/${safeFileName}`;
     const fileRef = ref(storage, filePath);
 
     await uploadBytes(fileRef, file);
