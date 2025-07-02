@@ -3,38 +3,46 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Helper function to get order data
+    // Helper function to get order data from Firestore
     function getOrder(orderId) {
       return get(/databases/$(database)/documents/orders/$(orderId)).data;
     }
 
+    // Helper to check if a user is the seeker for a specific order
+    function isOrderSeeker(orderId) {
+      let order = getOrder(orderId);
+      return request.auth != null && request.auth.uid == order.seekerId;
+    }
+    
     // Helper to check if a user is a participant in an order
     function isOrderParticipant(orderId) {
       let order = getOrder(orderId);
-      return request.auth.uid == order.seekerId || request.auth.uid == order.providerId;
+      return request.auth != null && (request.auth.uid == order.seekerId || request.auth.uid == order.providerId);
+    }
+    
+    function isAdmin() {
+        return request.auth != null && request.auth.token.email == "mobusinessarena@gmail.com";
     }
 
     // Payment Proofs:
-    // - Naming convention: payment_proofs/{orderId}/{someUserId}/{fileName}
-    match /payment_proofs/{orderId}/{userIdInPath}/{fileName} {
-      allow read: if request.auth != null && (isOrderParticipant(orderId) || request.auth.token.email == "mobusinessarena@gmail.com");
-      // Corrected Rule: The user writing the file MUST be the seeker associated with the order in Firestore.
-      // This is more secure than trusting the UID in the file path.
-      allow write: if request.auth != null && request.auth.uid == get(/databases/$(database)/documents/orders/$(orderId)).data.seekerId;
+    // Path: payment_proofs/{orderId}/{anyFileName}
+    // Corrected rule: Only the seeker of the specific order can upload.
+    match /payment_proofs/{orderId}/{fileName} {
+      allow read: if isOrderParticipant(orderId) || isAdmin();
+      allow write: if isOrderSeeker(orderId);
     }
 
     // Portfolio Images and Videos for Providers:
-    // - Naming convention: serviceAds/{userId}/{'images' or 'videos'}/{fileName}
-    // - Only the owner (provider) can write/delete.
-    // - Anyone can read (public portfolio).
+    // Path: serviceAds/{userId}/{'images' or 'videos'}/{fileName}
+    // Only the owner (provider) can write/delete. Anyone can read.
     match /serviceAds/{userId}/{mediaType}/{fileName} {
       allow read: if true;
       allow write, delete: if request.auth != null && request.auth.uid == userId;
     }
     
     // Chat media:
-    // - Naming convention: chats/{chatId}/{fileName}
-    // - Only participants of the chat can read/write.
+    // Path: chats/{chatId}/{fileName}
+    // Only participants of the chat can read/write.
     match /chats/{chatId}/{fileName} {
       function isChatParticipant() {
         return request.auth.uid in get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds;
