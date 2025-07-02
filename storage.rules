@@ -10,36 +10,32 @@ service firebase.storage {
 
     // Payment Proofs:
     // - Path: payment_proofs/{orderId}/{seekerId}/{fileName}
-    // - Rule: The uploading user's ID must match the seekerId in the path,
-    //         AND that seekerId must match the one in the corresponding Firestore order document.
     match /payment_proofs/{orderId}/{seekerId}/{fileName} {
       allow read: if request.auth != null && (request.auth.uid == getOrderData(orderId).seekerId || request.auth.uid == getOrderData(orderId).providerId || request.auth.token.email == "mobusinessarena@gmail.com");
       allow write: if request.auth != null && request.auth.uid == seekerId && request.auth.uid == getOrderData(orderId).seekerId;
     }
 
     // Portfolio Images and Videos for Providers:
-    // - Naming convention: serviceAds/{userId}/{'images' or 'videos'}/{fileName}
-    // - Only the owner (provider) can write/delete.
-    // - Anyone can read (public portfolio).
+    // - Path: serviceAds/{userId}/{mediaType}/{fileName}
     match /serviceAds/{userId}/{mediaType}/{fileName} {
       allow read: if true;
       allow write, delete: if request.auth != null && request.auth.uid == userId;
     }
     
     // Chat media:
-    // This rule uses bracket notation for metadata access, which is more robust.
-    // It verifies that the uploader's ID and the target chatId in the file's metadata
-    // match the request authentication and the path.
+    // This rule is the FINAL, CORRECTED version.
+    // It checks the METADATA object attached to the file at upload time (which corresponds to customMetadata from the client SDK).
     match /chats/{chatId}/{fileName} {
        function isChatParticipant() {
         let chatPath = /databases/$(database)/documents/messages/$(chatId);
         return exists(chatPath) && request.auth.uid in get(chatPath).data.participantIds;
       }
 
-      // Read access is still based on the Firestore document for security.
+      // Read access is still based on Firestore document for security.
       allow read: if request.auth != null && isChatParticipant();
       
-      // Write access is based on metadata sent with the upload.
+      // Write access is based on the metadata sent with the upload.
+      // This ensures the uploader is who they say they are and are uploading to the correct chat.
       allow write: if request.auth != null && 
                       request.auth.uid == request.resource.metadata['senderId'] && 
                       chatId == request.resource.metadata['chatId'];
