@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 // Helper functions
@@ -14,23 +13,15 @@ function isAdmin() {
   return isUserAuthenticated() && request.auth.token.email == "mobusinessarena@gmail.com";
 }
 
-// Corrected functions to check roles safely
-function isProvider() {
-  // Check if the user document exists AND if its role is 'provider'
-  return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'provider';
+function isSeeker(userId) {
+  return exists(/databases/$(database)/documents/users/$(userId)) &&
+         get(/databases/$(database)/documents/users/$(userId)).data.role == 'seeker';
 }
 
-function isSeeker() {
-  // Check if the user document exists AND if its role is 'seeker'
-  return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'seeker';
-}
-
-
-function isParticipant(resource) {
-  // This is a correct and safe check
-  return request.auth.uid in resource.data.participantIds;
+function onlyTheseFieldsChanged(allowedKeys) {
+    let allKeys = request.resource.data.keys().toSet().union(resource.data.keys().toSet());
+    let changedKeys = allKeys.filter(key => request.resource.data[key] != resource.data[key]);
+    return changedKeys.difference(allowedKeys.toSet()).size() == 0;
 }
 
 service cloud.firestore {
@@ -40,8 +31,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow create: if isUserAuthenticated();
-      // Prevent users from changing their own role. Admin can change roles.
-      allow update: if (isUser(userId) && request.resource.data.role == resource.data.role) || isAdmin();
+      // User can update their own profile, but not their role. Admin can do anything.
+      allow update: if (isUser(userId) && !('role' in request.resource.data)) || isAdmin();
       allow delete: if isUser(userId) || isAdmin();
     }
 
@@ -54,51 +45,107 @@ service cloud.firestore {
 
     // Orders
     match /orders/{orderId} {
-      // Allow read/update if the user is a participant in the order or an admin.
-      allow read, update: if isUserAuthenticated() && (
-        request.auth.uid == resource.data.seekerId ||
-        request.auth.uid == resource.data.providerId ||
-        isAdmin()
-      );
-      // Allow create if the user submitting the request is the seeker in the order
-      allow create: if isUserAuthenticated() && request.auth.uid == request.resource.data.seekerId;
-      // Allow list for authenticated users. Logic in the app filters by user.
+      allow read: if isUserAuthenticated() && (request.auth.uid == resource.data.seekerId || request.auth.uid == resource.data.providerId || isAdmin());
+      allow create: if isUserAuthenticated() && request.auth.uid == request.resource.data.seekerId && isSeeker(request.auth.uid);
       allow list: if isUserAuthenticated();
+      allow update: if isUserAuthenticated() && (
+        // Provider accepts/declines order
+        (
+            request.auth.uid == resource.data.providerId &&
+            resource.data.status == 'pending_approval' &&
+            (request.resource.data.status == 'pending_payment' || request.resource.data.status == 'declined') &&
+            onlyTheseFieldsChanged(['status', 'approvedByProviderAt', 'declinedAt'])
+        ) ||
+        // Seeker uploads payment proof
+        (
+            request.auth.uid == resource.data.seekerId &&
+            resource.data.status == 'pending_payment' &&
+            onlyTheseFieldsChanged(['proofOfPaymentUrl'])
+        ) ||
+        // Seeker grants grace period
+        (
+            request.auth.uid == resource.data.seekerId &&
+            resource.data.status == 'paid' &&
+            resource.data.serviceStartedAt == null &&
+            onlyTheseFieldsChanged(['gracePeriodInDays'])
+        ) ||
+        // Seeker disputes (before service starts)
+         (
+            request.auth.uid == resource.data.seekerId &&
+            resource.data.status == 'paid' &&
+            resource.data.serviceStartedAt == null &&
+            request.resource.data.status == 'disputed' &&
+            onlyTheseFieldsChanged(['status', 'disputeReason'])
+        ) ||
+        // Provider starts service
+        (
+            request.auth.uid == resource.data.providerId &&
+            resource.data.status == 'paid' &&
+            onlyTheseFieldsChanged(['serviceStartedAt'])
+        ) ||
+        // Seeker completes the order
+        (
+            request.auth.uid == resource.data.seekerId &&
+            resource.data.status == 'paid' &&
+            resource.data.serviceStartedAt != null &&
+            request.resource.data.status == 'completed' &&
+            onlyTheseFieldsChanged(['status', 'completedAt'])
+        ) ||
+        // Seeker disputes (after service starts)
+        (
+            request.auth.uid == resource.data.seekerId &&
+            resource.data.status == 'paid' &&
+            resource.data.serviceStartedAt != null &&
+            request.resource.data.status == 'disputed' &&
+            onlyTheseFieldsChanged(['status', 'disputeReason'])
+        ) ||
+        // Admin approves payment
+        (
+            isAdmin() &&
+            resource.data.status == 'pending_payment' && 
+            request.resource.data.status == 'paid' &&
+            onlyTheseFieldsChanged(['status', 'paymentApprovedAt'])
+        ) ||
+        // Admin handles disputes
+        (
+            isAdmin() && resource.data.status == 'disputed'
+        )
+      );
       allow delete: if isAdmin();
     }
 
     // Ratings
     match /ratings/{ratingId} {
       allow read: if true;
-      // Ensure user is authenticated before checking role
-      allow create: if isUserAuthenticated() && isSeeker();
+      allow create: if isUserAuthenticated() && isSeeker(request.auth.uid);
       allow update, delete: if isAdmin();
     }
 
-    // Messages (Chat documents)
+    // Messages & Calls
+    function isChatParticipant(chatId) {
+        return request.auth.uid in get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds;
+    }
+    
     match /messages/{chatId} {
-      allow get, update: if isUserAuthenticated() && (isParticipant(resource) || isAdmin());
+      allow get, update: if isUserAuthenticated() && (isChatParticipant(chatId) || isAdmin());
       allow list: if isUserAuthenticated();
-      // Explicit create permission for starting new chats
       allow create: if isUserAuthenticated();
 
-      // Subcollection: individual messages
       match /messages/{messageId} {
-        allow read, create: if isUserAuthenticated() && (
-          isParticipant(get(/databases/$(database)/documents/messages/$(chatId))) || isAdmin()
-        );
+        allow read, create: if isUserAuthenticated() && isChatParticipant(chatId);
         allow update, delete: if isAdmin();
       }
     }
 
-    // Calls and WebRTC candidates
     match /calls/{callId} {
-      allow get, list, create, update, delete: if isUserAuthenticated() && (isParticipant(resource) || isAdmin());
+        function isCallParticipant() {
+            return request.auth.uid in get(/databases/$(database)/documents/calls/$(callId)).data.participantIds;
+        }
+
+        allow read, list, create, update, delete: if isUserAuthenticated() && (isCallParticipant() || isAdmin());
 
       match /{candidatesCollection}/{candidateId} {
-        allow read, create: if isUserAuthenticated() && (
-          isParticipant(get(/databases/$(database)/documents/calls/$(callId))) || isAdmin()
-        );
+        allow read, create: if isUserAuthenticated() && isCallParticipant();
         allow update, delete: if isAdmin();
       }
     }
