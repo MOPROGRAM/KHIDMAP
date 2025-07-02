@@ -16,6 +16,7 @@ import { auth, db } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, User as FirebaseUser, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, Timestamp, writeBatch, getDoc } from 'firebase/firestore';
 import { z } from "zod";
+import { ADMIN_EMAIL } from '@/lib/config';
 
 const RegisterSchema = z.object({
   name: z.string().min(1, { message: "requiredField" }),
@@ -100,13 +101,17 @@ export default function RegisterPage() {
       return;
     }
 
-    // Check for username availability
-    const usernameDocRef = doc(db, 'usernames', validationResult.data.username);
-    const usernameDoc = await getDoc(usernameDocRef);
-    if (usernameDoc.exists()) {
-        setErrors(prev => ({ ...prev, username: t.usernameTaken }));
-        setIsLoading(false);
-        return;
+    const isAdminRegistration = validationResult.data.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+    // Check for username availability, unless it's the admin registration
+    if (!isAdminRegistration) {
+      const usernameDocRef = doc(db, 'usernames', validationResult.data.username);
+      const usernameDoc = await getDoc(usernameDocRef);
+      if (usernameDoc.exists()) {
+          setErrors(prev => ({ ...prev, username: t.usernameTaken }));
+          setIsLoading(false);
+          return;
+      }
     }
     
     try {
@@ -116,19 +121,20 @@ export default function RegisterPage() {
       await updateProfile(firebaseUser, { displayName: validationResult.data.name });
       
       const userDocRef = doc(db, "users", firebaseUser.uid);
-      const claimedUsernameRef = doc(db, "usernames", validationResult.data.username);
       
+      const finalRole = isAdminRegistration ? 'admin' : validationResult.data.role;
+
       const userDocData: any = {
         uid: firebaseUser.uid,
         name: validationResult.data.name,
-        username: validationResult.data.username,
+        username: isAdminRegistration ? 'admin' : validationResult.data.username,
         email: firebaseUser.email,
-        role: validationResult.data.role,
+        role: finalRole,
         createdAt: Timestamp.now(), 
         emailVerified: firebaseUser.emailVerified,
       };
 
-      if (validationResult.data.role === 'provider') {
+      if (finalRole === 'provider') {
         Object.assign(userDocData, {
             phoneNumber: '',
             qualifications: '',
@@ -140,17 +146,30 @@ export default function RegisterPage() {
       
       const batch = writeBatch(db);
       batch.set(userDocRef, userDocData);
-      batch.set(claimedUsernameRef, { uid: firebaseUser.uid });
+
+      if (!isAdminRegistration) {
+        const claimedUsernameRef = doc(db, "usernames", validationResult.data.username);
+        batch.set(claimedUsernameRef, { uid: firebaseUser.uid });
+      }
+
       await batch.commit();
 
       await sendEmailVerification(firebaseUser);
       setShowVerificationMessage(true);
       
-      toast({
-        title: t.emailVerificationSent,
-        description: t.checkYourEmailForVerification,
-        duration: 10000, 
-      });
+      if (isAdminRegistration) {
+        toast({
+          title: "Admin Account Created",
+          description: "Please verify your email, then you can log in.",
+          duration: 10000, 
+        });
+      } else {
+        toast({
+          title: t.emailVerificationSent,
+          description: t.checkYourEmailForVerification,
+          duration: 10000, 
+        });
+      }
 
     } catch (error: any) {
       console.error("Firebase registration error:", error);
