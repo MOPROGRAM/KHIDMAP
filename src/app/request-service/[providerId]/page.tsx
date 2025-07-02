@@ -11,10 +11,14 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, getUserProfileById, createOrder } from '@/lib/data';
 import { auth } from '@/lib/firebase';
-import { Loader2, Send, UserCircle, ArrowLeft, CircleDollarSign } from 'lucide-react';
+import { Loader2, Send, UserCircle, ArrowLeft, CircleDollarSign, Calendar as CalendarIcon } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Label } from '@/components/ui/label';
 import { useSettings } from '@/contexts/SettingsContext';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export default function RequestServicePage() {
   const t = useTranslation();
@@ -28,6 +32,7 @@ export default function RequestServicePage() {
   const [provider, setProvider] = useState<UserProfile | null>(null);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
+  const [serviceStartDate, setServiceStartDate] = useState<Date | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +91,7 @@ export default function RequestServicePage() {
 
     setIsSubmitting(true);
     try {
-        const orderId = await createOrder(providerId, description, serviceAmount, currency);
+        const orderId = await createOrder(providerId, description, serviceAmount, currency, serviceStartDate || null);
         toast({
             title: t.orderCreatedSuccessTitle,
             description: t.orderCreatedAwaitingApprovalDescription
@@ -147,28 +152,60 @@ export default function RequestServicePage() {
               <p className="text-xs text-muted-foreground mt-2">{t.providerWillSeeDescription}</p>
             </div>
             
-            <div>
-              <Label htmlFor="amount" className="block text-sm font-medium text-foreground mb-2">
-                {t.serviceAmount}
-              </Label>
-              <div className="relative">
-                 <CircleDollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                 <Input
-                    id="amount"
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="0.00"
-                    required
-                    disabled={isSubmitting}
-                    className="pl-9 pr-14"
-                    step="0.01"
-                  />
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                     <span className="text-muted-foreground sm:text-sm">{currency}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="amount" className="block text-sm font-medium text-foreground mb-2">
+                    {t.serviceAmount}
+                  </Label>
+                  <div className="relative">
+                     <CircleDollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                     <Input
+                        id="amount"
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="0.00"
+                        required
+                        disabled={isSubmitting}
+                        className="pl-9 pr-14"
+                        step="0.01"
+                      />
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                         <span className="text-muted-foreground sm:text-sm">{currency}</span>
+                      </div>
                   </div>
-              </div>
-               <p className="text-xs text-muted-foreground mt-2">{t.enterServiceAmount}</p>
+                   <p className="text-xs text-muted-foreground mt-2">{t.enterServiceAmount}</p>
+                </div>
+
+                <div>
+                    <Label htmlFor="serviceStartDate" className="block text-sm font-medium text-foreground mb-2">
+                        {t.proposedStartDate}
+                    </Label>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <Button
+                            variant={"outline"}
+                            className={cn(
+                            "w-full justify-start text-left font-normal h-10",
+                            !serviceStartDate && "text-muted-foreground"
+                            )}
+                            disabled={isSubmitting}
+                        >
+                            <CalendarIcon className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                            {serviceStartDate ? format(serviceStartDate, "PPP") : <span>{t.selectStartDate}</span>}
+                        </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                        <Calendar
+                            mode="single"
+                            selected={serviceStartDate}
+                            onSelect={setServiceStartDate}
+                            initialFocus
+                            disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))}
+                        />
+                        </PopoverContent>
+                    </Popover>
+                </div>
             </div>
 
             <Button type="submit" className="w-full text-lg py-3 group" disabled={isSubmitting}>

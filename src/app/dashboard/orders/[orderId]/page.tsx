@@ -8,13 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { auth, storage } from '@/lib/firebase';
-import { Order, getOrderById, OrderStatus, uploadPaymentProofAndUpdateOrder, markOrderAsCompleted, disputeOrder, acceptOrder, declineOrder } from '@/lib/data';
+import { Order, getOrderById, OrderStatus, uploadPaymentProofAndUpdateOrder, markOrderAsCompleted, disputeOrder, acceptOrder, declineOrder, startService, grantGracePeriod } from '@/lib/data';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { Loader2, ArrowLeft, Clock, CheckCircle, AlertCircle, Upload, Send, ShieldQuestion, FileCheck, DollarSign, Banknote, Landmark, Hourglass, XCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Loader2, ArrowLeft, Clock, CheckCircle, AlertCircle, Upload, Send, ShieldQuestion, FileCheck, DollarSign, Banknote, Landmark, Hourglass, XCircle, ThumbsUp, ThumbsDown, PlayCircle, CalendarDays } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 const StatusInfo = ({ status, t, isProvider }: { status: OrderStatus; t: Translations; isProvider: boolean }) => {
     const infoMap: Record<OrderStatus, { icon: React.ElementType, titleKey: keyof Translations, descKey: keyof Translations, style: string }> = {
@@ -84,6 +86,7 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingAction, setIsSubmittingAction] = useState<string|null>(null);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<FirebaseUser | null>(null);
   
@@ -95,6 +98,28 @@ export default function OrderDetailPage() {
     QAR: 'ر.ق',
   };
 
+  const fetchOrder = async () => {
+    if (!orderId || !user) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+        const fetchedOrder = await getOrderById(orderId);
+        if (!fetchedOrder) {
+            setError("Order not found.");
+            return;
+        }
+        if (fetchedOrder.seekerId !== user.uid && fetchedOrder.providerId !== user.uid) {
+            setError("You are not authorized to view this order.");
+            return;
+        }
+        setOrder(fetchedOrder);
+    } catch (err: any) {
+        setError("Failed to fetch order details.");
+    } finally {
+        setIsLoading(false);
+    }
+  }
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
         setUser(currentUser);
@@ -104,29 +129,9 @@ export default function OrderDetailPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!orderId || !user) return;
-    
-    const fetchOrder = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const fetchedOrder = await getOrderById(orderId);
-            if (!fetchedOrder) {
-                setError("Order not found.");
-                return;
-            }
-            if (fetchedOrder.seekerId !== user.uid && fetchedOrder.providerId !== user.uid) {
-                setError("You are not authorized to view this order.");
-                return;
-            }
-            setOrder(fetchedOrder);
-        } catch (err: any) {
-            setError("Failed to fetch order details.");
-        } finally {
-            setIsLoading(false);
-        }
+    if(user && orderId){
+      fetchOrder();
     }
-    fetchOrder();
   }, [orderId, user]);
   
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,8 +147,7 @@ export default function OrderDetailPage() {
     setIsSubmitting(true);
     try {
         await uploadPaymentProofAndUpdateOrder(order.id, file);
-        const updatedOrder = await getOrderById(order.id);
-        setOrder(updatedOrder);
+        await fetchOrder();
         toast({ title: "Proof Uploaded Successfully", description: "The admin will review your payment shortly."});
     } catch (err: any) {
         toast({ variant: "destructive", title: "Upload Failed", description: err.message });
@@ -155,31 +159,29 @@ export default function OrderDetailPage() {
 
   const handleMarkAsCompleted = async () => {
     if(!order) return;
-    setIsSubmitting(true);
+    setIsSubmittingAction('complete');
     try {
       await markOrderAsCompleted(order.id);
-      const updatedOrder = await getOrderById(order.id);
-      setOrder(updatedOrder);
+      await fetchOrder();
       toast({ title: "Service Marked as Completed!", description: "Thank you for using our platform."});
     } catch(err: any) {
       toast({ variant: "destructive", title: "Error", description: err.message });
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingAction(null);
     }
   }
   
-  const handleDispute = async () => {
+  const handleDispute = async (reason: string) => {
     if(!order) return;
-    setIsSubmitting(true);
+    setIsSubmittingAction('dispute');
     try {
-      await disputeOrder(order.id);
-      const updatedOrder = await getOrderById(order.id);
-      setOrder(updatedOrder);
+      await disputeOrder(order.id, reason);
+      await fetchOrder();
       toast({ title: "Order Disputed", description: "The order has been marked as disputed. Admin will review it."});
     } catch(err: any) {
       toast({ variant: "destructive", title: "Error", description: err.message });
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingAction(null);
     }
   }
 
@@ -188,13 +190,12 @@ export default function OrderDetailPage() {
     setIsSubmitting(true);
     try {
       await acceptOrder(order.id);
-      const updatedOrder = await getOrderById(order.id);
-      setOrder(updatedOrder);
+      await fetchOrder();
       toast({ title: t.orderAccepted, description: t.orderAcceptedDescription });
     } catch(err: any) {
       toast({ variant: "destructive", title: "Error", description: err.message });
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(true);
     }
   }
 
@@ -203,8 +204,7 @@ export default function OrderDetailPage() {
     setIsSubmitting(true);
     try {
       await declineOrder(order.id);
-      const updatedOrder = await getOrderById(order.id);
-      setOrder(updatedOrder);
+      await fetchOrder();
       toast({ title: t.orderDeclined, description: t.orderDeclinedDescription });
     } catch(err: any) {
       toast({ variant: "destructive", title: "Error", description: err.message });
@@ -212,6 +212,36 @@ export default function OrderDetailPage() {
       setIsSubmitting(false);
     }
   }
+
+  const handleStartService = async () => {
+    if(!order) return;
+    setIsSubmittingAction('start');
+    try {
+      await startService(order.id);
+      await fetchOrder();
+      toast({ title: t.serviceStarted, description: "The service is now marked as in progress."});
+    } catch (err:any) {
+       toast({ variant: "destructive", title: "Error", description: err.message });
+    } finally {
+      setIsSubmittingAction(null);
+    }
+  };
+
+  const handleGrantGracePeriod = async (days: string) => {
+    if(!order || !days) return;
+    const numDays = parseInt(days, 10);
+    setIsSubmittingAction('grace');
+    try {
+      await grantGracePeriod(order.id, numDays);
+      await fetchOrder();
+      toast({ title: "Grace Period Granted", description: t.gracePeriodGranted?.replace('{days}', days) });
+    } catch (err:any) {
+       toast({ variant: "destructive", title: "Error", description: err.message });
+    } finally {
+      setIsSubmittingAction(null);
+    }
+  };
+
 
   if (isLoading || !user) {
     return <div className="flex justify-center items-center h-96"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -227,9 +257,15 @@ export default function OrderDetailPage() {
 
   const isSeeker = user.uid === order.seekerId;
   const isProvider = user.uid === order.providerId;
+  
   const showPaymentBox = isSeeker && order.status === 'pending_payment';
-  const showSeekerActionBox = isSeeker && order.status === 'paid';
   const showProviderActionBox = isProvider && order.status === 'pending_approval';
+  const showProviderStartServiceBox = isProvider && order.status === 'paid' && !order.serviceStartedAt;
+  const showSeekerGraceAndRefundBox = isSeeker && order.status === 'paid' && !order.serviceStartedAt;
+  const showSeekerCompletionBox = isSeeker && order.status === 'paid' && !!order.serviceStartedAt;
+
+  const isPastDue = order.serviceStartDate && new Date() > new Date(order.serviceStartDate.toDate().setDate(order.serviceStartDate.toDate().getDate() + (order.gracePeriodInDays || 0)));
+
   const currencySymbol = currencySymbols[order.currency] || order.currency;
 
   return (
@@ -252,7 +288,9 @@ export default function OrderDetailPage() {
                 <div><strong className="block text-muted-foreground">Seeker</strong> {order.seekerName}</div>
                 <div><strong className="block text-muted-foreground">Order Date</strong> {new Date(order.createdAt.seconds * 1000).toLocaleDateString()}</div>
                 {order.approvedByProviderAt && <div><strong className="block text-muted-foreground">Request Approved</strong> {new Date(order.approvedByProviderAt.seconds * 1000).toLocaleDateString()}</div>}
+                {order.serviceStartDate && <div><strong className="block text-muted-foreground">{t.proposedStartDate}</strong> {new Date(order.serviceStartDate.seconds * 1000).toLocaleDateString()}</div>}
                 {order.paymentApprovedAt && <div><strong className="block text-muted-foreground">Payment Approved</strong> {new Date(order.paymentApprovedAt.seconds * 1000).toLocaleDateString()}</div>}
+                {order.serviceStartedAt && <div><strong className="block text-muted-foreground">{t.serviceStarted}</strong> {new Date(order.serviceStartedAt.seconds * 1000).toLocaleString()}</div>}
             </div>
 
             <div>
@@ -311,7 +349,7 @@ export default function OrderDetailPage() {
                                 Upload Payment Proof
                             </Button>
                         ) : (
-                             <div className="flex items-center gap-2 p-3 border rounded-md bg-green-50 text-green-800">
+                             <div className="flex items-center gap-2 p-3 border rounded-md bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300">
                                 <FileCheck className="h-5 w-5"/>
                                 <span className="font-medium">Proof of payment has been uploaded.</span>
                              </div>
@@ -320,19 +358,67 @@ export default function OrderDetailPage() {
                 </Card>
             )}
 
-            {showSeekerActionBox && (
+            {showProviderStartServiceBox && (
+              <Card className="bg-background">
+                <CardHeader>
+                  <CardTitle>{t.startService}</CardTitle>
+                  <CardDescription>Click the button below to confirm you have started working on this service.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full" onClick={handleStartService} disabled={isSubmittingAction === 'start'}>
+                    {isSubmittingAction === 'start' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PlayCircle className="mr-2 h-4 w-4"/>}
+                    {t.startService}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {showSeekerGraceAndRefundBox && (
+              <Card className="bg-background">
+                  <CardHeader>
+                      <CardTitle>{isPastDue ? t.orderPastDue : t.gracePeriodTitle}</CardTitle>
+                      <CardDescription>{isPastDue ? t.orderPastDueDescription : t.gracePeriodDescription}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                      <div>
+                        <Label>{t.grantGracePeriod}</Label>
+                        <Select onValueChange={handleGrantGracePeriod} disabled={isSubmittingAction === 'grace' || !!order.gracePeriodInDays}>
+                            <SelectTrigger>
+                                <SelectValue placeholder={order.gracePeriodInDays ? `${order.gracePeriodInDays} day(s) granted` : t.selectGracePeriod } />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="1">{t.oneDay}</SelectItem>
+                                <SelectItem value="2">{t.twoDays}</SelectItem>
+                                <SelectItem value="3">{t.threeDays}</SelectItem>
+                            </SelectContent>
+                        </Select>
+                      </div>
+                      {isPastDue && (
+                          <>
+                          <Separator />
+                          <Button variant="destructive" className="w-full" onClick={() => handleDispute(t.refundReasonLate || "Service not started on time.")} disabled={isSubmittingAction === 'dispute'}>
+                              {isSubmittingAction === 'dispute' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <AlertCircle className="mr-2 h-4 w-4"/>}
+                              {t.requestRefund}
+                          </Button>
+                          </>
+                      )}
+                  </CardContent>
+              </Card>
+            )}
+
+            {showSeekerCompletionBox && (
                  <Card className="bg-background">
                     <CardHeader>
                         <CardTitle>Confirm Service Completion</CardTitle>
                         <CardDescription>Once the service is completed to your satisfaction, please mark it as complete.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col sm:flex-row gap-2">
-                        <Button className="w-full" onClick={handleMarkAsCompleted} disabled={isSubmitting}>
-                             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
+                        <Button className="w-full" onClick={handleMarkAsCompleted} disabled={!!isSubmittingAction}>
+                             {isSubmittingAction === 'complete' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
                             Mark as Completed
                         </Button>
-                        <Button variant="destructive" className="w-full" onClick={handleDispute} disabled={isSubmitting}>
-                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ShieldQuestion className="mr-2 h-4 w-4"/>}
+                        <Button variant="destructive" className="w-full" onClick={() => handleDispute('Issue with completed service')} disabled={!!isSubmittingAction}>
+                            {isSubmittingAction === 'dispute' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ShieldQuestion className="mr-2 h-4 w-4"/>}
                             Report a Problem
                         </Button>
                     </CardContent>

@@ -427,6 +427,27 @@ export type Translations = {
   advertisement: string;
   adPlaceholderTitle: string;
   adPlaceholderDescription: string;
+  
+  // Service Start Date & Grace Period
+  proposedStartDate: string;
+  selectStartDate: string;
+  gracePeriodTitle: string;
+  grantGracePeriod: string;
+  gracePeriodDescription: string;
+  selectGracePeriod: string;
+  oneDay: string;
+  twoDays: string;
+  threeDays: string;
+  gracePeriodGranted: string; // "A grace period of {days} day(s) has been granted."
+  startService: string;
+  serviceStarted: string;
+  serviceStartedOn: string; // "Service started on {date}"
+  requestRefund: string;
+  refundReasonLate: string;
+  refundRequested: string;
+  refundRequestedDescription: string;
+  orderPastDue: string;
+  orderPastDueDescription: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -828,6 +849,25 @@ export const translations: Record<'en' | 'ar', Translations> = {
     advertisement: "Advertisement",
     adPlaceholderTitle: "Your Ad Here",
     adPlaceholderDescription: "Promote your service or product to a targeted audience of users looking for solutions.",
+    proposedStartDate: "Proposed Start Date",
+    selectStartDate: "Pick a date",
+    gracePeriodTitle: "Service Start Actions",
+    grantGracePeriod: "Grant Grace Period",
+    gracePeriodDescription: "If the provider is running late, you can grant a grace period of up to 3 days.",
+    selectGracePeriod: "Select grace period",
+    oneDay: "1 Day",
+    twoDays: "2 Days",
+    threeDays: "3 Days",
+    gracePeriodGranted: "A grace period of {days} day(s) has been granted.",
+    startService: "Start Service",
+    serviceStarted: "Service In Progress",
+    serviceStartedOn: "Service started on {date}",
+    requestRefund: "Request Refund",
+    refundReasonLate: "Service not started by the agreed-upon date.",
+    refundRequested: "Refund Request Submitted",
+    refundRequestedDescription: "Your refund request has been submitted and is under review by the administration.",
+    orderPastDue: "Order Past Due",
+    orderPastDueDescription: "The service start date has passed. You can request a refund or grant a grace period.",
   },
   ar: {
     appName: "خدماب",
@@ -1224,5 +1264,24 @@ export const translations: Record<'en' | 'ar', Translations> = {
     advertisement: "إعلان",
     adPlaceholderTitle: "إعلانك هنا",
     adPlaceholderDescription: "روّج لخدمتك أو منتجك لجمهور مستهدف من المستخدمين الباحثين عن حلول.",
+    proposedStartDate: "تاريخ البدء المقترح",
+    selectStartDate: "اختر تاريخ",
+    gracePeriodTitle: "إجراءات بدء الخدمة",
+    grantGracePeriod: "منح فترة سماح",
+    gracePeriodDescription: "إذا تأخر مقدم الخدمة، يمكنك منحه فترة سماح تصل إلى 3 أيام.",
+    selectGracePeriod: "اختر فترة السماح",
+    oneDay: "يوم واحد",
+    twoDays: "يومان",
+    threeDays: "3 أيام",
+    gracePeriodGranted: "تم منح فترة سماح لمدة {days} يوم/أيام.",
+    startService: "بدء الخدمة",
+    serviceStarted: "الخدمة قيد التنفيذ",
+    serviceStartedOn: "بدأت الخدمة في {date}",
+    requestRefund: "طلب استرداد المبلغ",
+    refundReasonLate: "لم تبدأ الخدمة في التاريخ المتفق عليه.",
+    refundRequested: "تم تقديم طلب استرداد المبلغ",
+    refundRequestedDescription: "تم تقديم طلب استرداد المبلغ الخاص بك وهو قيد المراجعة من قبل الإدارة.",
+    orderPastDue: "الطلب متأخر",
+    orderPastDueDescription: "لقد انقضى تاريخ بدء الخدمة. يمكنك طلب استرداد المبلغ أو منح فترة سماح.",
   },
 };

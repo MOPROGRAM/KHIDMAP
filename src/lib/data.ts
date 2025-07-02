@@ -101,6 +101,10 @@ export interface Order {
     paymentApprovedAt?: Timestamp;
     completedAt?: Timestamp;
     declinedAt?: Timestamp;
+    serviceStartDate?: Timestamp;
+    gracePeriodInDays?: number;
+    serviceStartedAt?: Timestamp;
+    disputeReason?: string;
 }
 
 
@@ -510,7 +514,7 @@ export const updateCallStatus = async (callId: string, status: Call['status']): 
 
 // --- Order Management Functions ---
 
-export async function createOrder(providerId: string, serviceDescription: string, amount: number, currency: string): Promise<string> {
+export async function createOrder(providerId: string, serviceDescription: string, amount: number, currency: string, serviceStartDate: Date | null): Promise<string> {
   if (!db || !auth.currentUser) throw new Error("Authentication or database error.");
   
   const seekerId = auth.currentUser.uid;
@@ -527,7 +531,7 @@ export async function createOrder(providerId: string, serviceDescription: string
   const commission = amount * commissionRate;
   const payoutAmount = amount - commission;
 
-  const orderData = {
+  const orderData: any = {
     seekerId,
     providerId,
     seekerName: seekerProfile.name,
@@ -540,6 +544,10 @@ export async function createOrder(providerId: string, serviceDescription: string
     status: 'pending_approval',
     createdAt: serverTimestamp(),
   };
+
+  if (serviceStartDate) {
+    orderData.serviceStartDate = Timestamp.fromDate(serviceStartDate);
+  }
 
   const orderRef = await addDoc(collection(db, 'orders'), orderData);
   return orderRef.id;
@@ -618,11 +626,12 @@ export async function markOrderAsCompleted(orderId: string): Promise<void> {
     });
 }
 
-export async function disputeOrder(orderId: string): Promise<void> {
+export async function disputeOrder(orderId: string, reason: string): Promise<void> {
     if (!db) throw new Error("Database not initialized.");
     const orderRef = doc(db, "orders", orderId);
     await updateDoc(orderRef, {
-        status: 'disputed'
+        status: 'disputed',
+        disputeReason: reason
     });
 }
 
@@ -641,5 +650,21 @@ export async function declineOrder(orderId: string): Promise<void> {
     await updateDoc(orderRef, {
         status: 'declined',
         declinedAt: serverTimestamp()
+    });
+}
+
+export async function startService(orderId: string): Promise<void> {
+    if (!db) throw new Error("Database not initialized.");
+    const orderRef = doc(db, "orders", orderId);
+    await updateDoc(orderRef, {
+        serviceStartedAt: serverTimestamp()
+    });
+}
+
+export async function grantGracePeriod(orderId: string, days: number): Promise<void> {
+    if (!db || days < 1 || days > 3) throw new Error("Invalid input.");
+    const orderRef = doc(db, "orders", orderId);
+    await updateDoc(orderRef, {
+        gracePeriodInDays: days
     });
 }
