@@ -110,6 +110,14 @@ export default {
           '50%': { 'background-position': '100% 50%' },
           '100%': { 'background-position': '0% 50%' },
         },
+        'pulse-glow': {
+          '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+          '50%': { opacity: '0.7', transform: 'scale(1.1)' },
+        },
+        'subtle-bounce': {
+           '0%, 100%': { transform: 'translateY(0)' },
+           '50%': { transform: 'translateY(-3px)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -117,6 +125,8 @@ export default {
         'fade-in-up': 'fade-in-up 0.6s ease-out forwards',
         'scroll': 'scroll 60s linear infinite',
         'background-pan': 'background-pan 15s ease infinite',
+        'pulse-glow': 'pulse-glow 1.5s ease-in-out infinite',
+        'subtle-bounce': 'subtle-bounce 0.5s ease-in-out',
       },
       transitionProperty: {
         'height': 'height',
