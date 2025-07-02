@@ -3,15 +3,15 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Helper function to get order data from Firestore
+    // Helper function to get order data from Firestore for read operations
     function getOrderData(orderId) {
       return get(/databases/$(database)/documents/orders/$(orderId)).data;
     }
 
     // Payment Proofs:
-    // - Path: payment_proofs/{orderId}/{seekerId}/{fileName}
-    // - Rule: The uploading user's ID must match the seekerId in the path,
-    //         AND that seekerId must match the one in the corresponding Firestore order document.
+    // Path: payment_proofs/{orderId}/{seekerId}/{fileName}
+    // Rule: The uploading user's ID must match the seekerId in the path,
+    //       AND that seekerId must match the one in the corresponding Firestore order document.
     match /payment_proofs/{orderId}/{seekerId}/{fileName} {
       allow read: if request.auth != null && (request.auth.uid == getOrderData(orderId).seekerId || request.auth.uid == getOrderData(orderId).providerId || request.auth.token.email == "mobusinessarena@gmail.com");
       allow write: if request.auth != null && request.auth.uid == seekerId && request.auth.uid == getOrderData(orderId).seekerId;
@@ -25,25 +25,24 @@ service firebase.storage {
       allow read: if true;
       allow write, delete: if request.auth != null && request.auth.uid == userId;
     }
-    
+
     // Chat media:
-    // - Path: chats/{chatId}/{fileName}
-    // - Write: User must be authenticated and their UID must match the 'senderId' in the file's custom metadata.
-    //          The chatId in the path must also match the one in metadata. This prevents race conditions with Firestore.
-    // - Read: User must be a participant in the chat document in Firestore.
+    // - Naming convention: chats/{chatId}/{fileName}
+    // - Rule for WRITE: The uploaded file MUST have custom metadata where `senderId` matches the user's ID. This avoids race conditions with Firestore.
+    // - Rule for READ: The user must be a participant in the chat document in Firestore.
     match /chats/{chatId}/{fileName} {
       function isChatParticipant() {
         let chatPath = /databases/$(database)/documents/messages/$(chatId);
-        // Check existence first to prevent errors on new chats.
+        // Check for existence to prevent errors on read.
         return exists(chatPath) && request.auth.uid in get(chatPath).data.participantIds;
       }
       
       allow read: if request.auth != null && isChatParticipant();
-
-      // Authorize write based on metadata sent with the upload, not a DB read.
+      
+      // Write rule now uses metadata, which is faster and avoids race conditions.
       allow write: if request.auth != null &&
-                      request.auth.uid == request.resource.metadata.senderId &&
-                      chatId == request.resource.metadata.chatId;
+                    request.resource.metadata.senderId == request.auth.uid &&
+                    request.resource.metadata.chatId == chatId;
     }
 
     // Default deny all other paths
