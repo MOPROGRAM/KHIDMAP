@@ -4,47 +4,12 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Helper function to get order data from Firestore
-    function getOrderData(orderId) {
-      return get(/databases/$(database)/documents/orders/$(orderId)).data;
-    }
-
-    // Payment Proofs:
-    // - Path: payment_proofs/{orderId}/{seekerId}/{fileName}
-    match /payment_proofs/{orderId}/{seekerId}/{fileName} {
-      allow read: if request.auth != null && (request.auth.uid == getOrderData(orderId).seekerId || request.auth.uid == getOrderData(orderId).providerId || request.auth.token.email == "mobusinessarena@gmail.com");
-      allow write: if request.auth != null && request.auth.uid == seekerId && request.auth.uid == getOrderData(orderId).seekerId;
-    }
-
-    // Portfolio Images and Videos for Providers:
-    // - Path: serviceAds/{userId}/{mediaType}/{fileName}
-    match /serviceAds/{userId}/{mediaType}/{fileName} {
-      allow read: if true;
-      allow write, delete: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Chat media:
-    // This is the final, correct rule. It verifies the sender's identity using
-    // custom metadata attached to the file at upload time.
-    match /chats/{chatId}/{fileName} {
-       function isChatParticipant() {
-        let chatPath = /databases/$(database)/documents/messages/$(chatId);
-        return exists(chatPath) && request.auth.uid in get(chatPath).data.participantIds;
-      }
-
-      // Anyone in the chat can read the files.
-      allow read: if request.auth != null && isChatParticipant();
-      
-      // Only the authenticated user who is the sender (verified via metadata) can write.
-      // This checks the 'metadata' object where customMetadata is placed by the rules engine.
-      allow write: if request.auth != null && 
-                      request.auth.uid == request.resource.metadata['senderId'] && 
-                      chatId == request.resource.metadata['chatId'];
-    }
-
-    // Default deny all other paths
+    // !! VERY INSECURE - FOR DIAGNOSIS ONLY !!
+    // This rule allows anyone to read or write anything to your bucket.
+    // This is to confirm if the core connection to Storage is working at all.
+    // We will replace this with a secure rule once the diagnosis is complete.
     match /{allPaths=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
   }
 }

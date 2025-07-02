@@ -341,12 +341,26 @@ export const sendMessage = async (
     if (content instanceof File || content instanceof Blob) {
         if (!storage) throw new Error("Storage service is not available.");
         
+        // --- DIAGNOSTIC BLOCK START ---
+        // This block attempts a simplified upload to test the core connection.
+        console.log("DIAGNOSTIC: Attempting insecure test upload.");
+        try {
+            const testPath = `test-uploads/${new Date().getTime()}.jpg`;
+            const testFileRef = ref(storage, testPath);
+            await uploadBytes(testFileRef, content);
+            console.log(`DIAGNOSTIC: Test upload to ${testPath} appears to have SUCCEEDED.`);
+            alert("DIAGNOSTIC: Test upload SUCCEEDED. The problem is likely in the security rules logic. Please report this success.");
+        } catch (diagError: any) {
+            console.error("DIAGNOSTIC: Test upload FAILED.", diagError);
+            alert(`DIAGNOSTIC: Test upload FAILED with error: ${diagError.message}. The problem is likely with Firebase project setup or network, not security rules logic.`);
+        }
+        // --- DIAGNOSTIC BLOCK END ---
+
         const originalName = content instanceof File ? content.name : "media";
         const safeFileName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_');
         const filePath = `chats/${chatId}/${new Date().getTime()}_${safeFileName}`;
         const fileRef = ref(storage, filePath);
-
-        // Add custom metadata for security rules to prevent race conditions
+        
         const metadata = {
           customMetadata: {
             'senderId': senderId,
@@ -354,7 +368,7 @@ export const sendMessage = async (
           }
         };
 
-        await uploadBytes(fileRef, content, metadata); // Pass metadata
+        await uploadBytes(fileRef, content, metadata);
         messageContent = await getDownloadURL(fileRef);
 
         if (type === 'image') lastMessageText = "📷 Image";
