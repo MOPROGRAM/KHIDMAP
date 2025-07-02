@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service firebase.storage {
@@ -9,36 +8,38 @@ service firebase.storage {
       return get(/databases/$(database)/documents/orders/$(orderId)).data;
     }
 
-    // Payment Proofs:
-    // - Path: payment_proofs/{orderId}/{seekerId}/{fileName}
+    // Payment Proofs: Stays secure with Firestore checks
     match /payment_proofs/{orderId}/{seekerId}/{fileName} {
       allow read: if request.auth != null && (request.auth.uid == getOrderData(orderId).seekerId || request.auth.uid == getOrderData(orderId).providerId || request.auth.token.email == "mobusinessarena@gmail.com");
       allow write: if request.auth != null && request.auth.uid == seekerId && request.auth.uid == getOrderData(orderId).seekerId;
     }
 
-    // Portfolio Images and Videos for Providers:
-    // - Path: serviceAds/{userId}/{mediaType}/{fileName}
+    // Portfolio Images and Videos for Providers: Stays secure
     match /serviceAds/{userId}/{mediaType}/{fileName} {
       allow read: if true;
       allow write, delete: if request.auth != null && request.auth.uid == userId;
     }
     
     // Chat media:
-    // This is the most robust rule. It checks Firestore directly to confirm the user is a participant.
-    // This avoids any issues with client-sent metadata and is the most secure approach.
+    // This rule is based on the user's provided working rules.
+    // It allows any authenticated user to create files in a chat path.
     match /chats/{chatId}/{fileName} {
        function isChatParticipant() {
-        // Path to the chat document in Firestore
         let chatPath = /databases/$(database)/documents/messages/$(chatId);
-        // Check if the document exists and the requesting user's UID is in the participantIds array
         return exists(chatPath) && request.auth.uid in get(chatPath).data.participantIds;
       }
+      
+      // Read access remains secure, checking if the user is in the chat.
+      allow read: if request.auth != null && isChatParticipant();
+      
+      // Create access is simplified to allow any authenticated user, as per the user's working rules.
+      allow create: if request.auth != null;
 
-      // Allow read and write if the user is authenticated AND is a participant in the chat.
-      allow read, write: if request.auth != null && isChatParticipant();
+      // Disallow updates and deletes for safety.
+      allow update, delete: if false;
     }
 
-    // Default deny all other paths
+    // Default deny all other paths as a security best practice.
     match /{allPaths=**} {
       allow read, write: if false;
     }
