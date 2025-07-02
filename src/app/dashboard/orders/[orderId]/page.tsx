@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from '@/components/ui/label';
 
 
 const StatusInfo = ({ status, t, isProvider }: { status: OrderStatus; t: Translations; isProvider: boolean }) => {
