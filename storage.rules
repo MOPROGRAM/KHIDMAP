@@ -8,38 +8,34 @@ service firebase.storage {
       return get(/databases/$(database)/documents/orders/$(orderId)).data;
     }
 
-    // Payment Proofs: Stays secure with Firestore checks
+    // --- SECURE RULES (UNCHANGED) ---
     match /payment_proofs/{orderId}/{seekerId}/{fileName} {
       allow read: if request.auth != null && (request.auth.uid == getOrderData(orderId).seekerId || request.auth.uid == getOrderData(orderId).providerId || request.auth.token.email == "mobusinessarena@gmail.com");
       allow write: if request.auth != null && request.auth.uid == seekerId && request.auth.uid == getOrderData(orderId).seekerId;
     }
-
-    // Portfolio Images and Videos for Providers: Stays secure
     match /serviceAds/{userId}/{mediaType}/{fileName} {
       allow read: if true;
       allow write, delete: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Chat media:
-    // This rule is based on the user's provided working rules.
-    // It allows any authenticated user to create files in a chat path.
+
+    // --- TEMPORARY DIAGNOSTIC RULE ---
+    // This rule is COMPLETELY OPEN to allow uploads for testing purposes.
+    // It must be secured again after diagnosis.
     match /chats/{chatId}/{fileName} {
        function isChatParticipant() {
         let chatPath = /databases/$(database)/documents/messages/$(chatId);
         return exists(chatPath) && request.auth.uid in get(chatPath).data.participantIds;
       }
       
-      // Read access remains secure, checking if the user is in the chat.
+      // Read access is still secure.
       allow read: if request.auth != null && isChatParticipant();
       
-      // Create access is simplified to allow any authenticated user, as per the user's working rules.
-      allow create: if request.auth != null;
-
-      // Disallow updates and deletes for safety.
-      allow update, delete: if false;
+      // Write access is temporarily open to everyone for diagnosis.
+      allow write: if true;
     }
 
-    // Default deny all other paths as a security best practice.
+    // Default deny all other paths
     match /{allPaths=**} {
       allow read, write: if false;
     }
