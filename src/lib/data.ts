@@ -334,19 +334,18 @@ export const sendMessage = async (
         throw new Error("User not authenticated or database is unavailable.");
     }
     const senderId = auth.currentUser.uid;
-
     let messageContent: string;
     let lastMessageText: string;
 
     if (content instanceof File || content instanceof Blob) {
         if (!storage) throw new Error("Storage service is not available.");
 
+        // The metadata has been removed as it is no longer needed for the robust security rule.
         const originalName = content instanceof File ? content.name : "media";
         const safeFileName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_');
         const filePath = `chats/${chatId}/${new Date().getTime()}_${safeFileName}`;
         const fileRef = ref(storage, filePath);
         
-        // The metadata has been removed as it is no longer needed for the robust security rule.
         await uploadBytes(fileRef, content);
         
         messageContent = await getDownloadURL(fileRef);
@@ -575,6 +574,7 @@ export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: Fi
     const filePath = `payment_proofs/${orderId}/${auth.currentUser.uid}/${safeFileName}`;
     const fileRef = ref(storage, filePath);
 
+    // This upload does not require any metadata because the path itself is secured by rules.
     await uploadBytes(fileRef, file);
     const downloadURL = await getDownloadURL(fileRef);
 
@@ -608,11 +608,13 @@ export async function getPendingPaymentOrders(): Promise<Order[]> {
     if (!db) throw new Error("Database not initialized.");
     const q = query(
         collection(db, "orders"), 
-        where("status", "==", "pending_payment"),
-        orderBy("createdAt", "desc")
+        where("status", "==", "pending_payment")
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+    const orders = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+    // Sort client-side to avoid needing a composite index
+    orders.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+    return orders;
 }
 
 export async function approvePayment(orderId: string): Promise<void> {
