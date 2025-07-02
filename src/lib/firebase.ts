@@ -25,7 +25,7 @@ if (
   firebaseConfigValues.apiKey &&
   firebaseConfigValues.authDomain &&
   firebaseConfigValues.projectId &&
-  firebaseConfigValues.storageBucket // Ensure storageBucket is also available
+  firebaseConfigValues.storageBucket
 ) {
   if (!getApps().length) {
     try {
@@ -41,8 +41,9 @@ if (
     try {
       auth = getAuth(app);
       db = getFirestore(app);
-      // Explicitly providing the bucket URL to getStorage to prevent misconfiguration issues.
-      storage = getStorage(app, `gs://${firebaseConfigValues.storageBucket}`);
+      // CORRECTED: Use the standard getStorage() call.
+      // This allows the SDK to correctly use the storageBucket from the main config.
+      storage = getStorage(app);
     } catch (e) {
       console.error("Error getting Firebase auth, firestore, or storage instance:", e);
       // auth, db, and storage will remain undefined
