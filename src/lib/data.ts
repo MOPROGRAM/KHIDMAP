@@ -346,14 +346,9 @@ export const sendMessage = async (
         const filePath = `chats/${chatId}/${new Date().getTime()}_${safeFileName}`;
         const fileRef = ref(storage, filePath);
         
-        const metadata = {
-          customMetadata: {
-            'senderId': senderId,
-            'chatId': chatId
-          }
-        };
-
-        await uploadBytes(fileRef, content, metadata);
+        // DIAGNOSTIC STEP: Temporarily remove metadata from the upload call
+        await uploadBytes(fileRef, content);
+        
         messageContent = await getDownloadURL(fileRef);
 
         if (type === 'image') lastMessageText = "📷 Image";
