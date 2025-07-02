@@ -24,18 +24,18 @@ service firebase.storage {
     }
     
     // Chat media:
-    // This is a temporary diagnostic rule. It allows any authenticated user to write to the chat storage.
-    // This helps confirm if the authentication context is being passed correctly, separate from metadata checks.
+    // This is the most robust rule. It checks Firestore directly to confirm the user is a participant.
+    // This avoids any issues with client-sent metadata and is the most secure approach.
     match /chats/{chatId}/{fileName} {
        function isChatParticipant() {
+        // Path to the chat document in Firestore
         let chatPath = /databases/$(database)/documents/messages/$(chatId);
+        // Check if the document exists and the requesting user's UID is in the participantIds array
         return exists(chatPath) && request.auth.uid in get(chatPath).data.participantIds;
       }
-      
-      allow read: if request.auth != null && isChatParticipant();
-      
-      // DIAGNOSTIC RULE:
-      allow write: if request.auth != null;
+
+      // Allow read and write if the user is authenticated AND is a participant in the chat.
+      allow read, write: if request.auth != null && isChatParticipant();
     }
 
     // Default deny all other paths

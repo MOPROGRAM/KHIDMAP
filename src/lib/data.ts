@@ -346,7 +346,7 @@ export const sendMessage = async (
         const filePath = `chats/${chatId}/${new Date().getTime()}_${safeFileName}`;
         const fileRef = ref(storage, filePath);
         
-        // DIAGNOSTIC STEP: Temporarily remove metadata from the upload call
+        // The metadata has been removed as it is no longer needed for the robust security rule.
         await uploadBytes(fileRef, content);
         
         messageContent = await getDownloadURL(fileRef);
