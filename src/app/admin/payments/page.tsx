@@ -111,7 +111,7 @@ export default function AdminPaymentsPage() {
                 return (
                   <Card key={order.id} className="grid md:grid-cols-3 gap-4 p-4 items-center">
                     <div className="md:col-span-2 space-y-2">
-                      <p className="text-sm text-muted-foreground">Order ID: <Badge variant="secondary">{order.id}</Badge></p>
+                      <div className="text-sm text-muted-foreground">Order ID: <Badge variant="secondary">{order.id}</Badge></div>
                       <p><strong>Seeker:</strong> {order.seekerName}</p>
                       <p><strong>Provider:</strong> {order.providerName}</p>
                       <p><strong>Amount:</strong> <span className="font-mono">{currencySymbol}{order.amount.toFixed(2)}</span></p>
