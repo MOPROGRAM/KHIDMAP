@@ -24,7 +24,8 @@ let storage: FirebaseStorage | undefined = undefined;
 if (
   firebaseConfigValues.apiKey &&
   firebaseConfigValues.authDomain &&
-  firebaseConfigValues.projectId
+  firebaseConfigValues.projectId &&
+  firebaseConfigValues.storageBucket // Ensure storageBucket is also available
 ) {
   if (!getApps().length) {
     try {
@@ -40,7 +41,8 @@ if (
     try {
       auth = getAuth(app);
       db = getFirestore(app);
-      storage = getStorage(app);
+      // Explicitly providing the bucket URL to getStorage to prevent misconfiguration issues.
+      storage = getStorage(app, `gs://${firebaseConfigValues.storageBucket}`);
     } catch (e) {
       console.error("Error getting Firebase auth, firestore, or storage instance:", e);
       // auth, db, and storage will remain undefined
@@ -53,7 +55,7 @@ if (
 
 } else {
   console.error(
-    'CRITICAL: Firebase configuration is missing or incomplete (apiKey, authDomain, or projectId). Firebase services will not be available. Please check your environment variables.'
+    'CRITICAL: Firebase configuration is missing or incomplete (apiKey, authDomain, projectId, or storageBucket). Firebase services will not be available. Please check your environment variables.'
   );
   // app, auth, db, and storage will remain undefined
 }
