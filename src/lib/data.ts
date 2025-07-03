@@ -333,14 +333,15 @@ export const sendMessage = async (
     if (!db || !auth?.currentUser) {
         throw new Error("User not authenticated or database is unavailable.");
     }
+    if (!storage) {
+        throw new Error("Storage service is not configured.");
+    }
+
     const senderId = auth.currentUser.uid;
     let messageContent: string;
     let lastMessageText: string;
 
     if (content instanceof File || content instanceof Blob) {
-        if (!storage) throw new Error("Storage service is not available.");
-
-        // The metadata has been removed as it is no longer needed for the robust security rule.
         const originalName = content instanceof File ? content.name : "media";
         const safeFileName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_');
         const filePath = `chats/${chatId}/${new Date().getTime()}_${safeFileName}`;
