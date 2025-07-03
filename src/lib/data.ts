@@ -638,17 +638,18 @@ export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: Fi
 
     const photoDataUri = await fileToDataUri(file);
 
-    // Call AI for verification
+    // Call AI for verification, now including the seeker's name
     let verificationResult;
     try {
         verificationResult = await verifyPayment({
             photoDataUri,
             expectedAmount: order.amount,
-            expectedCurrency: order.currency
+            expectedCurrency: order.currency,
+            expectedPayerName: order.seekerName
         });
     } catch (aiError: any) {
         console.error("AI verification flow failed:", aiError);
-        verificationResult = { isVerified: false, reason: `AI analysis failed: ${aiError.message}. Please review manually.`, foundAmount: 0, foundCurrency: '' };
+        verificationResult = { isVerified: false, reason: `AI analysis failed: ${aiError.message}. Please review manually.` };
     }
     
     // Upload file to storage regardless of verification result
@@ -667,7 +668,7 @@ export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: Fi
             proofOfPaymentUrl: downloadURL,
             status: 'paid',
             paymentApprovedAt: serverTimestamp(),
-            verificationNotes: `AI Approved. Found: ${verificationResult.foundCurrency || ''} ${verificationResult.foundAmount || 'N/A'}.`
+            verificationNotes: verificationResult.reason || "AI Approved: All details match."
         });
         await createNotification(
             order.providerId,

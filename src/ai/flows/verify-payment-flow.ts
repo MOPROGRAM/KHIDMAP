@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview An AI flow to verify payment receipts.
+ * @fileOverview An AI flow to verify payment receipts with multiple checks.
  *
  * - verifyPayment - A function that analyzes a payment proof image against expected values.
  * - VerifyPaymentInput - The input type for the verifyPayment function.
@@ -18,14 +18,16 @@ const VerifyPaymentInputSchema = z.object({
     ),
   expectedAmount: z.number().describe("The expected payment amount."),
   expectedCurrency: z.string().describe("The expected currency code (e.g., USD, SAR)."),
+  expectedPayerName: z.string().describe("The name of the person expected to have made the payment (the service seeker)."),
 });
 export type VerifyPaymentInput = z.infer<typeof VerifyPaymentInputSchema>;
 
 const VerifyPaymentOutputSchema = z.object({
-  isVerified: z.boolean().describe("Whether the payment is verified to match the expected amount and currency."),
-  reason: z.string().describe("A brief explanation for why the verification succeeded or failed."),
+  isVerified: z.boolean().describe("Whether the payment is verified to match all expected details (amount, currency, and payer name)."),
+  reason: z.string().describe("A brief explanation for why the verification succeeded or failed, covering all checks."),
   foundAmount: z.number().optional().describe("The amount found in the receipt."),
   foundCurrency: z.string().optional().describe("The currency found in the receipt."),
+  foundPayerName: z.string().optional().describe("The name of the payer or account holder found on the receipt."),
 });
 export type VerifyPaymentOutput = z.infer<typeof VerifyPaymentOutputSchema>;
 
@@ -42,18 +44,22 @@ const prompt = ai.definePrompt({
 Analyze the image provided in '{{media url=photoDataUri}}'.
 
 The expected payment is:
+- Payer Name: {{expectedPayerName}}
 - Amount: {{expectedAmount}}
 - Currency: {{expectedCurrency}}
 
-Carefully examine the receipt image to find the total amount paid and the currency. The amount might be labeled as "Total", "Amount Paid", or similar. The currency might be a symbol ($, €, ر.س) or a code (USD, SAR, EGP).
+Carefully examine the receipt image to find the following information:
+1.  **Payer's Name**: Look for a sender name, account holder name, or similar identifier.
+2.  **Total Amount Paid**: This might be labeled as "Total", "Amount Paid", etc.
+3.  **Currency**: This might be a symbol ($, €, ر.س) or a code (USD, SAR, EGP).
 
 Your response MUST be in the structured format defined.
 
-1.  **isVerified**: Set to 'true' ONLY if the amount AND currency you find in the image EXACTLY match the expected values. If there is any doubt, or if the numbers are unclear, or if the currency is wrong, set it to 'false'.
+1.  **isVerified**: Set to 'true' ONLY IF the amount, currency, AND payer's name in the image EXACTLY match the expected values. The name can be a partial match (e.g., 'Mohammed' matches 'Mohammed Ahmed'). If there is any doubt, if numbers are unclear, or if any of the three items do not match, set it to 'false'.
 2.  **reason**: Provide a concise reason for your decision.
-    - If verified, state something like: "Verified: Found matching amount and currency in the receipt."
-    - If not verified, explain why, for example: "Failed: The amount in the receipt was [found_amount], but expected {{expectedAmount}}." OR "Failed: Currency not found or does not match." OR "Failed: The image is unclear or does not appear to be a valid receipt."
-3.  **foundAmount / foundCurrency**: Fill these fields with the values you extracted from the receipt, if possible.
+    - If verified, state: "Verified: Found matching name, amount, and currency."
+    - If not verified, explain exactly what failed, for example: "Failed: Amount was [found_amount], expected {{expectedAmount}}." OR "Failed: Payer name '{{foundPayerName}}' does not match expected '{{expectedPayerName}}'." OR "Failed: Image is unclear or not a valid receipt."
+3.  **foundAmount / foundCurrency / foundPayerName**: Fill these fields with the values you extracted from the receipt, if possible.
 
 Proceed with the analysis.`,
 });
@@ -77,8 +83,6 @@ const verifyPaymentFlow = ai.defineFlow(
         return {
             isVerified: false,
             reason: `AI analysis failed due to an internal error: ${e.message}. Please review manually.`,
-            foundAmount: 0,
-            foundCurrency: ''
         };
     }
   }
