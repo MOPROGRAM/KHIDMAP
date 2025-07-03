@@ -437,7 +437,11 @@ export default function MessagesPage() {
                           {msg.type === 'image' && (
                             <Dialog>
                                 <DialogTrigger asChild><Image src={msg.content} alt={t.image || 'Image'} width={250} height={250} className="rounded-md cursor-pointer object-cover aspect-square" /></DialogTrigger>
-                                <DialogContent className="max-w-4xl p-0 bg-transparent border-0"><Image src={msg.content} alt={t.image || 'Image'} width={1024} height={1024} className="rounded-lg object-contain max-h-[90vh] w-full" /></DialogContent>
+                                <DialogContent className="max-w-4xl p-0 bg-transparent border-0">
+                                  <DialogTitle className="sr-only">Image in Chat</DialogTitle>
+                                  <DialogDescription className="sr-only">A larger view of the image sent in the chat.</DialogDescription>
+                                  <Image src={msg.content} alt={t.image || 'Image'} width={1024} height={1024} className="rounded-lg object-contain max-h-[90vh] w-full" />
+                                </DialogContent>
                             </Dialog>
                           )}
                           {msg.type === 'video' && <video src={msg.content} controls className="rounded-md w-full max-w-[250px]" />}
@@ -506,4 +510,5 @@ export default function MessagesPage() {
     </div>
   );
 }
+
 

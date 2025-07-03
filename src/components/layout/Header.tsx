@@ -8,7 +8,7 @@ import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { CurrencySwitcher } from '@/components/shared/CurrencySwitcher';
 import Logo from '@/components/shared/Logo';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Menu, UserCircle, LogIn, UserPlus, LogOutIcon } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { auth } from '@/lib/firebase'; // auth can be undefined
@@ -142,9 +142,11 @@ export default function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-full max-w-xs p-6">
-              <div className="mb-6">
+              <SheetHeader className="mb-6 text-left">
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                <SheetDescription className="sr-only">Main menu for navigating the site.</SheetDescription>
                 <Logo />
-              </div>
+              </SheetHeader>
               <nav className="flex flex-col gap-2">
                 <NavLinkItems mobile />
               </nav>
