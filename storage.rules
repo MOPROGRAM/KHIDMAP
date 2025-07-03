@@ -9,33 +9,41 @@ service firebase.storage {
       return get(/databases/$(database)/documents/orders/$(orderId)).data;
     }
 
-    // --- RULES FOR PORTFOLIO & PAYMENT PROOFS ---
-
-    // Portfolio files for providers
-    match /serviceAds/{userId}/{mediaType}/{fileName} {
-      allow get; // Anyone can read public portfolio content
-      allow write: if request.auth != null && request.auth.uid == userId; // Only owner can write/delete
+    // Helper for reading chat data (secure reading)
+    function isChatParticipant(chatId) {
+      let chatPath = /databases/$(database)/documents/messages/$(chatId);
+      return exists(chatPath) && request.auth.uid in get(chatPath).data.participantIds;
     }
 
-    // Payment proof files for orders
+    // --- PORTFOLIO ---
+    match /serviceAds/{userId}/{mediaType}/{fileName} {
+      // Anyone can read public portfolio content
+      allow get; 
+      
+      // Secure write by checking metadata passed from the client, and matching the path.
+      // This is the most robust way to ensure the uploader is the owner.
+      allow write: if request.auth != null && request.resource.metadata.userId == request.auth.uid && request.auth.uid == userId;
+    }
+
+    // --- PAYMENT PROOFS ---
     match /payment_proofs/{orderId}/{seekerId}/{fileName} {
-      // Reading the proof remains secure with a database check.
+      // Secure read using Firestore check
       allow read: if request.auth != null && (request.auth.uid == getOrderData(orderId).seekerId || request.auth.uid == getOrderData(orderId).providerId || request.auth.token.email == "mobusinessarena@gmail.com");
       
-      // FINAL, ROBUST WRITE RULE using custom metadata.
-      // This bypasses the auth propagation issue by verifying metadata sent from the client.
-      allow write: if request.auth != null && request.auth.uid == request.resource.metadata.userId;
+      // Secure write by checking metadata. This avoids cross-service permission issues.
+      allow write: if request.auth != null && request.resource.metadata.userId == request.auth.uid && request.auth.uid == seekerId;
     }
 
-    // --- RULE FOR CHAT FILES ---
+    // --- CHAT FILES ---
     match /chats/{chatId}/{fileName} {
-        allow get: if request.auth != null;
+        // Secure read using Firestore check
+        allow get: if request.auth != null && isChatParticipant(chatId);
         
-        // Use the same robust metadata check for chat uploads.
-        allow create: if request.auth != null && request.auth.uid == request.resource.metadata.userId;
+        // Secure write using metadata check, ensuring the uploader is who they claim to be.
+        allow create: if request.auth != null && request.resource.metadata.userId == request.auth.uid;
         
         // Disallow updates and deletes to keep chat history immutable.
-        allow update, delete: if false;
+        allow update, delete: if false; 
     }
 
     // Default deny all other paths to secure your storage bucket

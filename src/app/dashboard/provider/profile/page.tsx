@@ -170,7 +170,9 @@ export default function ProviderProfilePage() {
       const filePath = `serviceAds/${authUser.uid}/${config.storageFolder}/${Date.now()}_${file.name}`;
       const fileRef = ref(storage, filePath);
       
-      await uploadBytes(fileRef, file);
+      const metadata = { customMetadata: { 'userId': authUser.uid } };
+      await uploadBytes(fileRef, file, metadata);
+      
       const downloadURL = await getDownloadURL(fileRef);
 
       const userDocRef = doc(db, "users", authUser.uid);

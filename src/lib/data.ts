@@ -575,13 +575,14 @@ export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: Fi
     if (!db || !storage || !auth.currentUser) {
         throw new Error("Authentication session is invalid or services are unavailable. Please log in again.");
     }
+    const seekerId = auth.currentUser.uid;
     const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const filePath = `payment_proofs/${orderId}/${auth.currentUser.uid}/${safeFileName}`;
+    const filePath = `payment_proofs/${orderId}/${seekerId}/${safeFileName}`;
     const fileRef = ref(storage, filePath);
 
     const metadata = {
         customMetadata: {
-            'userId': auth.currentUser.uid
+            'userId': seekerId
         }
     };
     await uploadBytes(fileRef, file, metadata);
