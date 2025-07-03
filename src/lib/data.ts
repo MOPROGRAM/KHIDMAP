@@ -2,6 +2,8 @@
 import { db, auth, storage } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch, GeoPoint, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { verifyPayment } from '@/ai/flows/verify-payment-flow';
+
 
 export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
 export type UserRole = 'provider' | 'seeker' | 'admin';
@@ -105,6 +107,7 @@ export interface Order {
     gracePeriodInDays?: number;
     serviceStartedAt?: Timestamp;
     disputeReason?: string;
+    verificationNotes?: string;
 }
 
 
@@ -576,23 +579,59 @@ export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: Fi
         throw new Error("Authentication session is invalid or services are unavailable. Please log in again.");
     }
     const seekerId = auth.currentUser.uid;
+
+    const order = await getOrderById(orderId);
+    if (!order) throw new Error("Order not found.");
+
+    // Helper to convert file to data URI for AI
+    const fileToDataUri = (file: File): Promise<string> => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve(event.target?.result as string);
+        reader.onerror = (error) => reject(error);
+        reader.readAsDataURL(file);
+    });
+
+    const photoDataUri = await fileToDataUri(file);
+
+    // Call AI for verification
+    let verificationResult;
+    try {
+        verificationResult = await verifyPayment({
+            photoDataUri,
+            expectedAmount: order.amount,
+            expectedCurrency: order.currency
+        });
+    } catch (aiError: any) {
+        console.error("AI verification flow failed:", aiError);
+        verificationResult = { isVerified: false, reason: `AI analysis failed: ${aiError.message}. Please review manually.`, foundAmount: 0, foundCurrency: '' };
+    }
+    
+    // Upload file to storage regardless of verification result
     const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const filePath = `payment_proofs/${orderId}/${seekerId}/${safeFileName}`;
     const fileRef = ref(storage, filePath);
-
-    const metadata = {
-        customMetadata: {
-            'userId': seekerId
-        }
-    };
+    const metadata = { customMetadata: { 'userId': seekerId } };
     await uploadBytes(fileRef, file, metadata);
-
     const downloadURL = await getDownloadURL(fileRef);
 
+    // Update Firestore based on verification
     const orderRef = doc(db, "orders", orderId);
-    await updateDoc(orderRef, {
-        proofOfPaymentUrl: downloadURL
-    });
+    if (verificationResult.isVerified) {
+        // AI approved, update status to paid
+        await updateDoc(orderRef, {
+            proofOfPaymentUrl: downloadURL,
+            status: 'paid',
+            paymentApprovedAt: serverTimestamp(),
+            verificationNotes: `AI Approved. Found: ${verificationResult.foundCurrency || ''} ${verificationResult.foundAmount || 'N/A'}.`
+        });
+    } else {
+        // AI rejected, update with proof and notes for manual review
+        await updateDoc(orderRef, {
+            proofOfPaymentUrl: downloadURL,
+            status: 'pending_payment', // Stays pending
+            verificationNotes: verificationResult.reason || "AI could not verify the payment. Please review manually."
+        });
+    }
 }
 
 export async function getOrdersForUser(userId: string): Promise<Order[]> {
@@ -633,7 +672,8 @@ export async function approvePayment(orderId: string): Promise<void> {
     const orderRef = doc(db, "orders", orderId);
     await updateDoc(orderRef, {
         status: 'paid',
-        paymentApprovedAt: serverTimestamp()
+        paymentApprovedAt: serverTimestamp(),
+        verificationNotes: "Manually Approved by Admin."
     });
     // In a real app, you would also trigger a notification to the provider here.
 }

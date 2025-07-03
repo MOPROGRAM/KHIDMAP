@@ -1,16 +1,17 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { DollarSign, Loader2, AlertTriangle, CheckCircle, ExternalLink, Image as ImageIcon } from 'lucide-react';
+import { DollarSign, Loader2, AlertTriangle, CheckCircle, ExternalLink, Image as ImageIcon, Search } from 'lucide-react';
 import { Order, getPendingPaymentOrders, approvePayment } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function AdminPaymentsPage() {
   const t = useTranslation();
@@ -28,9 +29,10 @@ export default function AdminPaymentsPage() {
     QAR: 'ر.ق',
   };
 
-  const fetchPendingPayments = async () => {
+  const fetchOrdersForReview = async () => {
     setIsLoading(true);
     try {
+      // Fetches all orders with status 'pending_payment'
       const pendingOrders = await getPendingPaymentOrders();
       setOrders(pendingOrders);
     } catch (err: any) {
@@ -44,9 +46,15 @@ export default function AdminPaymentsPage() {
       setIsLoading(false);
     }
   };
+  
+  // Memoize the filtered list of orders that need manual review
+  const ordersForReview = useMemo(() => {
+    return orders.filter(order => order.proofOfPaymentUrl);
+  }, [orders]);
+
 
   useEffect(() => {
-    fetchPendingPayments();
+    fetchOrdersForReview();
   }, []);
 
   const handleApprove = async (orderId: string) => {
@@ -58,7 +66,7 @@ export default function AdminPaymentsPage() {
         description: `Order ${orderId} has been marked as paid.`
       });
       // Refresh list after approval
-      fetchPendingPayments();
+      fetchOrdersForReview();
     } catch (err: any) {
       toast({
         variant: 'destructive',
@@ -84,10 +92,10 @@ export default function AdminPaymentsPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <div className="flex items-center gap-3">
-             <DollarSign className="h-10 w-10 text-primary" />
+             <Search className="h-10 w-10 text-primary" />
             <div>
-                <CardTitle className="text-2xl font-headline">{t.paymentApprovals}</CardTitle>
-                <CardDescription>Review uploaded payment proofs and approve orders.</CardDescription>
+                <CardTitle className="text-2xl font-headline">Manual Payment Review</CardTitle>
+                <CardDescription>Review payments that failed automatic AI verification.</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -98,24 +106,33 @@ export default function AdminPaymentsPage() {
               <span>{error}</span>
             </div>
           )}
-          {orders.length === 0 && !error ? (
+          {ordersForReview.length === 0 && !error ? (
             <div className="text-center py-12">
               <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
-              <h3 className="text-xl font-semibold">No Pending Payments</h3>
-              <p className="text-muted-foreground">All payments are up to date.</p>
+              <h3 className="text-xl font-semibold">No Manual Reviews Needed</h3>
+              <p className="text-muted-foreground">All uploaded payments have been verified automatically.</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {orders.map((order) => {
+              {ordersForReview.map((order) => {
                 const currencySymbol = currencySymbols[order.currency] || order.currency;
                 return (
-                  <Card key={order.id} className="grid md:grid-cols-3 gap-4 p-4 items-center">
+                  <Card key={order.id} className="grid md:grid-cols-3 gap-4 p-4 items-start">
                     <div className="md:col-span-2 space-y-2">
                       <div className="text-sm text-muted-foreground">Order ID: <Badge variant="secondary">{order.id}</Badge></div>
                       <p><strong>Seeker:</strong> {order.seekerName}</p>
                       <p><strong>Provider:</strong> {order.providerName}</p>
                       <p><strong>Amount:</strong> <span className="font-mono">{currencySymbol}{order.amount.toFixed(2)}</span></p>
                       <p className="text-sm text-muted-foreground pt-2"><strong>Description:</strong> {order.serviceDescription}</p>
+                       {order.verificationNotes && (
+                          <Alert variant={order.verificationNotes.startsWith("AI Approved") ? "default" : "destructive"} className="mt-2">
+                              <AlertTriangle className="h-4 w-4" />
+                              <AlertTitle>{order.verificationNotes.startsWith("AI Approved") ? "AI Note" : "AI Verification Failed"}</AlertTitle>
+                              <AlertDescription>
+                                  {order.verificationNotes}
+                              </AlertDescription>
+                          </Alert>
+                      )}
                     </div>
                     <div className="space-y-3 flex flex-col items-center">
                       {order.proofOfPaymentUrl ? (
@@ -136,7 +153,7 @@ export default function AdminPaymentsPage() {
                             ) : (
                               <CheckCircle className="mr-2 h-4 w-4" />
                             )}
-                            Approve Payment
+                            Approve Manually
                           </Button>
                         </>
                       ) : (
