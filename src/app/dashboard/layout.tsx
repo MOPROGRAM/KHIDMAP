@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ADMIN_EMAIL } from '@/lib/config';
 import CallNotification from '@/components/chat/CallNotification';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import NotificationBell from '@/components/layout/NotificationBell';
 
 type UserRole = 'provider' | 'seeker' | 'admin';
 
@@ -251,7 +252,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                  <div className="w-full flex-1">
                     {/* Optionally, a search bar can go here */}
                  </div>
-                 {/* Other header items like user menu can go here */}
+                 <div className="flex items-center gap-2">
+                    {authUser && <NotificationBell />}
+                 </div>
             </header>
             <main className="flex flex-1 flex-col overflow-hidden">
                  {authUser && !isEmailVerified && (

@@ -448,6 +448,24 @@ export type Translations = {
   refundRequestedDescription: string;
   orderPastDue: string;
   orderPastDueDescription: string;
+
+  // Notifications
+  notifications: string;
+  noNotifications: string;
+  markAllAsRead: string;
+  viewOrder: string;
+  newOrderRequestTitle: string;
+  newOrderRequestMessage: string; // "{seekerName} has requested your service."
+  orderAcceptedTitle: string;
+  orderAcceptedMessage: string; // "{providerName} has accepted your request. Please proceed with payment."
+  orderDeclinedTitle: string;
+  orderDeclinedMessage: string; // "{providerName} has declined your service request."
+  paymentReceivedTitle: string;
+  paymentReceivedMessage: string; // "{seekerName} has paid for the order. You can now start the service."
+  orderCompletedTitle: string; // Renamed from "Service Completed" to avoid conflict
+  orderCompletedMessage: string; // "{seekerName} has marked the order as completed. Your funds will be processed."
+  orderDisputedTitle: string;
+  orderDisputedMessage: string; // "A dispute has been raised for your order with {userName}."
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -794,8 +812,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paymentApprovedTitle: "Payment Approved",
     paymentApprovedDescription: "The service provider can now begin the work.",
     orderCompletedTitle: "Order Completed",
-    orderCompletedDescription: "This service has been successfully completed.",
+    orderCompletedMessage: "{seekerName} has marked the order as completed. Your funds will be processed.",
     orderDisputedTitle: "Order Disputed",
+    orderDisputedMessage: "A dispute has been raised for your order with {userName}.",
     orderDisputedDescription: "There is an issue with this order. Admin will investigate.",
     requestService: "Request Service",
     requestingServiceFrom: "Requesting Service from",
@@ -818,6 +837,10 @@ export const translations: Record<'en' | 'ar', Translations> = {
     declineOrder: "Decline Order",
     orderAccepted: "Order Accepted",
     orderDeclined: "Order Declined",
+    orderAcceptedTitle: "Your Order was Accepted!",
+    orderAcceptedMessage: "{providerName} has accepted your request. Please proceed with payment.",
+    orderDeclinedTitle: "Order Request Declined",
+    orderDeclinedMessage: "{providerName} has declined your service request.",
     orderAcceptedDescription: "The provider has accepted your request. The seeker will now proceed with payment.",
     orderDeclinedDescription: "You have declined this service request.",
     statusPendingApprovalTitle: "Waiting for Provider Approval",
@@ -868,6 +891,14 @@ export const translations: Record<'en' | 'ar', Translations> = {
     refundRequestedDescription: "Your refund request has been submitted and is under review by the administration.",
     orderPastDue: "Order Past Due",
     orderPastDueDescription: "The service start date has passed. You can request a refund or grant a grace period.",
+    notifications: "Notifications",
+    noNotifications: "No new notifications.",
+    markAllAsRead: "Mark all as read",
+    viewOrder: "View Order",
+    newOrderRequestTitle: "New Service Request",
+    newOrderRequestMessage: "{seekerName} has requested your service.",
+    paymentReceivedTitle: "Payment Received!",
+    paymentReceivedMessage: "{seekerName} has paid for the order. You can now start the service.",
   },
   ar: {
     appName: "خدماب",
@@ -1209,8 +1240,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paymentApprovedTitle: "تمت الموافقة على الدفع",
     paymentApprovedDescription: "يمكن لمقدم الخدمة الآن بدء العمل.",
     orderCompletedTitle: "اكتمل الطلب",
-    orderCompletedDescription: "تم إكمال هذه الخدمة بنجاح.",
-    orderDisputedTitle: "الطلب متنازع عليه",
+    orderCompletedMessage: "لقد قام {seekerName} بتأكيد اكتمال الطلب. سيتم تحويل مستحقاتك.",
+    orderDisputedTitle: "نزاع على الطلب",
+    orderDisputedMessage: "تم رفع نزاع على طلبك مع {userName}.",
     orderDisputedDescription: "هناك مشكلة في هذا الطلب. سيقوم المسؤول بالتحقيق.",
     requestService: "اطلب خدمة",
     requestingServiceFrom: "طلب خدمة من",
@@ -1233,6 +1265,10 @@ export const translations: Record<'en' | 'ar', Translations> = {
     declineOrder: "رفض الطلب",
     orderAccepted: "تم قبول الطلب",
     orderDeclined: "تم رفض الطلب",
+    orderAcceptedTitle: "تم قبول طلبك!",
+    orderAcceptedMessage: "لقد قبل {providerName} طلبك. يرجى المتابعة للدفع.",
+    orderDeclinedTitle: "تم رفض طلب الخدمة",
+    orderDeclinedMessage: "لقد رفض {providerName} طلب الخدمة الخاص بك.",
     orderAcceptedDescription: "لقد قبل مقدم الخدمة طلبك. سيقوم الباحث عن الخدمة الآن بالدفع.",
     orderDeclinedDescription: "لقد رفضت طلب الخدمة هذا.",
     statusPendingApprovalTitle: "بانتظار موافقة مقدم الخدمة",
@@ -1283,5 +1319,13 @@ export const translations: Record<'en' | 'ar', Translations> = {
     refundRequestedDescription: "تم تقديم طلب استرداد المبلغ الخاص بك وهو قيد المراجعة من قبل الإدارة.",
     orderPastDue: "الطلب متأخر",
     orderPastDueDescription: "لقد انقضى تاريخ بدء الخدمة. يمكنك طلب استرداد المبلغ أو منح فترة سماح.",
+    notifications: "الإشعارات",
+    noNotifications: "لا توجد إشعارات جديدة.",
+    markAllAsRead: "وضع علامة على الكل كمقروء",
+    viewOrder: "عرض الطلب",
+    newOrderRequestTitle: "طلب خدمة جديد",
+    newOrderRequestMessage: "لقد طلب {seekerName} خدمتك.",
+    paymentReceivedTitle: "تم استلام الدفعة!",
+    paymentReceivedMessage: "لقد دفع {seekerName} للطلب. يمكنك الآن بدء الخدمة.",
   },
 };

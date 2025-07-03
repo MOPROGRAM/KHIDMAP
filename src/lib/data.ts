@@ -3,6 +3,7 @@ import { db, auth, storage } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch, GeoPoint, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { verifyPayment } from '@/ai/flows/verify-payment-flow';
+import type { Translations } from './translations';
 
 
 export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
@@ -108,6 +109,41 @@ export interface Order {
     serviceStartedAt?: Timestamp;
     disputeReason?: string;
     verificationNotes?: string;
+}
+
+export interface Notification {
+    id: string;
+    userId: string; // The user who should receive the notification
+    titleKey: keyof Translations;
+    messageKey: keyof Translations;
+    messageParams?: { [key: string]: string };
+    link: string; // e.g., `/dashboard/orders/${orderId}`
+    isRead: boolean;
+    createdAt: Timestamp;
+}
+
+export async function createNotification(
+    userId: string, 
+    titleKey: keyof Translations, 
+    messageKey: keyof Translations, 
+    link: string, 
+    messageParams?: { [key: string]: string }
+): Promise<void> {
+    if (!db) return;
+    try {
+        await addDoc(collection(db, 'notifications'), {
+            userId,
+            titleKey,
+            messageKey,
+            messageParams: messageParams || {},
+            link,
+            isRead: false,
+            createdAt: serverTimestamp()
+        });
+    } catch (error) {
+        console.error("Error creating notification:", error);
+        // Don't throw, as notification failure shouldn't block the main action.
+    }
 }
 
 
@@ -563,6 +599,15 @@ export async function createOrder(providerId: string, serviceDescription: string
   }
 
   const orderRef = await addDoc(collection(db, 'orders'), orderData);
+  
+  await createNotification(
+    providerId,
+    'newOrderRequestTitle',
+    'newOrderRequestMessage',
+    `/dashboard/orders/${orderRef.id}`,
+    { seekerName: seekerProfile.name }
+  );
+  
   return orderRef.id;
 }
 
@@ -624,6 +669,13 @@ export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: Fi
             paymentApprovedAt: serverTimestamp(),
             verificationNotes: `AI Approved. Found: ${verificationResult.foundCurrency || ''} ${verificationResult.foundAmount || 'N/A'}.`
         });
+        await createNotification(
+            order.providerId,
+            'paymentReceivedTitle',
+            'paymentReceivedMessage',
+            `/dashboard/orders/${order.id}`,
+            { seekerName: order.seekerName }
+        );
     } else {
         // AI rejected, update with proof and notes for manual review
         await updateDoc(orderRef, {
@@ -675,7 +727,17 @@ export async function approvePayment(orderId: string): Promise<void> {
         paymentApprovedAt: serverTimestamp(),
         verificationNotes: "Manually Approved by Admin."
     });
-    // In a real app, you would also trigger a notification to the provider here.
+
+    const order = await getOrderById(orderId);
+    if (order) {
+        await createNotification(
+            order.providerId,
+            'paymentReceivedTitle',
+            'paymentReceivedMessage',
+            `/dashboard/orders/${order.id}`,
+            { seekerName: order.seekerName }
+        );
+    }
 }
 
 export async function markOrderAsCompleted(orderId: string): Promise<void> {
@@ -685,6 +747,17 @@ export async function markOrderAsCompleted(orderId: string): Promise<void> {
         status: 'completed',
         completedAt: serverTimestamp()
     });
+
+    const order = await getOrderById(orderId);
+    if (order) {
+        await createNotification(
+            order.providerId,
+            'orderCompletedTitle',
+            'orderCompletedMessage',
+            `/dashboard/orders/${order.id}`,
+            { seekerName: order.seekerName }
+        );
+    }
 }
 
 export async function disputeOrder(orderId: string, reason: string): Promise<void> {
@@ -694,6 +767,19 @@ export async function disputeOrder(orderId: string, reason: string): Promise<voi
         status: 'disputed',
         disputeReason: reason
     });
+
+    const order = await getOrderById(orderId);
+    const user = auth.currentUser;
+    if (order && user) {
+        const otherPartyId = user.uid === order.seekerId ? order.providerId : order.seekerId;
+        await createNotification(
+            otherPartyId,
+            'orderDisputedTitle',
+            'orderDisputedMessage',
+            `/dashboard/orders/${orderId}`,
+            { userName: user.displayName || 'A user' }
+        );
+    }
 }
 
 export async function acceptOrder(orderId: string): Promise<void> {
@@ -703,6 +789,17 @@ export async function acceptOrder(orderId: string): Promise<void> {
         status: 'pending_payment',
         approvedByProviderAt: serverTimestamp()
     });
+
+    const order = await getOrderById(orderId);
+    if (order) {
+        await createNotification(
+            order.seekerId,
+            'orderAcceptedTitle',
+            'orderAcceptedMessage',
+            `/dashboard/orders/${orderId}`,
+            { providerName: order.providerName }
+        );
+    }
 }
 
 export async function declineOrder(orderId: string): Promise<void> {
@@ -712,6 +809,17 @@ export async function declineOrder(orderId: string): Promise<void> {
         status: 'declined',
         declinedAt: serverTimestamp()
     });
+
+    const order = await getOrderById(orderId);
+    if (order) {
+        await createNotification(
+            order.seekerId,
+            'orderDeclinedTitle',
+            'orderDeclinedMessage',
+            `/dashboard/orders/${orderId}`,
+            { providerName: order.providerName }
+        );
+    }
 }
 
 export async function startService(orderId: string): Promise<void> {
