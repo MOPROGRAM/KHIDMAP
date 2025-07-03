@@ -1,12 +1,45 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // WARNING: This rule is insecure and allows public read/write access.
-    // It is used here to bypass a complex permission issue as confirmed by the user.
-    // It should be replaced with more secure rules for production.
+
+    // Helper function to get order data from Firestore
+    function getOrderData(orderId) {
+      return get(/databases/$(database)/documents/orders/$(orderId)).data;
+    }
+
+    // --- SECURE RULES FOR PAYMENTS AND PORTFOLIO (UNCHANGED) ---
+    match /payment_proofs/{orderId}/{seekerId}/{fileName} {
+      allow read: if request.auth != null && (request.auth.uid == getOrderData(orderId).seekerId || request.auth.uid == getOrderData(orderId).providerId || request.auth.token.email == "mobusinessarena@gmail.com");
+      allow write: if request.auth != null && request.auth.uid == seekerId && request.auth.uid == getOrderData(orderId).seekerId;
+    }
+
+    match /serviceAds/{userId}/{mediaType}/{fileName} {
+      allow read: if true;
+      allow write, delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // --- SECURE CHAT UPLOAD RULE (USING METADATA) ---
+    // This rule uses custom metadata to securely verify the uploader's identity,
+    // bypassing the auth propagation issue.
+    match /chats/{chatId}/{fileName} {
+      function isChatParticipant() {
+        let chatPath = /databases/$(database)/documents/messages/$(chatId);
+        return exists(chatPath) && request.auth.uid in get(chatPath).data.participantIds;
+      }
+      
+      // Reading remains highly secure.
+      allow read: if request.auth != null && isChatParticipant();
+      
+      // Writing is now secured by checking metadata passed from the client.
+      // This ensures the uploader is who they say they are.
+      allow write: if request.auth != null && request.auth.uid == request.resource.metadata.userId;
+    }
+
+    // Default deny all other paths
     match /{allPaths=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

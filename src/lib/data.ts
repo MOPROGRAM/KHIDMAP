@@ -338,6 +338,11 @@ export const sendMessage = async (
     }
 
     const senderId = auth.currentUser.uid;
+    const metadata = {
+        customMetadata: {
+            'userId': senderId
+        }
+    };
     let messageContent: string;
     let lastMessageText: string;
 
@@ -347,7 +352,7 @@ export const sendMessage = async (
         const filePath = `chats/${chatId}/${new Date().getTime()}_${safeFileName}`;
         const fileRef = ref(storage, filePath);
         
-        await uploadBytes(fileRef, content);
+        await uploadBytes(fileRef, content, metadata);
         
         messageContent = await getDownloadURL(fileRef);
 
