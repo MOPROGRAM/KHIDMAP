@@ -575,13 +575,17 @@ export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: Fi
     if (!db || !storage || !auth.currentUser) {
         throw new Error("Authentication session is invalid or services are unavailable. Please log in again.");
     }
-    // Sanitize filename to prevent path traversal issues
     const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const filePath = `payment_proofs/${orderId}/${auth.currentUser.uid}/${safeFileName}`;
     const fileRef = ref(storage, filePath);
 
-    // This upload does not require any metadata because the path itself is secured by rules.
-    await uploadBytes(fileRef, file);
+    const metadata = {
+        customMetadata: {
+            'userId': auth.currentUser.uid
+        }
+    };
+    await uploadBytes(fileRef, file, metadata);
+
     const downloadURL = await getDownloadURL(fileRef);
 
     const orderRef = doc(db, "orders", orderId);
