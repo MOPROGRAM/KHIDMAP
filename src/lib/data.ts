@@ -347,14 +347,7 @@ export const sendMessage = async (
         const filePath = `chats/${chatId}/${new Date().getTime()}_${safeFileName}`;
         const fileRef = ref(storage, filePath);
         
-        // **FINAL FIX**: Add custom metadata for secure rule validation.
-        const metadata = {
-          customMetadata: {
-            'userId': senderId
-          }
-        };
-        
-        await uploadBytes(fileRef, content, metadata);
+        await uploadBytes(fileRef, content);
         
         messageContent = await getDownloadURL(fileRef);
 
@@ -621,7 +614,7 @@ export async function getPendingPaymentOrders(): Promise<Order[]> {
     const querySnapshot = await getDocs(q);
     const orders = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
     // Sort client-side to avoid needing a composite index
-    orders.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+    orders.sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
     return orders;
 }
 
