@@ -347,7 +347,13 @@ export const sendMessage = async (
         const filePath = `chats/${chatId}/${new Date().getTime()}_${safeFileName}`;
         const fileRef = ref(storage, filePath);
         
-        await uploadBytes(fileRef, content);
+        const metadata = {
+          customMetadata: {
+            'userId': senderId
+          }
+        };
+        
+        await uploadBytes(fileRef, content, metadata);
         
         messageContent = await getDownloadURL(fileRef);
 
