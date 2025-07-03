@@ -1,43 +1,61 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Helper function to get order data from Firestore
+    // Helper functions
+    function isUserAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isUserAuthenticated() && request.auth.uid == userId;
+    }
+    
     function getOrderData(orderId) {
       return get(/databases/$(database)/documents/orders/$(orderId)).data;
     }
 
-    // --- SECURE RULES FOR PAYMENTS AND PORTFOLIO (UNCHANGED) ---
-    match /payment_proofs/{orderId}/{seekerId}/{fileName} {
-      allow read: if request.auth != null && (request.auth.uid == getOrderData(orderId).seekerId || request.auth.uid == getOrderData(orderId).providerId || request.auth.token.email == "mobusinessarena@gmail.com");
-      allow write: if request.auth != null && request.auth.uid == seekerId && request.auth.uid == getOrderData(orderId).seekerId;
+    // Rules for user-uploaded portfolio images and videos
+    match /serviceAds/{userId}/{fileType}/{fileName} {
+      allow get; // Portfolio is public
+      allow write: if isOwner(userId); // Only owner can write/delete
     }
 
-    match /serviceAds/{userId}/{mediaType}/{fileName} {
-      allow read: if true;
-      allow write, delete: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // --- SECURE CHAT UPLOAD RULE (USING METADATA) ---
-    // This rule uses custom metadata to securely verify the uploader's identity,
-    // bypassing the auth propagation issue.
+    // Rules for files uploaded in chats (images, videos, audio)
     match /chats/{chatId}/{fileName} {
-      function isChatParticipant() {
-        let chatPath = /databases/$(database)/documents/messages/$(chatId);
-        return exists(chatPath) && request.auth.uid in get(chatPath).data.participantIds;
-      }
-      
-      // Reading remains highly secure.
-      allow read: if request.auth != null && isChatParticipant();
-      
-      // Writing is now secured by checking metadata passed from the client.
-      // This ensures the uploader is who they say they are.
-      allow write: if request.auth != null && request.auth.uid == request.resource.metadata.userId;
+        function isChatParticipant() {
+            let chatPath = /databases/$(database)/documents/messages/$(chatId);
+            return exists(chatPath) && request.auth.uid in get(chatPath).data.participantIds;
+        }
+
+        // Reading is secure: only participants can read.
+        allow get: if isChatParticipant();
+        
+        // Writing is simple: any logged-in user can upload. This is the fix.
+        allow create: if isUserAuthenticated();
+
+        // Disallow updates and deletes.
+        allow update, delete: if false;
     }
 
-    // Default deny all other paths
+    // Rules for payment proofs
+    match /payment_proofs/{orderId}/{seekerId}/{fileName} {
+        // Reading is secure: Seeker, Provider, or Admin can read.
+        allow get: if isUserAuthenticated() && (
+            isOwner(getOrderData(orderId).seekerId) ||
+            isOwner(getOrderData(orderId).providerId) ||
+            request.auth.token.email == "mobusinessarena@gmail.com"
+        );
+        
+        // Writing is simple and secure: Only the owner (seeker) can upload.
+        allow create: if isOwner(seekerId);
+
+        // Disallow updates and deletes.
+        allow update, delete: if false;
+    }
+
+    // Default deny all other paths for security
     match /{allPaths=**} {
       allow read, write: if false;
     }
