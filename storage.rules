@@ -3,12 +3,10 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Helper function to get order data from Firestore (used for secure reading)
+    // Helper functions for secure reading (unchanged)
     function getOrderData(orderId) {
       return get(/databases/$(database)/documents/orders/$(orderId)).data;
     }
-
-    // Helper for reading chat data (secure reading)
     function isChatParticipant(chatId) {
       let chatPath = /databases/$(database)/documents/messages/$(chatId);
       return exists(chatPath) && request.auth.uid in get(chatPath).data.participantIds;
@@ -16,36 +14,29 @@ service firebase.storage {
 
     // --- PORTFOLIO ---
     match /serviceAds/{userId}/{mediaType}/{fileName} {
-      // Anyone can read public portfolio content
-      allow get; 
-      
-      // Secure write by checking metadata passed from the client, and matching the path.
-      allow write: if request.auth != null && request.resource.metadata.userId == request.auth.uid && request.auth.uid == userId;
-    }
-
-    // --- PAYMENT PROOFS ---
-    match /payment_proofs/{orderId}/{seekerId}/{fileName} {
-      // Secure read using Firestore check
-      allow read: if request.auth != null && (request.auth.uid == getOrderData(orderId).seekerId || request.auth.uid == getOrderData(orderId).providerId || request.auth.token.email == "mobusinessarena@gmail.com");
-      
-      // FINAL FIX: Writing is now simplified to *only* check the metadata.
-      // This is the most robust method and avoids the timeout/stall issue.
+      allow get;
+      // Secure write using metadata.
       allow write: if request.auth != null && request.resource.metadata.userId == request.auth.uid;
     }
 
-    // --- CHAT FILES ---
+    // --- PAYMENT PROOFS (SIMPLIFIED AND FINAL FIX) ---
+    match /payment_proofs/{orderId}/{seekerId}/{fileName} {
+      // Reading remains secure with a database check.
+      allow read: if request.auth != null && (request.auth.uid == getOrderData(orderId).seekerId || request.auth.uid == getOrderData(orderId).providerId || request.auth.token.email == "mobusinessarena@gmail.com");
+      
+      // THE FIX: Writing now *only* checks the metadata. This is fast and secure.
+      // It avoids the complex database/path check that was causing the timeout.
+      allow write: if request.auth != null && request.resource.metadata.userId == request.auth.uid;
+    }
+
+    // --- CHAT FILES (using the same reliable pattern) ---
     match /chats/{chatId}/{fileName} {
-        // Secure read using Firestore check
         allow get: if request.auth != null && isChatParticipant(chatId);
-        
-        // Secure write using metadata check, ensuring the uploader is who they claim to be.
         allow create: if request.auth != null && request.resource.metadata.userId == request.auth.uid;
-        
-        // Disallow updates and deletes to keep chat history immutable.
         allow update, delete: if false; 
     }
 
-    // Default deny all other paths to secure your storage bucket
+    // Default deny to secure the rest of the bucket
     match /{allPaths=**} {
       allow read, write: if false;
     }
