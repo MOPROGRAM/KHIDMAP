@@ -3,59 +3,41 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Helper functions
-    function isUserAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isUserAuthenticated() && request.auth.uid == userId;
-    }
-    
+    // Helper function to get order data from Firestore
     function getOrderData(orderId) {
       return get(/databases/$(database)/documents/orders/$(orderId)).data;
     }
 
-    // Rules for user-uploaded portfolio images and videos
-    match /serviceAds/{userId}/{fileType}/{fileName} {
-      allow get; // Portfolio is public
-      allow write: if isOwner(userId); // Only owner can write/delete
+    // --- RULES FOR PORTFOLIO & PAYMENT PROOFS ---
+
+    // Portfolio files for providers
+    match /serviceAds/{userId}/{mediaType}/{fileName} {
+      allow get; // Anyone can read public portfolio content
+      allow write: if request.auth != null && request.auth.uid == userId; // Only owner can write/delete
     }
 
-    // Rules for files uploaded in chats (images, videos, audio)
-    match /chats/{chatId}/{fileName} {
-        function isChatParticipant() {
-            let chatPath = /databases/$(database)/documents/messages/$(chatId);
-            return exists(chatPath) && request.auth.uid in get(chatPath).data.participantIds;
-        }
-
-        // Reading is secure: only participants can read.
-        allow get: if isChatParticipant();
-        
-        // Writing is simple: any logged-in user can upload. This is the fix.
-        allow create: if isUserAuthenticated();
-
-        // Disallow updates and deletes.
-        allow update, delete: if false;
-    }
-
-    // Rules for payment proofs
+    // Payment proof files for orders
     match /payment_proofs/{orderId}/{seekerId}/{fileName} {
-        // Reading is secure: Seeker, Provider, or Admin can read.
-        allow get: if isUserAuthenticated() && (
-            isOwner(getOrderData(orderId).seekerId) ||
-            isOwner(getOrderData(orderId).providerId) ||
-            request.auth.token.email == "mobusinessarena@gmail.com"
-        );
-        
-        // Writing is simple and secure: Only the owner (seeker) can upload.
-        allow create: if isOwner(seekerId);
+       // Seeker, provider, and admin can read the proof
+      allow read: if request.auth != null && (request.auth.uid == getOrderData(orderId).seekerId || request.auth.uid == getOrderData(orderId).providerId || request.auth.token.email == "mobusinessarena@gmail.com");
+      
+      // Only the specific seeker for that order can upload a proof
+      allow write: if request.auth != null && request.auth.uid == seekerId && request.auth.uid == getOrderData(orderId).seekerId;
+    }
 
-        // Disallow updates and deletes.
+    // --- RULE FOR CHAT FILES (FROM YOUR WORKING EXAMPLE) ---
+    match /chats/{chatId}/{fileName} {
+        // Authenticated users can read chat files. The unguessable URL provides security.
+        allow get: if request.auth != null;
+        
+        // Authenticated users can upload to a chat.
+        allow create: if request.auth != null;
+
+        // Disallow updates and deletes to keep chat history immutable.
         allow update, delete: if false;
     }
 
-    // Default deny all other paths for security
+    // Default deny all other paths to secure your storage bucket
     match /{allPaths=**} {
       allow read, write: if false;
     }
