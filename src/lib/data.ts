@@ -347,6 +347,7 @@ export const sendMessage = async (
         const filePath = `chats/${chatId}/${new Date().getTime()}_${safeFileName}`;
         const fileRef = ref(storage, filePath);
         
+        // **FINAL FIX**: Add custom metadata for secure rule validation.
         const metadata = {
           customMetadata: {
             'userId': senderId

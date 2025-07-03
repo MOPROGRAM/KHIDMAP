@@ -9,7 +9,7 @@ service firebase.storage {
       return get(/databases/$(database)/documents/orders/$(orderId)).data;
     }
 
-    // --- SECURE RULES FOR PAYMENTS AND PORTFOLIO ---
+    // --- SECURE RULES FOR PAYMENTS AND PORTFOLIO (UNCHANGED) ---
     match /payment_proofs/{orderId}/{seekerId}/{fileName} {
       allow read: if request.auth != null && (request.auth.uid == getOrderData(orderId).seekerId || request.auth.uid == getOrderData(orderId).providerId || request.auth.token.email == "mobusinessarena@gmail.com");
       allow write: if request.auth != null && request.auth.uid == seekerId && request.auth.uid == getOrderData(orderId).seekerId;
@@ -20,21 +20,21 @@ service firebase.storage {
       allow write, delete: if request.auth != null && request.auth.uid == userId;
     }
     
-    // --- ROBUST CHAT UPLOAD RULE ---
+    // --- FINAL, ROBUST CHAT UPLOAD RULE ---
     // This rule uses custom metadata to securely verify the uploader's identity,
-    // bypassing potential issues with the implicit auth object propagation.
+    // bypassing the auth propagation issue.
     match /chats/{chatId}/{fileName} {
       function isChatParticipant() {
         let chatPath = /databases/$(database)/documents/messages/$(chatId);
         return exists(chatPath) && request.auth.uid in get(chatPath).data.participantIds;
       }
       
-      // Reading remains highly secure, ensuring only chat participants can view files.
+      // Reading remains highly secure.
       allow read: if request.auth != null && isChatParticipant();
       
-      // Writing is secured by verifying that the metadata 'userId' matches the authenticated user's UID.
-      // An attacker cannot spoof request.auth.uid.
-      allow write: if request.auth != null && request.resource.metadata.userId == request.auth.uid;
+      // Writing is now secured by checking metadata passed from the client.
+      // This ensures the uploader is who they say they are.
+      allow write: if request.auth != null && request.auth.uid == request.resource.metadata.userId;
     }
 
     // Default deny all other paths
