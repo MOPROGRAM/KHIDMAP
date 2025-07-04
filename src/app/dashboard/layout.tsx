@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -16,7 +15,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useToast } from "@/hooks/use-toast";
 import { ADMIN_EMAIL } from '@/lib/config';
 import CallNotification from '@/components/chat/CallNotification';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import NotificationBell from '@/components/layout/NotificationBell';
 
 type UserRole = 'provider' | 'seeker' | 'admin';
@@ -235,6 +234,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </Button>
                     </SheetTrigger>
                     <SheetContent side="left" className="flex flex-col p-0">
+                         <SheetHeader className="sr-only">
+                           <SheetTitle>Dashboard Menu</SheetTitle>
+                           <SheetDescription>Main navigation links for the dashboard.</SheetDescription>
+                        </SheetHeader>
                         <div className="flex h-14 shrink-0 items-center border-b px-4 lg:h-[60px] lg:px-6">
                              <Logo />
                         </div>
