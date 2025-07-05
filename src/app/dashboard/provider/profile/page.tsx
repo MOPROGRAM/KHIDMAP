@@ -41,7 +41,6 @@ export default function ProviderProfilePage() {
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
   
   const [name, setName] = useState('');
-  const [username, setUsername] = useState('');
   const [email, setEmail] = useState(''); 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [qualifications, setQualifications] = useState('');
@@ -76,7 +75,6 @@ export default function ProviderProfilePage() {
               if (docSnap.exists()) {
                 const firestoreProfile = docSnap.data() as UserProfile;
                 setName(firestoreProfile.name || user.displayName || ''); 
-                setUsername(firestoreProfile.username || '');
                 setPhoneNumber(firestoreProfile.phoneNumber || '');
                 setQualifications(firestoreProfile.qualifications || '');
                 setServiceAreasString((firestoreProfile.serviceAreas || []).join(', ')); 
@@ -381,20 +379,10 @@ export default function ProviderProfilePage() {
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="name">{t.name}</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} disabled={!isCoreServicesAvailable || isLoading} />
-                {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="username">{t.username}</Label>
-                <div className="relative">
-                  <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input id="username" value={username} readOnly disabled className="bg-muted/50 cursor-not-allowed pl-9" />
-                </div>
-                <p className="text-xs text-muted-foreground">{t.usernameCantBeChanged}</p>
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="name">{t.name}</Label>
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} disabled={!isCoreServicesAvailable || isLoading} />
+              {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
             </div>
 
             <div className="space-y-1.5">

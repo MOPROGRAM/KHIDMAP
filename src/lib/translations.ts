@@ -23,11 +23,8 @@ export type Translations = {
   email: string;
   password: string;
   name: string;
-  username: string;
-  usernameTaken: string;
-  usernameInvalid: string;
-  usernameHelpText: string;
-  usernameCantBeChanged: string;
+  realNameHelpText: string;
+  bankNamePlaceholder: string;
   qualifications: string;
   phoneNumber: string;
   address: string;
@@ -489,6 +486,7 @@ export type Translations = {
   viewProof: string;
   paymentProof: string;
   continue: string;
+  contactSupport: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -516,11 +514,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     email: "Email",
     password: "Password",
     name: "Full Name",
-    username: "Username",
-    usernameTaken: "This username is already taken.",
-    usernameInvalid: "3-20 chars, lowercase, numbers, or _ only.",
-    usernameHelpText: "Unique, lowercase, numbers, and underscores.",
-    usernameCantBeChanged: "Username cannot be changed after registration.",
+    realNameHelpText: "Please use your real name as it appears on bank documents.",
+    bankNamePlaceholder: "e.g. John Doe",
     qualifications: "About Me / Bio",
     phoneNumber: "Phone Number",
     address: "Address / Service Location",
@@ -933,7 +928,20 @@ export const translations: Record<'en' | 'ar', Translations> = {
     newOrderRequestMessage: "{seekerName} has requested your service.",
     paymentReceivedTitle: "Payment Received!",
     paymentReceivedMessage: "{seekerName} has paid for the order. You can now start the service.",
-    orderCompletedMessage: "{seekerName} has marked the order as completed. Your funds will be processed."
+    orderCompletedMessage: "{seekerName} has marked the order as completed. Your funds will be processed.",
+    orderDisputedMessage: "A dispute has been raised for your order with {userName}.",
+    deleteProof: "Delete Proof",
+    uploadNewProof: "Upload New Proof",
+    confirmDeleteProofTitle: "Delete Payment Proof?",
+    confirmDeleteProofDescription: "This will permanently delete your uploaded proof. You can then upload a new one. This action cannot be undone.",
+    proofDeletedSuccessTitle: "Proof Deleted",
+    proofDeletedSuccessDescription: "Your previous proof has been deleted. You can now upload a new one.",
+    deleteFailedTitle: "Deletion Failed",
+    proofUploaded: "Payment proof has been uploaded.",
+    viewProof: "View Proof",
+    paymentProof: "Payment Proof",
+    continue: "Continue",
+    contactSupport: "Contact Support",
   },
   ar: {
     appName: "خدماب",
@@ -959,11 +967,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     email: "البريد الإلكتروني",
     password: "كلمة المرور",
     name: "الاسم الكامل",
-    username: "اسم المستخدم",
-    usernameTaken: "اسم المستخدم هذا مأخوذ بالفعل.",
-    usernameInvalid: "3-20 حرفًا، أحرف صغيرة، أرقام، أو _ فقط.",
-    usernameHelpText: "فريد، أحرف صغيرة، أرقام، وشرطات سفلية.",
-    usernameCantBeChanged: "لا يمكن تغيير اسم المستخدم بعد التسجيل.",
+    realNameHelpText: "يرجى استخدام اسمك الحقيقي كما يظهر في المستندات البنكية.",
+    bankNamePlaceholder: "مثال: زيد المحمد",
     qualifications: "عني / نبذة تعريفية",
     phoneNumber: "رقم الهاتف",
     address: "العنوان / موقع الخدمة",
@@ -1386,5 +1391,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     viewProof: "عرض الإثبات",
     paymentProof: "إثبات الدفع",
     continue: "متابعة",
+    contactSupport: "اتصل بالدعم",
   },
 };
