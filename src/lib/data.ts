@@ -778,6 +778,46 @@ export async function approvePayment(orderId: string): Promise<void> {
     }
 }
 
+export async function rejectPayment(orderId: string, reason: string): Promise<void> {
+  if (!db || !storage || !auth.currentUser) {
+    throw new Error("Authentication or services are unavailable.");
+  }
+  const orderRef = doc(db, "orders", orderId);
+  const orderSnap = await getDoc(orderRef);
+
+  if (!orderSnap.exists()) {
+    throw new Error("Order not found.");
+  }
+
+  const orderData = orderSnap.data() as Order;
+  const proofUrl = orderData.proofOfPaymentUrl;
+
+  if (proofUrl) {
+    try {
+      const fileRef = ref(storage, proofUrl);
+      await deleteObject(fileRef);
+    } catch (error: any) {
+      if (error.code !== 'storage/object-not-found') {
+        console.error("Error deleting file from storage:", error);
+        throw new Error("Failed to delete the existing proof from storage.");
+      }
+    }
+  }
+
+  await updateDoc(orderRef, {
+    proofOfPaymentUrl: deleteField(),
+    verificationNotes: `Manual Rejection: ${reason || 'The uploaded proof was invalid.'}`
+  });
+
+  await createNotification(
+    orderData.seekerId,
+    'paymentRejectedTitle',
+    'paymentRejectedMessage',
+    `/dashboard/orders/${orderId}`,
+    { orderId: orderId.slice(0, 6) }
+  );
+}
+
 export async function markOrderAsCompleted(orderId: string): Promise<void> {
     if (!db) throw new Error("Database not initialized.");
     const orderRef = doc(db, "orders", orderId);

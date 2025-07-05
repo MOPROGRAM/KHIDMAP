@@ -359,6 +359,8 @@ export type Translations = {
   completed: string;
   disputed: string;
   paymentApprovals: string;
+  paymentRejectedTitle: string;
+  paymentRejectedMessage: string;
   paymentPendingTitle: string;
   paymentPendingDescription: string;
   paymentApprovedTitle: string;
@@ -368,6 +370,16 @@ export type Translations = {
   orderDisputedTitle: string;
   orderDisputedMessage: string; // "A dispute has been raised for your order with {userName}."
   orderDisputedDescription: string;
+  approveManually: string;
+  rejectManually: string;
+  confirmRejectPaymentTitle: string;
+  confirmRejectPaymentDescription: string;
+  reject: string;
+  rejectionReason: string;
+  rejectionReasonPlaceholder: string;
+  rejectionFailedTitle: string;
+  rejectionSuccessTitle: string;
+  rejectionSuccessDescription: string;
   
   // Request Service Page
   requestService: string;
@@ -387,12 +399,15 @@ export type Translations = {
 
   // New keys for order approval flow
   pendingApproval: string;
-  declined: string;
   orderCreatedAwaitingApprovalDescription: string;
   acceptOrder: string;
   declineOrder: string;
   orderAccepted: string;
   orderDeclined: string;
+  orderAcceptedTitle: string;
+  orderAcceptedMessage: string;
+  orderDeclinedTitle: string;
+  orderDeclinedMessage: string;
   orderAcceptedDescription: string;
   orderDeclinedDescription: string;
   statusPendingApprovalTitle: string;
@@ -815,6 +830,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     completed: "Completed",
     disputed: "Disputed",
     paymentApprovals: "Payment Approvals",
+    paymentRejectedTitle: "Payment Proof Rejected",
+    paymentRejectedMessage: "The payment proof for your order {orderId} was rejected by the admin. Please check your order details and upload a new proof.",
     paymentPendingTitle: "Payment Pending",
     paymentPendingDescription: "The seeker needs to upload proof of payment.",
     paymentApprovedTitle: "Payment Approved",
@@ -824,6 +841,16 @@ export const translations: Record<'en' | 'ar', Translations> = {
     orderDisputedTitle: "Order Disputed",
     orderDisputedMessage: "A dispute has been raised for your order with {userName}.",
     orderDisputedDescription: "There is an issue with this order. Admin will investigate.",
+    approveManually: "Approve Manually",
+    rejectManually: 'Reject Manually',
+    confirmRejectPaymentTitle: 'Are you sure you want to reject this payment?',
+    confirmRejectPaymentDescription: "This action cannot be undone. The provider's proof will be deleted, and they will be notified to upload a new one.",
+    reject: 'Reject',
+    rejectionReason: 'Reason for Rejection (optional)',
+    rejectionReasonPlaceholder: 'e.g., Unclear image, wrong amount...',
+    rejectionFailedTitle: 'Rejection Failed',
+    rejectionSuccessTitle: 'Payment Rejected',
+    rejectionSuccessDescription: 'The seeker has been notified to upload a new proof.',
     requestService: "Request Service",
     requestingServiceFrom: "Requesting Service from",
     serviceDescription: "Service Description",
@@ -839,7 +866,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     loginToRequestService: "Please log in to request a service.",
     backToProfile: "Back to Profile",
     pendingApproval: "Pending Approval",
-    declined: "Declined",
     orderCreatedAwaitingApprovalDescription: "Your request has been sent to the provider. You will be notified when they respond.",
     acceptOrder: "Accept Order",
     declineOrder: "Decline Order",
@@ -907,17 +933,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     newOrderRequestMessage: "{seekerName} has requested your service.",
     paymentReceivedTitle: "Payment Received!",
     paymentReceivedMessage: "{seekerName} has paid for the order. You can now start the service.",
-    deleteProof: "Delete Proof",
-    uploadNewProof: "Upload New Proof",
-    confirmDeleteProofTitle: "Delete Payment Proof?",
-    confirmDeleteProofDescription: "This will permanently delete your uploaded proof. You will then be able to upload a new one. This action cannot be undone.",
-    proofDeletedSuccessTitle: "Proof Deleted",
-    proofDeletedSuccessDescription: "Your previous proof has been deleted. You may now upload a new one.",
-    deleteFailedTitle: "Deletion Failed",
-    proofUploaded: "Proof of payment has been uploaded.",
-    viewProof: "View Proof",
-    paymentProof: "Payment Proof",
-    continue: "Continue",
+    orderCompletedMessage: "{seekerName} has marked the order as completed. Your funds will be processed."
   },
   ar: {
     appName: "خدماب",
@@ -1220,7 +1236,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     videoCall: "مكالمة فيديو",
     audioCall: "مكالمة صوتية",
     incomingCall: "مكالمة واردة",
-    isCallingYou: "يتصل بك...",
+    isCallingYou: "{userName} is calling you...",
     accept: "قبول",
     decline: "رفض",
     callFailed: "فشل الاتصال",
@@ -1254,15 +1270,27 @@ export const translations: Record<'en' | 'ar', Translations> = {
     completed: "مكتمل",
     disputed: "متنازع عليه",
     paymentApprovals: "الموافقات المالية",
+    paymentRejectedTitle: "تم رفض إثبات الدفع",
+    paymentRejectedMessage: "تم رفض إثبات الدفع الخاص بك للطلب {orderId} من قبل المسؤول. يرجى التحقق من تفاصيل طلبك ورفع إثبات جديد.",
     paymentPendingTitle: "الدفع معلق",
     paymentPendingDescription: "يحتاج الباحث عن الخدمة إلى تحميل إثبات الدفع.",
     paymentApprovedTitle: "تمت الموافقة على الدفع",
     paymentApprovedDescription: "يمكن لمقدم الخدمة الآن بدء العمل.",
     orderCompletedTitle: "اكتمل الطلب",
-    orderCompletedMessage: "لقد قام {seekerName} بتأكيد اكتمال الطلب. سيتم تحويل مستحقاتك.",
+    orderCompletedMessage: "{seekerName} لقد قام بتأكيد اكتمال الطلب. سيتم تحويل مستحقاتك.",
     orderDisputedTitle: "نزاع على الطلب",
     orderDisputedMessage: "تم رفع نزاع على طلبك مع {userName}.",
     orderDisputedDescription: "هناك مشكلة في هذا الطلب. سيقوم المسؤول بالتحقيق.",
+    approveManually: "موافقة يدوية",
+    rejectManually: "رفض يدوي",
+    confirmRejectPaymentTitle: "هل أنت متأكد من رفض هذا الدفع؟",
+    confirmRejectPaymentDescription: "لا يمكن التراجع عن هذا الإجراء. سيتم حذف إثبات الدفع الذي قدمه الباحث عن الخدمة، وسيتم إعلامه برفع إثبات جديد.",
+    reject: "رفض",
+    rejectionReason: "سبب الرفض (اختياري)",
+    rejectionReasonPlaceholder: "مثال: صورة غير واضحة، مبلغ خاطئ...",
+    rejectionFailedTitle: "فشل الرفض",
+    rejectionSuccessTitle: "تم رفض الدفع",
+    rejectionSuccessDescription: "تم إعلام الباحث عن الخدمة برفع إثبات جديد.",
     requestService: "اطلب خدمة",
     requestingServiceFrom: "طلب خدمة من",
     serviceDescription: "وصف الخدمة",
@@ -1278,7 +1306,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     loginToRequestService: "يرجى تسجيل الدخول لطلب خدمة.",
     backToProfile: "العودة إلى الملف الشخصي",
     pendingApproval: "بانتظار الموافقة",
-    declined: "مرفوض",
     orderCreatedAwaitingApprovalDescription: "تم إرسال طلبك إلى مقدم الخدمة. سيتم إعلامك عندما يرد.",
     acceptOrder: "قبول الطلب",
     declineOrder: "رفض الطلب",
@@ -1343,9 +1370,11 @@ export const translations: Record<'en' | 'ar', Translations> = {
     markAllAsRead: "وضع علامة على الكل كمقروء",
     viewOrder: "عرض الطلب",
     newOrderRequestTitle: "طلب خدمة جديد",
-    newOrderRequestMessage: "لقد طلب {seekerName} خدمتك.",
+    newOrderRequestMessage: "{seekerName} لقد طلب خدمتك.",
     paymentReceivedTitle: "تم استلام الدفعة!",
-    paymentReceivedMessage: "لقد دفع {seekerName} للطلب. يمكنك الآن بدء الخدمة.",
+    paymentReceivedMessage: "{seekerName} لقد دفع للطلب. يمكنك الآن بدء الخدمة.",
+    orderCompletedMessage: "{seekerName} لقد قام بتأكيد اكتمال الطلب. سيتم تحويل مستحقاتك.",
+    orderDisputedMessage: "تم رفع نزاع على طلبك مع {userName}.",
     deleteProof: "حذف الإثبات",
     uploadNewProof: "رفع إثبات جديد",
     confirmDeleteProofTitle: "حذف إثبات الدفع؟",

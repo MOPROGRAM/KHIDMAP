@@ -4,14 +4,17 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { DollarSign, Loader2, AlertTriangle, CheckCircle, ExternalLink, Image as ImageIcon, Search } from 'lucide-react';
-import { Order, getPendingPaymentOrders, approvePayment } from '@/lib/data';
-import { Button } from '@/components/ui/button';
+import { Loader2, AlertTriangle, CheckCircle, ExternalLink, Image as ImageIcon, Search, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Order, getPendingPaymentOrders, approvePayment, rejectPayment } from '@/lib/data';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 export default function AdminPaymentsPage() {
   const t = useTranslation();
@@ -20,6 +23,8 @@ export default function AdminPaymentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [approvingOrderId, setApprovingOrderId] = useState<string | null>(null);
+  const [rejectingOrderId, setRejectingOrderId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const currencySymbols: Record<string, string> = {
     USD: '$',
@@ -32,7 +37,6 @@ export default function AdminPaymentsPage() {
   const fetchOrdersForReview = async () => {
     setIsLoading(true);
     try {
-      // Fetches all orders with status 'pending_payment'
       const pendingOrders = await getPendingPaymentOrders();
       setOrders(pendingOrders);
     } catch (err: any) {
@@ -47,7 +51,6 @@ export default function AdminPaymentsPage() {
     }
   };
   
-  // Memoize the filtered list of orders that need manual review
   const ordersForReview = useMemo(() => {
     return orders.filter(order => order.proofOfPaymentUrl);
   }, [orders]);
@@ -65,7 +68,6 @@ export default function AdminPaymentsPage() {
         title: "Payment Approved",
         description: `Order ${orderId} has been marked as paid.`
       });
-      // Refresh list after approval
       fetchOrdersForReview();
     } catch (err: any) {
       toast({
@@ -75,6 +77,28 @@ export default function AdminPaymentsPage() {
       });
     } finally {
       setApprovingOrderId(null);
+    }
+  };
+
+  const handleReject = async (orderId: string) => {
+    if (!orderId) return;
+    setRejectingOrderId(orderId);
+    try {
+      await rejectPayment(orderId, rejectionReason || "The uploaded proof was invalid.");
+      toast({
+        title: t.rejectionSuccessTitle,
+        description: t.rejectionSuccessDescription,
+      });
+      setRejectionReason('');
+      fetchOrdersForReview();
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: t.rejectionFailedTitle,
+        description: err.message
+      });
+    } finally {
+      setRejectingOrderId(null);
     }
   };
 
@@ -95,7 +119,7 @@ export default function AdminPaymentsPage() {
              <Search className="h-10 w-10 text-primary" />
             <div>
                 <CardTitle className="text-2xl font-headline">Manual Payment Review</CardTitle>
-                <CardDescription>Review payments that failed automatic AI verification.</CardDescription>
+                <CardDescription>Review payments that failed automatic AI verification or require manual checks.</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -116,6 +140,7 @@ export default function AdminPaymentsPage() {
             <div className="space-y-4">
               {ordersForReview.map((order) => {
                 const currencySymbol = currencySymbols[order.currency] || order.currency;
+                const isProcessing = approvingOrderId === order.id || rejectingOrderId === order.id;
                 return (
                   <Card key={order.id} className="grid md:grid-cols-3 gap-4 p-4 items-start">
                     <div className="md:col-span-2 space-y-2">
@@ -143,18 +168,58 @@ export default function AdminPaymentsPage() {
                                   <ExternalLink className="h-8 w-8 text-white" />
                              </div>
                           </Link>
-                          <Button 
-                            onClick={() => handleApprove(order.id)} 
-                            disabled={approvingOrderId === order.id}
-                            className="w-full"
-                          >
-                            {approvingOrderId === order.id ? (
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                              <CheckCircle className="mr-2 h-4 w-4" />
-                            )}
-                            Approve Manually
-                          </Button>
+                          <div className="flex flex-col sm:flex-row gap-2 w-full">
+                            <Button 
+                              onClick={() => handleApprove(order.id)} 
+                              disabled={isProcessing}
+                              className="w-full bg-green-600 hover:bg-green-700"
+                            >
+                              {approvingOrderId === order.id ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              ) : (
+                                <ThumbsUp className="mr-2 h-4 w-4" />
+                              )}
+                              {t.approveManually}
+                            </Button>
+
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="destructive"
+                                  className="w-full"
+                                  disabled={isProcessing}
+                                >
+                                  <ThumbsDown className="mr-2 h-4 w-4" />
+                                  {t.rejectManually}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>{t.confirmRejectPaymentTitle}</AlertDialogTitle>
+                                  <AlertDialogDescription>{t.confirmRejectPaymentDescription}</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`rejection-reason-${order.id}`}>{t.rejectionReason}</Label>
+                                  <Input
+                                    id={`rejection-reason-${order.id}`}
+                                    value={rejectionReason}
+                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                    placeholder={t.rejectionReasonPlaceholder}
+                                  />
+                                </div>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel onClick={() => setRejectionReason('')}>{t.cancel}</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleReject(order.id)}
+                                    disabled={rejectingOrderId === order.id}
+                                    className={buttonVariants({ variant: "destructive" })}
+                                  >
+                                    {rejectingOrderId === order.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : t.reject}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </>
                       ) : (
                           <div className="flex flex-col items-center justify-center text-center p-4 bg-muted rounded-md h-full w-full">
