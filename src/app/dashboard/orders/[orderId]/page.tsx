@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Link from 'next/link';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 const StatusInfo = ({ status, t, isProvider }: { status: OrderStatus; t: Translations; isProvider: boolean }) => {
@@ -360,6 +361,15 @@ export default function OrderDetailPage() {
                             <p className="text-sm text-muted-foreground">Amount: <strong className="font-mono">{currencySymbol}{order.amount.toFixed(2)}</strong></p>
                         </div>
                         <Separator />
+                         {order.verificationNotes && (
+                            <Alert variant={order.verificationNotes.includes("Rejected") || order.verificationNotes.includes("Rejection") ? "destructive" : "default"} className="mt-2">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertTitle>{order.verificationNotes.includes("Rejected") || order.verificationNotes.includes("Rejection") ? "Verification Failed" : "Admin Note"}</AlertTitle>
+                                <AlertDescription>
+                                    {order.verificationNotes}
+                                </AlertDescription>
+                            </Alert>
+                        )}
                          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/jpeg,image/png,application/pdf" />
                         
                         {!order.proofOfPaymentUrl ? (

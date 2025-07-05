@@ -13,8 +13,9 @@ import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { useSettings } from '@/contexts/SettingsContext';
+import type { User as FirebaseUser } from 'firebase/auth';
 
-export default function NotificationBell() {
+export default function NotificationBell({ user }: { user: FirebaseUser | null }) {
     const t = useTranslation();
     const { language } = useSettings();
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -22,13 +23,16 @@ export default function NotificationBell() {
     const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
-        const currentUser = auth.currentUser;
-        if (!currentUser || !db) return;
+        if (!user || !db) {
+            setNotifications([]);
+            setUnreadCount(0);
+            return;
+        }
 
         const notificationsRef = collection(db, "notifications");
         const q = query(
             notificationsRef,
-            where("userId", "==", currentUser.uid),
+            where("userId", "==", user.uid),
             orderBy("createdAt", "desc"),
             limit(10)
         );
@@ -43,10 +47,10 @@ export default function NotificationBell() {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [user, db]);
 
     const handleMarkAllAsRead = async () => {
-        if (!db || !auth.currentUser || unreadCount === 0) return;
+        if (!db || !user || unreadCount === 0) return;
 
         const batch = writeBatch(db);
         notifications.forEach(notification => {

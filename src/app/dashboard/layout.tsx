@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -234,7 +235,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </Button>
                     </SheetTrigger>
                     <SheetContent side="left" className="flex flex-col p-0">
-                         <SheetHeader className="sr-only">
+                         <SheetHeader className="p-4">
                            <SheetTitle>Dashboard Menu</SheetTitle>
                            <SheetDescription>Main navigation links for the dashboard.</SheetDescription>
                         </SheetHeader>
@@ -256,7 +257,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     {/* Optionally, a search bar can go here */}
                  </div>
                  <div className="flex items-center gap-2">
-                    {authUser && <NotificationBell />}
+                    {authUser && <NotificationBell user={authUser} />}
                  </div>
             </header>
             <main className="flex flex-1 flex-col overflow-hidden">
