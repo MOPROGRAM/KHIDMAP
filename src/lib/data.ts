@@ -672,7 +672,7 @@ export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: Fi
             proofOfPaymentUrl: downloadURL,
             status: 'paid',
             paymentApprovedAt: serverTimestamp(),
-            verificationNotes: verificationResult.reason || "AI Approved: All details match."
+            verificationNotes: verificationResult.reason || "AI Approval: Accepted. All details match."
         });
         await createNotification(
             order.providerId,
@@ -686,7 +686,7 @@ export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: Fi
         await updateDoc(orderRef, {
             proofOfPaymentUrl: downloadURL,
             status: 'pending_payment', // Stays pending
-            verificationNotes: verificationResult.reason || "AI could not verify the payment. Please review manually."
+            verificationNotes: verificationResult.reason || "AI Approval: Rejected. The receipt could not be verified. Please review manually."
         });
     }
 }
@@ -763,7 +763,7 @@ export async function approvePayment(orderId: string): Promise<void> {
     await updateDoc(orderRef, {
         status: 'paid',
         paymentApprovedAt: serverTimestamp(),
-        verificationNotes: "Manually Approved by Admin."
+        verificationNotes: "Manual Approval: Accepted."
     });
 
     const order = await getOrderById(orderId);

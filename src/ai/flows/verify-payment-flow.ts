@@ -67,11 +67,13 @@ Analyze the receipt image and compare it with the expected transaction details t
     - **Payer**: The \`foundPayerName\` should be a plausible match for the \`expectedPayerName\`. A partial match is acceptable (e.g., 'Mohammed Ahmed' matches 'Mohammed').
     - **Payee**: The recipient on the receipt should plausibly match the \`expectedPayeeName\`.
 4.  **Set Verification Status**:
-    - Set \`isVerified\` to \`true\` **ONLY IF** Amount and Currency match, AND the Payer name is a reasonable match.
+    - Set \`isVerified\` to \`true\` **ONLY IF** Amount, Currency, Payer, and Payee details are all reasonable matches.
     - If there is any doubt, if numbers are unclear, or if any of the key items do not match, set \`isVerified\` to \`false\`.
 5.  **Provide a Clear Reason**:
-    - If verified, set \`reason\` to: "AI Approved: Amount, currency, and payer name appear to match."
-    - If not verified, explain **exactly what the mismatch is**. For example: "AI Rejected: Amount found was {{foundAmount}} but expected was {{expectedAmount}}." or "AI Rejected: Payer name '{{foundPayerName}}' does not sufficiently match expected '{{expectedPayerName}}'." or "AI Rejected: Image is unclear or not a valid receipt."
+    - If verified, set \`reason\` to: "AI Approval: Accepted. All details appear to match."
+    - If not verified due to an amount mismatch, set \`reason\` to: "AI Approval: Rejected. The amount found ({{foundAmount}}) does not match the expected amount ({{expectedAmount}})."
+    - If not verified due to a payer name mismatch, set \`reason\` to: "AI Approval: Rejected. The payer name '{{foundPayerName}}' does not sufficiently match '{{expectedPayerName}}'."
+    - If not verified for any other reason (e.g., payee mismatch, unclear image, not a receipt), set \`reason\` to: "AI Approval: Rejected. The receipt could not be verified. Please review manually."
 
 Your final output must be in the specified JSON format.`,
 });
@@ -94,7 +96,7 @@ const verifyPaymentFlow = ai.defineFlow(
         // Return a structured error response
         return {
             isVerified: false,
-            reason: `AI analysis failed due to an internal error: ${e.message}. Please review manually.`,
+            reason: `AI analysis failed: ${e.message}. Please review manually.`,
         };
     }
   }

@@ -125,9 +125,9 @@ export default function AdminPaymentsPage() {
                       <p><strong>Amount:</strong> <span className="font-mono">{currencySymbol}{order.amount.toFixed(2)}</span></p>
                       <p className="text-sm text-muted-foreground pt-2"><strong>Description:</strong> {order.serviceDescription}</p>
                        {order.verificationNotes && (
-                          <Alert variant={order.verificationNotes.startsWith("AI Approved") ? "default" : "destructive"} className="mt-2">
+                          <Alert variant={order.verificationNotes.includes("Rejected") ? "destructive" : "default"} className="mt-2">
                               <AlertTriangle className="h-4 w-4" />
-                              <AlertTitle>{order.verificationNotes.startsWith("AI Approved") ? "AI Note" : "AI Verification Failed"}</AlertTitle>
+                              <AlertTitle>{order.verificationNotes.includes("Rejected") ? "AI Verification Failed" : "AI Note"}</AlertTitle>
                               <AlertDescription>
                                   {order.verificationNotes}
                               </AlertDescription>
