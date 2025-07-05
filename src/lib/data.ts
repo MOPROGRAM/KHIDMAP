@@ -638,14 +638,15 @@ export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: Fi
 
     const photoDataUri = await fileToDataUri(file);
 
-    // Call AI for verification, now including the seeker's name
+    // Call AI for verification, now including the seeker's and provider's name
     let verificationResult;
     try {
         verificationResult = await verifyPayment({
             photoDataUri,
             expectedAmount: order.amount,
             expectedCurrency: order.currency,
-            expectedPayerName: order.seekerName
+            expectedPayerName: order.seekerName,
+            expectedPayeeName: order.providerName
         });
     } catch (aiError: any) {
         console.error("AI verification flow failed:", aiError);

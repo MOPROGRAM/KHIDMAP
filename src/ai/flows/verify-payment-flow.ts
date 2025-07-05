@@ -19,6 +19,7 @@ const VerifyPaymentInputSchema = z.object({
   expectedAmount: z.number().describe("The expected payment amount."),
   expectedCurrency: z.string().describe("The expected currency code (e.g., USD, SAR)."),
   expectedPayerName: z.string().describe("The name of the person expected to have made the payment (the service seeker)."),
+  expectedPayeeName: z.string().describe("The name of the person or entity expected to have received the payment (the service provider)."),
 });
 export type VerifyPaymentInput = z.infer<typeof VerifyPaymentInputSchema>;
 
@@ -39,29 +40,40 @@ const prompt = ai.definePrompt({
   name: 'verifyPaymentPrompt',
   input: {schema: VerifyPaymentInputSchema},
   output: {schema: VerifyPaymentOutputSchema},
-  prompt: `You are a meticulous financial auditor AI. Your task is to analyze the provided image of a payment receipt and verify if it matches an expected transaction.
+  prompt: `You are an AI assistant for a financial services platform. Your role is to verify payment receipts uploaded by users. You must be very careful and precise.
 
-Analyze the image provided in '{{media url=photoDataUri}}'.
+**Task**:
+Analyze the receipt image and compare it with the expected transaction details to determine if the payment is valid.
 
-The expected payment is:
-- Payer Name: {{expectedPayerName}}
-- Amount: {{expectedAmount}}
-- Currency: {{expectedCurrency}}
+**Image to Analyze**:
+{{media url=photoDataUri}}
 
-Carefully examine the receipt image to find the following information:
-1.  **Payer's Name**: Look for a sender name, account holder name, or similar identifier.
-2.  **Total Amount Paid**: This might be labeled as "Total", "Amount Paid", etc.
-3.  **Currency**: This might be a symbol ($, €, ر.س) or a code (USD, SAR, EGP).
+**Expected Transaction Details**:
+- **Payer (Sender)**: {{expectedPayerName}}
+- **Payee (Recipient)**: {{expectedPayeeName}}
+- **Amount**: {{expectedAmount}}
+- **Currency**: {{expectedCurrency}}
 
-Your response MUST be in the structured format defined.
+**Instructions**:
+1.  **Extract Information**: Carefully examine the image to find the following:
+    - The sender's name (Payer).
+    - The recipient's name (Payee).
+    - The total amount transferred.
+    - The currency (e.g., USD, SAR, $, ر.س).
+2.  **Populate Found Fields**: Fill the \`foundAmount\`, \`foundCurrency\`, and \`foundPayerName\` fields with the data you extract from the image. If you cannot find a piece of information, leave its corresponding field blank.
+3.  **Compare and Decide**:
+    - **Amount**: The \`foundAmount\` must match the \`expectedAmount\` exactly.
+    - **Currency**: The \`foundCurrency\` must match the \`expectedCurrency\` (e.g., 'SAR' matches 'ر.س').
+    - **Payer**: The \`foundPayerName\` should be a plausible match for the \`expectedPayerName\`. A partial match is acceptable (e.g., 'Mohammed Ahmed' matches 'Mohammed').
+    - **Payee**: The recipient on the receipt should plausibly match the \`expectedPayeeName\`.
+4.  **Set Verification Status**:
+    - Set \`isVerified\` to \`true\` **ONLY IF** Amount and Currency match, AND the Payer name is a reasonable match.
+    - If there is any doubt, if numbers are unclear, or if any of the key items do not match, set \`isVerified\` to \`false\`.
+5.  **Provide a Clear Reason**:
+    - If verified, set \`reason\` to: "AI Approved: Amount, currency, and payer name appear to match."
+    - If not verified, explain **exactly what the mismatch is**. For example: "AI Rejected: Amount found was {{foundAmount}} but expected was {{expectedAmount}}." or "AI Rejected: Payer name '{{foundPayerName}}' does not sufficiently match expected '{{expectedPayerName}}'." or "AI Rejected: Image is unclear or not a valid receipt."
 
-1.  **isVerified**: Set to 'true' ONLY IF the amount, currency, AND payer's name in the image EXACTLY match the expected values. The name can be a partial match (e.g., 'Mohammed' matches 'Mohammed Ahmed'). If there is any doubt, if numbers are unclear, or if any of the three items do not match, set it to 'false'.
-2.  **reason**: Provide a concise reason for your decision.
-    - If verified, state: "Verified: Found matching name, amount, and currency."
-    - If not verified, explain exactly what failed, for example: "Failed: Amount was [found_amount], expected {{expectedAmount}}." OR "Failed: Payer name '{{foundPayerName}}' does not match expected '{{expectedPayerName}}'." OR "Failed: Image is unclear or not a valid receipt."
-3.  **foundAmount / foundCurrency / foundPayerName**: Fill these fields with the values you extracted from the receipt, if possible.
-
-Proceed with the analysis.`,
+Your final output must be in the specified JSON format.`,
 });
 
 const verifyPaymentFlow = ai.defineFlow(
