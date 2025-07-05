@@ -363,9 +363,10 @@ export type Translations = {
   paymentPendingDescription: string;
   paymentApprovedTitle: string;
   paymentApprovedDescription: string;
-  orderCompletedTitle: string;
-  orderCompletedDescription: string;
+  orderCompletedTitle: string; // Renamed from "Service Completed" to avoid conflict
+  orderCompletedMessage: string; // "{seekerName} has marked the order as completed. Your funds will be processed."
   orderDisputedTitle: string;
+  orderDisputedMessage: string; // "A dispute has been raised for your order with {userName}."
   orderDisputedDescription: string;
   
   // Request Service Page
@@ -456,16 +457,23 @@ export type Translations = {
   viewOrder: string;
   newOrderRequestTitle: string;
   newOrderRequestMessage: string; // "{seekerName} has requested your service."
-  orderAcceptedTitle: string;
-  orderAcceptedMessage: string; // "{providerName} has accepted your request. Please proceed with payment."
-  orderDeclinedTitle: string;
-  orderDeclinedMessage: string; // "{providerName} has declined your service request."
   paymentReceivedTitle: string;
   paymentReceivedMessage: string; // "{seekerName} has paid for the order. You can now start the service."
-  orderCompletedTitle: string; // Renamed from "Service Completed" to avoid conflict
   orderCompletedMessage: string; // "{seekerName} has marked the order as completed. Your funds will be processed."
-  orderDisputedTitle: string;
   orderDisputedMessage: string; // "A dispute has been raised for your order with {userName}."
+
+  // Proof deletion
+  deleteProof: string;
+  uploadNewProof: string;
+  confirmDeleteProofTitle: string;
+  confirmDeleteProofDescription: string;
+  proofDeletedSuccessTitle: string;
+  proofDeletedSuccessDescription: string;
+  deleteFailedTitle: string;
+  proofUploaded: string;
+  viewProof: string;
+  paymentProof: string;
+  continue: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -773,7 +781,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     videoCall: "Video Call",
     audioCall: "Audio Call",
     incomingCall: "Incoming Call",
-    isCallingYou: "is calling you...",
+    isCallingYou: "{userName} is calling you...",
     accept: "Accept",
     decline: "Decline",
     callFailed: "Call Failed",
@@ -899,6 +907,17 @@ export const translations: Record<'en' | 'ar', Translations> = {
     newOrderRequestMessage: "{seekerName} has requested your service.",
     paymentReceivedTitle: "Payment Received!",
     paymentReceivedMessage: "{seekerName} has paid for the order. You can now start the service.",
+    deleteProof: "Delete Proof",
+    uploadNewProof: "Upload New Proof",
+    confirmDeleteProofTitle: "Delete Payment Proof?",
+    confirmDeleteProofDescription: "This will permanently delete your uploaded proof. You will then be able to upload a new one. This action cannot be undone.",
+    proofDeletedSuccessTitle: "Proof Deleted",
+    proofDeletedSuccessDescription: "Your previous proof has been deleted. You may now upload a new one.",
+    deleteFailedTitle: "Deletion Failed",
+    proofUploaded: "Proof of payment has been uploaded.",
+    viewProof: "View Proof",
+    paymentProof: "Payment Proof",
+    continue: "Continue",
   },
   ar: {
     appName: "خدماب",
@@ -1266,9 +1285,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     orderAccepted: "تم قبول الطلب",
     orderDeclined: "تم رفض الطلب",
     orderAcceptedTitle: "تم قبول طلبك!",
-    orderAcceptedMessage: "لقد قبل {providerName} طلبك. يرجى المتابعة للدفع.",
+    orderAcceptedMessage: "{providerName} لقد قبل طلبك. يرجى المتابعة للدفع.",
     orderDeclinedTitle: "تم رفض طلب الخدمة",
-    orderDeclinedMessage: "لقد رفض {providerName} طلب الخدمة الخاص بك.",
+    orderDeclinedMessage: "{providerName} لقد رفض طلب الخدمة الخاص بك.",
     orderAcceptedDescription: "لقد قبل مقدم الخدمة طلبك. سيقوم الباحث عن الخدمة الآن بالدفع.",
     orderDeclinedDescription: "لقد رفضت طلب الخدمة هذا.",
     statusPendingApprovalTitle: "بانتظار موافقة مقدم الخدمة",
@@ -1327,5 +1346,16 @@ export const translations: Record<'en' | 'ar', Translations> = {
     newOrderRequestMessage: "لقد طلب {seekerName} خدمتك.",
     paymentReceivedTitle: "تم استلام الدفعة!",
     paymentReceivedMessage: "لقد دفع {seekerName} للطلب. يمكنك الآن بدء الخدمة.",
+    deleteProof: "حذف الإثبات",
+    uploadNewProof: "رفع إثبات جديد",
+    confirmDeleteProofTitle: "حذف إثبات الدفع؟",
+    confirmDeleteProofDescription: "سيؤدي هذا إلى حذف إثباتك المرفوع نهائيًا. ستتمكن بعد ذلك من رفع إثبات جديد. لا يمكن التراجع عن هذا الإجراء.",
+    proofDeletedSuccessTitle: "تم حذف الإثبات",
+    proofDeletedSuccessDescription: "تم حذف إثباتك السابق. يمكنك الآن رفع إثبات جديد.",
+    deleteFailedTitle: "فشل الحذف",
+    proofUploaded: "تم رفع إثبات الدفع.",
+    viewProof: "عرض الإثبات",
+    paymentProof: "إثبات الدفع",
+    continue: "متابعة",
   },
 };

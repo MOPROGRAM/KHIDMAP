@@ -1,8 +1,8 @@
 
 import { db, auth, storage } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch, GeoPoint, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { verifyPayment } from '@/ai/flows/verify-payment-flow';
+import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch, GeoPoint, arrayUnion, arrayRemove, increment, deleteField } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { verifyPayment, type VerifyPaymentInput } from '@/ai/flows/verify-payment-flow';
 import type { Translations } from './translations';
 
 
@@ -627,6 +627,8 @@ export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: Fi
 
     const order = await getOrderById(orderId);
     if (!order) throw new Error("Order not found.");
+    if (order.seekerId !== seekerId) throw new Error("You are not authorized to upload proof for this order.");
+
 
     // Helper to convert file to data URI for AI
     const fileToDataUri = (file: File): Promise<string> => new Promise((resolve, reject) => {
@@ -641,13 +643,14 @@ export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: Fi
     // Call AI for verification, now including the seeker's and provider's name
     let verificationResult;
     try {
-        verificationResult = await verifyPayment({
+        const verifyPaymentInput: VerifyPaymentInput = {
             photoDataUri,
             expectedAmount: order.amount,
             expectedCurrency: order.currency,
             expectedPayerName: order.seekerName,
             expectedPayeeName: order.providerName
-        });
+        };
+        verificationResult = await verifyPayment(verifyPaymentInput);
     } catch (aiError: any) {
         console.error("AI verification flow failed:", aiError);
         verificationResult = { isVerified: false, reason: `AI analysis failed: ${aiError.message}. Please review manually.` };
@@ -687,6 +690,39 @@ export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: Fi
         });
     }
 }
+
+export async function deletePaymentProof(orderId: string): Promise<void> {
+  if (!db || !storage || !auth.currentUser) {
+    throw new Error("Authentication or services are unavailable.");
+  }
+  const orderRef = doc(db, "orders", orderId);
+  const orderSnap = await getDoc(orderRef);
+
+  if (!orderSnap.exists()) {
+    throw new Error("Order not found.");
+  }
+
+  const orderData = orderSnap.data();
+  const proofUrl = orderData.proofOfPaymentUrl;
+
+  if (proofUrl) {
+    try {
+      const fileRef = ref(storage, proofUrl);
+      await deleteObject(fileRef);
+    } catch (error: any) {
+      if (error.code !== 'storage/object-not-found') {
+        console.error("Error deleting file from storage:", error);
+        throw new Error("Failed to delete the existing proof from storage.");
+      }
+    }
+  }
+
+  await updateDoc(orderRef, {
+    proofOfPaymentUrl: deleteField(),
+    verificationNotes: deleteField()
+  });
+}
+
 
 export async function getOrdersForUser(userId: string): Promise<Order[]> {
     if (!db) throw new Error("Database not initialized.");

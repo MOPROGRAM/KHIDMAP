@@ -3,20 +3,23 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { auth, storage } from '@/lib/firebase';
-import { Order, getOrderById, OrderStatus, uploadPaymentProofAndUpdateOrder, markOrderAsCompleted, disputeOrder, acceptOrder, declineOrder, startService, grantGracePeriod } from '@/lib/data';
+import type { Order, OrderStatus } from '@/lib/data';
+import { getOrderById, uploadPaymentProofAndUpdateOrder, markOrderAsCompleted, disputeOrder, acceptOrder, declineOrder, startService, grantGracePeriod, deletePaymentProof } from '@/lib/data';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { Loader2, ArrowLeft, Clock, CheckCircle, AlertCircle, Upload, Send, ShieldQuestion, FileCheck, DollarSign, Banknote, Landmark, Hourglass, XCircle, ThumbsUp, ThumbsDown, PlayCircle, CalendarDays } from 'lucide-react';
+import { Loader2, ArrowLeft, Clock, CheckCircle, AlertCircle, Upload, Send, ShieldQuestion, FileCheck, DollarSign, Banknote, Landmark, Hourglass, XCircle, ThumbsUp, ThumbsDown, PlayCircle, CalendarDays, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import Link from 'next/link';
 
 
 const StatusInfo = ({ status, t, isProvider }: { status: OrderStatus; t: Translations; isProvider: boolean }) => {
@@ -88,6 +91,7 @@ export default function OrderDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmittingAction, setIsSubmittingAction] = useState<string|null>(null);
+  const [isDeletingProof, setIsDeletingProof] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<FirebaseUser | null>(null);
   
@@ -155,6 +159,20 @@ export default function OrderDetailPage() {
     } finally {
         setIsSubmitting(false);
         if (event.target) event.target.value = '';
+    }
+  };
+
+  const handleDeleteProof = async () => {
+    if (!order) return;
+    setIsDeletingProof(true);
+    try {
+        await deletePaymentProof(order.id);
+        toast({ title: t.proofDeletedSuccessTitle, description: t.proofDeletedSuccessDescription });
+        await fetchOrder(); // Re-fetch order to update UI
+    } catch (err: any) {
+        toast({ variant: "destructive", title: t.deleteFailedTitle, description: err.message });
+    } finally {
+        setIsDeletingProof(false);
     }
   };
 
@@ -331,7 +349,7 @@ export default function OrderDetailPage() {
             {showPaymentBox && (
                 <Card className="bg-background border-primary">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Banknote className="h-5 w-5"/>Payment Required</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Banknote className="h-5 w-5"/>{t.paymentProof}</CardTitle>
                         <CardDescription>Please complete the payment and upload proof to proceed.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -347,13 +365,34 @@ export default function OrderDetailPage() {
                         {!order.proofOfPaymentUrl ? (
                             <Button className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isSubmitting}>
                                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
-                                Upload Payment Proof
+                                {t.uploadNewProof}
                             </Button>
                         ) : (
-                             <div className="flex items-center gap-2 p-3 border rounded-md bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300">
-                                <FileCheck className="h-5 w-5"/>
-                                <span className="font-medium">Proof of payment has been uploaded.</span>
-                             </div>
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 p-3 border rounded-md bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300">
+                                    <FileCheck className="h-5 w-5"/>
+                                    <span className="font-medium">{t.proofUploaded}</span>
+                                    <Link href={order.proofOfPaymentUrl} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs underline">{t.viewProof}</Link>
+                                </div>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" className="w-full" disabled={isDeletingProof}>
+                                            {isDeletingProof ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Trash2 className="mr-2 h-4 w-4"/>}
+                                            {t.deleteProof}
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>{t.confirmDeleteProofTitle}</AlertDialogTitle>
+                                            <AlertDialogDescription>{t.confirmDeleteProofDescription}</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleDeleteProof} className={buttonVariants({ variant: "destructive" })}>{t.delete}</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
                         )}
                     </CardContent>
                 </Card>
@@ -419,7 +458,7 @@ export default function OrderDetailPage() {
                             Mark as Completed
                         </Button>
                         <Button variant="destructive" className="w-full" onClick={() => handleDispute('Issue with completed service')} disabled={!!isSubmittingAction}>
-                            {isSubmittingAction === 'dispute' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ShieldQuestion className="mr-2 h-4 w-4"/>}
+                            {isSubmittingAction === 'dispute' ? <ShieldQuestion className="mr-2 h-4 w-4"/> : <ShieldQuestion className="mr-2 h-4 w-4"/>}
                             Report a Problem
                         </Button>
                     </CardContent>
