@@ -14,7 +14,6 @@ export type OrderStatus = 'pending_approval' | 'pending_payment' | 'paid' | 'com
 export interface UserProfile {
   uid: string;
   name: string;
-  username?: string;
   email: string;
   role: UserRole;
   phoneNumber?: string;
@@ -121,6 +120,19 @@ export interface Notification {
     isRead: boolean;
     createdAt: Timestamp;
 }
+
+export interface AdRequest {
+    id: string;
+    userId: string;
+    name: string;
+    email: string;
+    company?: string;
+    message: string;
+    status: 'pending' | 'approved' | 'rejected';
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
+}
+
 
 export async function createNotification(
     userId: string, 
@@ -914,4 +926,53 @@ export async function grantGracePeriod(orderId: string, days: number): Promise<v
     await updateDoc(orderRef, {
         gracePeriodInDays: days
     });
+}
+
+// --- Ad Request Functions ---
+
+export async function createAdRequest(data: { name: string; email: string; company?: string; message: string; }): Promise<string> {
+    if (!db) throw new Error("Database not initialized.");
+    if (!auth.currentUser) throw new Error("User must be logged in to submit a request.");
+
+    const adRequestData = {
+        ...data,
+        status: 'pending' as const,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        userId: auth.currentUser.uid,
+    };
+
+    const adRequestRef = await addDoc(collection(db, 'adRequests'), adRequestData);
+    return adRequestRef.id;
+}
+
+export async function getAdRequests(): Promise<AdRequest[]> {
+    if (!db) throw new Error("Database not initialized.");
+    const q = query(
+        collection(db, "adRequests"),
+        orderBy("createdAt", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as AdRequest));
+}
+
+export async function updateAdRequestStatus(requestId: string, status: 'approved' | 'rejected'): Promise<void> {
+    if (!db) throw new Error("Database not initialized.");
+    const requestRef = doc(db, "adRequests", requestId);
+    
+    await updateDoc(requestRef, {
+        status: status,
+        updatedAt: serverTimestamp()
+    });
+
+    const requestSnap = await getDoc(requestRef);
+    if(requestSnap.exists()){
+        const requestData = requestSnap.data() as AdRequest;
+        await createNotification(
+            requestData.userId,
+            status === 'approved' ? 'adRequestApprovedTitle' : 'adRequestRejectedTitle',
+            status === 'approved' ? 'adRequestApprovedMessage' : 'adRequestRejectedMessage',
+            '/advertise'
+        );
+    }
 }

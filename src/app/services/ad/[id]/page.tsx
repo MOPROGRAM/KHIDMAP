@@ -349,11 +349,7 @@ export default function ProviderDetailsPage() {
                 </Avatar>
                 <div className="space-y-1">
                     <h1 className="text-3xl md:text-4xl font-bold font-headline text-foreground">{provider.name || ''}</h1>
-                    {provider.username && (
-                        <p className="text-lg text-muted-foreground">
-                            @{provider.username}
-                        </p>
-                    )}
+                    
                     {serviceCategories?.[0] && (
                         <p className="text-lg text-primary font-semibold">
                             {t[(serviceCategories[0]).toLowerCase() as keyof Translations] || serviceCategories[0]}

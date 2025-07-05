@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,10 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { Megaphone, Loader2, Send, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
+import { createAdRequest } from '@/lib/data';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import Link from 'next/link';
 
 const AdvertiseFormSchema = z.object({
   name: z.string().min(1, { message: "requiredField" }),
@@ -34,6 +38,21 @@ export default function AdvertisePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [authUser, setAuthUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setAuthUser(user);
+      if (user) {
+        setFormData(prev => ({
+          ...prev,
+          name: user.displayName || prev.name,
+          email: user.email || prev.email,
+        }));
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -45,6 +64,15 @@ export default function AdvertisePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!authUser) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Required",
+        description: "You must be logged in to submit an advertisement request.",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     setErrors({});
     setIsSubmitted(false);
@@ -63,39 +91,17 @@ export default function AdvertisePage() {
     }
 
     try {
-      const response = await fetch('https://formsubmit.co/mobusinessarena@gmail.com', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-            ...validationResult.data,
-            _subject: `Khidmap Ad Request: ${validationResult.data.company || validationResult.data.name}`,
-            _replyto: validationResult.data.email,
-        }),
+      await createAdRequest(validationResult.data);
+      toast({
+        title: t.requestSubmittedTitle,
+        description: t.requestSubmittedDescription,
       });
-
-      if (response.ok) {
-        toast({
-          title: t.messageSentSuccessTitle,
-          description: t.messageSentSuccessDescription,
-        });
-        setIsSubmitted(true);
-        setFormData({ name: '', email: '', company: '', message: '' }); // Reset form
-      } else {
-        const errorData = await response.json();
-        toast({
-          variant: "destructive",
-          title: t.messageSentErrorTitle,
-          description: errorData.message || t.messageSentErrorDescription,
-        });
-      }
-    } catch (error) {
+      setIsSubmitted(true);
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: t.messageSentErrorTitle,
-        description: t.messageSentErrorDescription,
+        description: error.message || t.messageSentErrorDescription,
       });
     } finally {
       setIsLoading(false);
@@ -114,10 +120,19 @@ export default function AdvertisePage() {
           {isSubmitted ? (
             <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 border border-green-500 rounded-lg shadow-md animate-fadeIn">
               <CheckCircle className="mx-auto h-16 w-16 text-green-600 dark:text-green-400 mb-4" />
-              <h3 className="text-xl font-semibold text-green-700 dark:text-green-300 mb-2">{t.messageSentSuccessTitle}</h3>
-              <p className="text-muted-foreground">{t.messageSentSuccessDescription}</p>
-              <Button onClick={() => setIsSubmitted(false)} className="mt-6">
-                {t.sendMessage} {t.other}
+              <h3 className="text-xl font-semibold text-green-700 dark:text-green-300 mb-2">{t.requestSubmittedTitle}</h3>
+              <p className="text-muted-foreground">{t.requestSubmittedDescription}</p>
+              <Button asChild className="mt-6">
+                <Link href="/dashboard">{t.backToDashboard}</Link>
+              </Button>
+            </div>
+          ) : !authUser ? (
+            <div className="text-center p-6">
+              <p className="text-muted-foreground mb-4">Please log in to submit an advertisement request.</p>
+              <Button asChild>
+                 <Link href="/login">
+                  {t.login}
+                </Link>
               </Button>
             </div>
           ) : (
@@ -126,12 +141,12 @@ export default function AdvertisePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">{t.yourName}</Label>
-                    <Input id="name" name="name" value={formData.name} onChange={handleChange} disabled={isLoading} />
+                    <Input id="name" name="name" value={formData.name} onChange={handleChange} disabled={isLoading || !!authUser?.displayName} />
                     {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">{t.yourEmail}</Label>
-                    <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} disabled={isLoading} />
+                    <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} disabled={isLoading || !!authUser?.email} />
                     {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                   </div>
                 </div>
@@ -144,8 +159,6 @@ export default function AdvertisePage() {
                   <Textarea id="message" name="message" value={formData.message} onChange={handleChange} placeholder={t.adInquiryPlaceholder} rows={5} disabled={isLoading}/>
                   {errors.message && <p className="text-sm text-destructive">{errors.message}</p>}
                 </div>
-                 <input type="hidden" name="_captcha" value="false" /> 
-                 <input type="hidden" name="_template" value="table" />
                 <Button type="submit" className="w-full text-lg py-3 group" disabled={isLoading}>
                   {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <Send className="ltr:mr-2 rtl:ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300"/>}
                   {t.submitRequest}

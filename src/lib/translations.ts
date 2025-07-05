@@ -487,6 +487,17 @@ export type Translations = {
   paymentProof: string;
   continue: string;
   contactSupport: string;
+  // Ad Requests
+  requestSubmittedTitle: string;
+  requestSubmittedDescription: string;
+  adRequestApprovedTitle: string;
+  adRequestApprovedMessage: string;
+  adRequestRejectedTitle: string;
+  adRequestRejectedMessage: string;
+  adRequests: string;
+  pending: string;
+  approved: string;
+  rejected: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -942,6 +953,16 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paymentProof: "Payment Proof",
     continue: "Continue",
     contactSupport: "Contact Support",
+    requestSubmittedTitle: "Request Submitted",
+    requestSubmittedDescription: "Your request has been sent to the admin for review.",
+    adRequestApprovedTitle: "Ad Request Approved",
+    adRequestApprovedMessage: "Your advertisement request has been approved. An admin will contact you shortly.",
+    adRequestRejectedTitle: "Ad Request Rejected",
+    adRequestRejectedMessage: "Unfortunately, your advertisement request has been rejected.",
+    adRequests: "Ad Requests",
+    pending: "Pending",
+    approved: "Approved",
+    rejected: "Rejected",
   },
   ar: {
     appName: "خدماب",
@@ -1392,5 +1413,15 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paymentProof: "إثبات الدفع",
     continue: "متابعة",
     contactSupport: "اتصل بالدعم",
+    requestSubmittedTitle: "تم إرسال الطلب",
+    requestSubmittedDescription: "تم إرسال طلبك إلى المسؤول للمراجعة.",
+    adRequestApprovedTitle: "تمت الموافقة على طلب الإعلان",
+    adRequestApprovedMessage: "تمت الموافقة على طلب الإعلان الخاص بك. سيتصل بك المسؤول قريبًا.",
+    adRequestRejectedTitle: "تم رفض طلب الإعلان",
+    adRequestRejectedMessage: "للأسف، تم رفض طلب الإعلان الخاص بك.",
+    adRequests: "طلبات الإعلانات",
+    pending: "قيد الانتظار",
+    approved: "موافق عليه",
+    rejected: "مرفوض",
   },
 };

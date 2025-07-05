@@ -73,7 +73,7 @@ export default function ProviderProfilePage() {
               const userDocRef = doc(db, "users", user.uid);
               const docSnap = await getDoc(userDocRef);
               if (docSnap.exists()) {
-                const firestoreProfile = docSnap.data() as UserProfile;
+                const firestoreProfile = docSnap.data() as Omit<UserProfile, 'uid'>;
                 setName(firestoreProfile.name || user.displayName || ''); 
                 setPhoneNumber(firestoreProfile.phoneNumber || '');
                 setQualifications(firestoreProfile.qualifications || '');
