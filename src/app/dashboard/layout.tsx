@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, User, Search, History, LogOut, Settings, MessageSquare, Loader2, ShieldCheck, AlertTriangle, ServerCrash, Briefcase, DollarSign, Menu, Mail, Megaphone } from 'lucide-react';
+import { Home, User, Search, History, LogOut, Settings, MessageSquare, Loader2, ShieldCheck, AlertTriangle, ServerCrash, Briefcase, DollarSign, Menu, Mail, Megaphone, LifeBuoy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
@@ -151,10 +151,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: '/services/search', labelKey: 'search', icon: <Search className="h-5 w-5" />, roles: ['seeker', 'provider'] },
     { href: '/dashboard/seeker/history', labelKey: 'searchHistory', icon: <History className="h-5 w-5" />, roles: ['seeker'] },
     { href: '/dashboard/settings', labelKey: 'settings', icon: <Settings className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
-    { href: '/contact', labelKey: 'contactSupport', icon: <Mail className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
+    { href: '/contact', labelKey: 'contactSupport', icon: <LifeBuoy className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
     { href: '/admin/dashboard', labelKey: 'adminDashboard', icon: <ShieldCheck className="h-5 w-5" />, roles: ['admin'] },
     { href: '/admin/payments', labelKey: 'paymentApprovals', icon: <DollarSign className="h-5 w-5" />, roles: ['admin'] },
     { href: '/admin/ads', labelKey: 'adRequests', icon: <Megaphone className="h-5 w-5" />, roles: ['admin'] },
+    { href: '/admin/support', labelKey: 'supportRequests', icon: <Mail className="h-5 w-5" />, roles: ['admin'] },
   ];
   
   const handleLogout = async () => {

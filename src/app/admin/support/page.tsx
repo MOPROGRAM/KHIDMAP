@@ -1,0 +1,171 @@
+
+"use client";
+
+import { useEffect, useState } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Loader2, AlertTriangle, CheckCircle, LifeBuoy, Clock, Check, Eye } from 'lucide-react';
+import type { SupportRequest } from '@/lib/data';
+import { getSupportRequests, updateSupportRequestStatus } from '@/lib/data';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { formatDistanceToNow } from 'date-fns';
+import { ar, enUS } from 'date-fns/locale';
+import { useSettings } from '@/contexts/SettingsContext';
+import type { Translations } from '@/lib/translations';
+
+const StatusBadge = ({ status, t }: { status: SupportRequest['status'], t: Translations }) => {
+    const styles: Record<SupportRequest['status'], string> = {
+        open: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/50 dark:text-yellow-300',
+        in_progress: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300',
+        closed: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-300',
+    };
+    const text: Record<SupportRequest['status'], keyof Translations> = {
+        open: 'statusOpen',
+        in_progress: 'statusInProgress',
+        closed: 'statusClosed',
+    };
+    const Icon = {
+        open: Clock,
+        in_progress: Eye,
+        closed: Check,
+    }[status];
+    return (
+        <Badge variant="outline" className={`gap-1.5 ${styles[status]}`}>
+            <Icon className="h-3.5 w-3.5" />
+            {t[text[status]]}
+        </Badge>
+    );
+};
+
+const TypeBadge = ({ type, t }: { type: SupportRequest['type'], t: Translations }) => {
+    const text: Record<SupportRequest['type'], keyof Translations> = {
+        inquiry: 'inquiry',
+        complaint: 'complaint',
+        payment_issue: 'paymentIssue',
+        other: 'other',
+    };
+    return <Badge variant="secondary">{t[text[type]]}</Badge>;
+};
+
+
+export default function AdminSupportPage() {
+  const t = useTranslation();
+  const { toast } = useToast();
+  const { language } = useSettings();
+  const [requests, setRequests] = useState<SupportRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const fetchRequests = async () => {
+    setIsLoading(true);
+    try {
+      const supportRequests = await getSupportRequests();
+      setRequests(supportRequests);
+    } catch (err: any) {
+      setError(t.errorOccurred + ": " + err.message);
+      toast({ variant: 'destructive', title: t.errorOccurred, description: err.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const handleUpdateStatus = async (requestId: string, status: 'in_progress' | 'closed') => {
+    setProcessingId(requestId);
+    try {
+      await updateSupportRequestStatus(requestId, status);
+      toast({ title: t.ticketStatusUpdated, description: `The ticket has been marked as ${status.replace('_', ' ')}.` });
+      fetchRequests(); // Re-fetch to update the list
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: "Update Failed", description: err.message });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+  
+  const formatRelativeTime = (timestamp: any) => {
+    if (!timestamp?.toDate) return '';
+    return formatDistanceToNow(timestamp.toDate(), { addSuffix: true, locale: language === 'ar' ? ar : enUS });
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[calc(100vh-10rem)]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="ml-2">{t.loading}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card className="shadow-lg">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+             <LifeBuoy className="h-10 w-10 text-primary" />
+            <div>
+                <CardTitle className="text-2xl font-headline">{t.supportRequests}</CardTitle>
+                <CardDescription>{t.supportRequestsDescription}</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div className="p-4 mb-6 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2 justify-center">
+              <AlertTriangle className="h-5 w-5" />
+              <span>{error}</span>
+            </div>
+          )}
+          {requests.length === 0 && !error ? (
+            <div className="text-center py-12">
+              <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
+              <h3 className="text-xl font-semibold">{t.noSupportRequests}</h3>
+              <p className="text-muted-foreground">{t.noSupportRequestsDescription}</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {requests.map((req) => (
+                  <Card key={req.id} className="p-4">
+                    <div className="grid md:grid-cols-3 gap-4 items-start">
+                        <div className="md:col-span-2 space-y-3">
+                            <div className="flex items-center gap-2 text-sm flex-wrap">
+                                <StatusBadge status={req.status} t={t} />
+                                <TypeBadge type={req.type} t={t} />
+                                <span className="text-muted-foreground">{formatRelativeTime(req.createdAt)}</span>
+                            </div>
+                            <p><strong>From:</strong> {req.name} ({req.email})</p>
+                            <p><strong>Subject:</strong> {req.subject}</p>
+                            <p className="text-sm text-muted-foreground pt-2 whitespace-pre-wrap bg-muted/50 p-3 rounded-md"><strong>Message:</strong> {req.message}</p>
+                        </div>
+                        <div className="space-y-2 flex flex-col items-center justify-center">
+                            {req.status !== 'closed' && (
+                                <div className="flex flex-col sm:flex-row md:flex-col gap-2 w-full">
+                                    {req.status === 'open' && (
+                                        <Button onClick={() => handleUpdateStatus(req.id, 'in_progress')} disabled={!!processingId} className="w-full bg-blue-600 hover:bg-blue-700">
+                                            {processingId === req.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
+                                            {t.markAsInProgress}
+                                        </Button>
+                                    )}
+                                    <Button onClick={() => handleUpdateStatus(req.id, 'closed')} disabled={!!processingId} className="w-full bg-green-600 hover:bg-green-700">
+                                        {processingId === req.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                                        {t.markAsClosed}
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                  </Card>
+                ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

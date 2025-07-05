@@ -9,6 +9,7 @@ import type { Translations } from './translations';
 export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
 export type UserRole = 'provider' | 'seeker' | 'admin';
 export type OrderStatus = 'pending_approval' | 'pending_payment' | 'paid' | 'completed' | 'disputed' | 'declined';
+export type SupportRequestType = 'inquiry' | 'complaint' | 'payment_issue' | 'other';
 
 
 export interface UserProfile {
@@ -129,6 +130,19 @@ export interface AdRequest {
     company?: string;
     message: string;
     status: 'pending' | 'approved' | 'rejected';
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
+}
+
+export interface SupportRequest {
+    id: string;
+    userId: string;
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+    type: SupportRequestType;
+    status: 'open' | 'in_progress' | 'closed';
     createdAt: Timestamp;
     updatedAt: Timestamp;
 }
@@ -973,6 +987,56 @@ export async function updateAdRequestStatus(requestId: string, status: 'approved
             status === 'approved' ? 'adRequestApprovedTitle' : 'adRequestRejectedTitle',
             status === 'approved' ? 'adRequestApprovedMessage' : 'adRequestRejectedMessage',
             '/advertise'
+        );
+    }
+}
+
+// --- Support Request Functions ---
+
+export async function createSupportRequest(data: { name: string; email: string; subject: string; message: string; type: SupportRequestType; }): Promise<string> {
+    if (!db) throw new Error("Database not initialized.");
+    if (!auth.currentUser) throw new Error("User must be logged in to submit a request.");
+
+    const supportRequestData = {
+        ...data,
+        status: 'open' as const,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        userId: auth.currentUser.uid,
+    };
+
+    const supportRequestRef = await addDoc(collection(db, 'supportRequests'), supportRequestData);
+    return supportRequestRef.id;
+}
+
+export async function getSupportRequests(): Promise<SupportRequest[]> {
+    if (!db) throw new Error("Database not initialized.");
+    const q = query(
+        collection(db, "supportRequests"),
+        orderBy("createdAt", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as SupportRequest));
+}
+
+export async function updateSupportRequestStatus(requestId: string, status: 'in_progress' | 'closed'): Promise<void> {
+    if (!db) throw new Error("Database not initialized.");
+    const requestRef = doc(db, "supportRequests", requestId);
+    
+    await updateDoc(requestRef, {
+        status: status,
+        updatedAt: serverTimestamp()
+    });
+
+    const requestSnap = await getDoc(requestRef);
+    if(requestSnap.exists()){
+        const requestData = requestSnap.data() as SupportRequest;
+        await createNotification(
+            requestData.userId,
+            status === 'closed' ? 'supportRequestClosedTitle' : 'supportRequestInProgressTitle',
+            status === 'closed' ? 'supportRequestClosedMessage' : 'supportRequestInProgressMessage',
+            '/contact', // For now, just link back to the contact page. Later this will be a ticket view page.
+            { ticketId: requestId.slice(0, 6) }
         );
     }
 }

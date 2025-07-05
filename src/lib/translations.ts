@@ -498,6 +498,33 @@ export type Translations = {
   pending: string;
   approved: string;
   rejected: string;
+
+  // Support Tickets
+  loginToContactSupport: string;
+  supportRequestSentTitle: string;
+  supportRequestSentDescription: string;
+  supportRequestSentSuccess: string;
+  requestType: string;
+  selectRequestType: string;
+  inquiry: string;
+  complaint: string;
+  paymentIssue: string;
+  messageTooShort: string;
+  supportRequests: string;
+  supportRequestsDescription: string;
+  reviewSupportTickets: string;
+  noSupportRequests: string;
+  noSupportRequestsDescription: string;
+  statusOpen: string;
+  statusInProgress: string;
+  statusClosed: string;
+  markAsInProgress: string;
+  markAsClosed: string;
+  ticketStatusUpdated: string;
+  supportRequestClosedTitle: string;
+  supportRequestClosedMessage: string;
+  supportRequestInProgressTitle: string;
+  supportRequestInProgressMessage: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -963,6 +990,33 @@ export const translations: Record<'en' | 'ar', Translations> = {
     pending: "Pending",
     approved: "Approved",
     rejected: "Rejected",
+
+    // Support Tickets
+    loginToContactSupport: "Please log in to contact support.",
+    supportRequestSentTitle: "Support Request Sent",
+    supportRequestSentDescription: "Your request (ID: {ticketId}) has been sent. We will get back to you soon.",
+    supportRequestSentSuccess: "Your support ticket has been received. Our team will review it and get back to you as soon as possible.",
+    requestType: "Request Type",
+    selectRequestType: "Select the type of your request...",
+    inquiry: "General Inquiry",
+    complaint: "Complaint",
+    paymentIssue: "Payment Issue",
+    messageTooShort: "Message must be at least 10 characters.",
+    supportRequests: "Support Requests",
+    supportRequestsDescription: "Review and manage user support tickets.",
+    reviewSupportTickets: "Review user support tickets.",
+    noSupportRequests: "No Support Requests",
+    noSupportRequestsDescription: "There are currently no open support requests.",
+    statusOpen: "Open",
+    statusInProgress: "In Progress",
+    statusClosed: "Closed",
+    markAsInProgress: "Mark as In Progress",
+    markAsClosed: "Mark as Closed",
+    ticketStatusUpdated: "Ticket Status Updated",
+    supportRequestClosedTitle: "Support Ticket Closed",
+    supportRequestClosedMessage: "Your support ticket #{ticketId} has been closed by an admin.",
+    supportRequestInProgressTitle: "Support Ticket In Progress",
+    supportRequestInProgressMessage: "An admin is now reviewing your support ticket #{ticketId}.",
   },
   ar: {
     appName: "خدماب",
@@ -1412,7 +1466,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     viewProof: "عرض الإثبات",
     paymentProof: "إثبات الدفع",
     continue: "متابعة",
-    contactSupport: "اتصل بالدعم",
+    contactSupport: "الاتصال بالدعم",
     requestSubmittedTitle: "تم إرسال الطلب",
     requestSubmittedDescription: "تم إرسال طلبك إلى المسؤول للمراجعة.",
     adRequestApprovedTitle: "تمت الموافقة على طلب الإعلان",
@@ -1423,5 +1477,32 @@ export const translations: Record<'en' | 'ar', Translations> = {
     pending: "قيد الانتظار",
     approved: "موافق عليه",
     rejected: "مرفوض",
+
+    // Support Tickets
+    loginToContactSupport: "يرجى تسجيل الدخول للاتصال بالدعم.",
+    supportRequestSentTitle: "تم إرسال طلب الدعم",
+    supportRequestSentDescription: "تم إرسال طلبك (رقم: {ticketId}). سنتواصل معك قريباً.",
+    supportRequestSentSuccess: "تم استلام تذكرة الدعم الخاصة بك. سيقوم فريقنا بمراجعتها والرد عليك في أقرب وقت ممكن.",
+    requestType: "نوع الطلب",
+    selectRequestType: "اختر نوع طلبك...",
+    inquiry: "استفسار عام",
+    complaint: "شكوى",
+    paymentIssue: "مشكلة في الدفع",
+    messageTooShort: "يجب أن تكون الرسالة 10 أحرف على الأقل.",
+    supportRequests: "طلبات الدعم",
+    supportRequestsDescription: "مراجعة وإدارة تذاكر دعم المستخدمين.",
+    reviewSupportTickets: "مراجعة تذاكر دعم المستخدمين.",
+    noSupportRequests: "لا توجد طلبات دعم",
+    noSupportRequestsDescription: "لا توجد حاليًا طلبات دعم مفتوحة.",
+    statusOpen: "مفتوح",
+    statusInProgress: "قيد المراجعة",
+    statusClosed: "مغلق",
+    markAsInProgress: "تحديد كـ قيد المراجعة",
+    markAsClosed: "تحديد كـ مغلق",
+    ticketStatusUpdated: "تم تحديث حالة التذكرة",
+    supportRequestClosedTitle: "تم إغلاق تذكرة الدعم",
+    supportRequestClosedMessage: "تم إغلاق تذكرة الدعم الخاصة بك #{ticketId} من قبل المسؤول.",
+    supportRequestInProgressTitle: "تذكرة الدعم قيد المراجعة",
+    supportRequestInProgressMessage: "يقوم المسؤول الآن بمراجعة تذكرة الدعم الخاصة بك #{ticketId}.",
   },
 };

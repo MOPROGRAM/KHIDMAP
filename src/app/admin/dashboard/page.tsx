@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ShieldCheck, AlertTriangle, Loader2, DollarSign, ArrowRight, Megaphone } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, Loader2, DollarSign, ArrowRight, Megaphone, LifeBuoy } from 'lucide-react';
 import { auth, db } from '@/lib/firebase';
 import { ADMIN_EMAIL } from '@/lib/config';
 import { useToast } from '@/hooks/use-toast';
@@ -81,7 +81,7 @@ export default function AdminDashboardPage() {
           </div>
         </CardHeader>
         <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Link href="/admin/payments" className="group">
                     <Card className="shadow-sm hover:shadow-xl border transition-all duration-300 ease-in-out transform hover:-translate-y-1">
                         <CardContent className="p-6 flex items-center justify-between">
@@ -108,6 +108,22 @@ export default function AdminDashboardPage() {
                                 <div>
                                     <h3 className="text-base font-bold text-foreground">Ad Requests</h3>
                                     <p className="text-sm text-muted-foreground">Review and approve advertisement requests.</p>
+                                </div>
+                            </div>
+                            <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+                        </CardContent>
+                    </Card>
+                </Link>
+                 <Link href="/admin/support" className="group">
+                    <Card className="shadow-sm hover:shadow-xl border transition-all duration-300 ease-in-out transform hover:-translate-y-1">
+                        <CardContent className="p-6 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-primary/10 p-3 rounded-full">
+                                    <LifeBuoy className="h-6 w-6 text-primary" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold text-foreground">{t.supportRequests}</h3>
+                                    <p className="text-sm text-muted-foreground">{t.reviewSupportTickets}</p>
                                 </div>
                             </div>
                             <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
