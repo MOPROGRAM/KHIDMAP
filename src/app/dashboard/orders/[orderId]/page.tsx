@@ -41,13 +41,13 @@ const StatusInfo = ({ status, t, isProvider }: { status: OrderStatus; t: Transla
             icon: CheckCircle,
             titleKey: 'paymentApprovedTitle',
             descKey: 'paymentApprovedDescription',
-            style: 'bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+            style: 'bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
         },
         completed: {
             icon: CheckCircle,
             titleKey: 'orderCompletedTitle',
             descKey: 'orderCompletedDescription',
-            style: 'bg-green-100 border-green-300 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+            style: 'bg-green-100 border-green-300 text-green-800 dark:bg-green-900/50 dark:text-green-300'
         },
         disputed: {
             icon: AlertCircle,
