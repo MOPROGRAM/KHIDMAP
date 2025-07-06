@@ -369,10 +369,10 @@ export type Translations = {
   orderDisputedMessage: string; // "A dispute has been raised for your order with {userName}."
   orderDisputedDescription: string;
   approveManually: string;
-  rejectManually: string;
+  rejectManually: 'Reject Manually';
   confirmRejectPaymentTitle: string;
   confirmRejectPaymentDescription: string;
-  reject: string;
+  reject: 'Reject';
   rejectionReason: string;
   rejectionReasonPlaceholder: string;
   rejectionFailedTitle: string;
@@ -556,6 +556,7 @@ export type Translations = {
   adPaymentConfirmedMessage: string;
   adPaymentRejectedTitle: string;
   adPaymentRejectedMessage: string;
+  adRequestInPaymentReviewMessage: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -1081,6 +1082,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     adPaymentConfirmedMessage: "Your payment has been confirmed and your ad is now active.",
     adPaymentRejectedTitle: "Ad Payment Rejected",
     adPaymentRejectedMessage: "Your payment proof was rejected. Reason: {reason}. Please upload new proof.",
+    adRequestInPaymentReviewMessage: "Your ad payment is under review by the admin and will be activated shortly.",
   },
   ar: {
     appName: "خدماب",
@@ -1426,15 +1428,15 @@ export const translations: Record<'en' | 'ar', Translations> = {
     orderDisputedMessage: "تم رفع نزاع على طلبك مع {userName}.",
     orderDisputedDescription: "هناك مشكلة في هذا الطلب. سيقوم المسؤول بالتحقيق.",
     approveManually: "موافقة يدوية",
-    rejectManually: "رفض يدوي",
-    confirmRejectPaymentTitle: "هل أنت متأكد من رفض هذا الدفع؟",
+    rejectManually: 'رفض يدوي',
+    confirmRejectPaymentTitle: 'هل أنت متأكد من رفض هذا الدفع؟',
     confirmRejectPaymentDescription: "لا يمكن التراجع عن هذا الإجراء. سيتم حذف إثبات الدفع الذي قدمه الباحث عن الخدمة، وسيتم إعلامه برفع إثبات جديد.",
-    reject: "رفض",
-    rejectionReason: "سبب الرفض (اختياري)",
-    rejectionReasonPlaceholder: "مثال: صورة غير واضحة، مبلغ خاطئ...",
-    rejectionFailedTitle: "فشل الرفض",
-    rejectionSuccessTitle: "تم رفض الدفع",
-    rejectionSuccessDescription: "تم إعلام الباحث عن الخدمة برفع إثبات جديد.",
+    reject: 'رفض',
+    rejectionReason: 'سبب الرفض (اختياري)',
+    rejectionReasonPlaceholder: 'مثال: صورة غير واضحة، مبلغ خاطئ...',
+    rejectionFailedTitle: 'فشل الرفض',
+    rejectionSuccessTitle: 'تم رفض الدفع',
+    rejectionSuccessDescription: 'تم إعلام الباحث عن الخدمة برفع إثبات جديد.',
     requestService: "اطلب خدمة",
     requestingServiceFrom: "طلب خدمة من",
     serviceDescription: "وصف الخدمة",
@@ -1601,5 +1603,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     adPaymentConfirmedMessage: "تم تأكيد دفعتك وإعلانك الآن نشط.",
     adPaymentRejectedTitle: "تم رفض دفع الإعلان",
     adPaymentRejectedMessage: "تم رفض إثبات الدفع الخاص بك. السبب: {reason}. يرجى رفع إثبات جديد.",
+    adRequestInPaymentReviewMessage: "دفعتك للإعلان قيد المراجعة من قبل المسؤول وسيتم تفعيلها قريباً.",
   },
 };

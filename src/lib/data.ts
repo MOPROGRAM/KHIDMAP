@@ -137,6 +137,7 @@ export interface AdRequest {
     currency?: string; // Set by admin
     paymentProofUrl?: string; // Uploaded by user after price is set
     rejectionReason?: string; // Set by admin if rejected
+    verificationNotes?: string;
     createdAt: Timestamp;
     updatedAt: Timestamp;
 }
@@ -899,7 +900,7 @@ export async function disputeOrder(orderId: string, reason: string): Promise<voi
             otherPartyId,
             'orderDisputedTitle',
             'orderDisputedMessage',
-            `/dashboard/orders/${orderId}`,
+            `/dashboard/orders/${order.id}`,
             { userName: user.displayName || 'A user' }
         );
     }
@@ -919,7 +920,7 @@ export async function acceptOrder(orderId: string): Promise<void> {
             order.seekerId,
             'orderAcceptedTitle',
             'orderAcceptedMessage',
-            `/dashboard/orders/${orderId}`,
+            `/dashboard/orders/${order.id}`,
             { providerName: order.providerName }
         );
     }
@@ -1071,20 +1072,77 @@ export async function rejectAdRequest(requestId: string, reason: string): Promis
 
 
 export async function uploadAdPaymentProof(requestId: string, file: File): Promise<void> {
-    if (!db || !storage || !auth.currentUser) throw new Error("Authentication or services are unavailable.");
-    const userId = auth.currentUser.uid;
+    if (!db || !storage || !auth.currentUser) {
+        throw new Error("Authentication session is invalid or services are unavailable. Please log in again.");
+    }
 
-    const filePath = `ad_payments/${requestId}/${userId}_${file.name}`;
+    const adRequest = await getAdRequestById(requestId);
+    if (!adRequest) throw new Error("Ad Request not found.");
+    if (adRequest.userId !== auth.currentUser.uid) throw new Error("You are not authorized to upload proof for this ad.");
+    if (!adRequest.price || !adRequest.currency) throw new Error("Ad price has not been set by the admin yet.");
+
+    // Helper to convert file to data URI for AI
+    const fileToDataUri = (file: File): Promise<string> => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve(event.target?.result as string);
+        reader.onerror = (error) => reject(error);
+        reader.readAsDataURL(file);
+    });
+
+    const photoDataUri = await fileToDataUri(file);
+
+    let verificationResult;
+    try {
+        const verifyPaymentInput: VerifyPaymentInput = {
+            photoDataUri,
+            expectedAmount: adRequest.price,
+            expectedCurrency: adRequest.currency,
+            expectedPayerName: adRequest.name,
+            expectedPayeeName: "Khidmap" // The name of the platform
+        };
+        verificationResult = await verifyPayment(verifyPaymentInput);
+    } catch (aiError: any) {
+        console.error("AI verification flow for ads failed:", aiError);
+        verificationResult = { isVerified: false, reason: `AI analysis failed: ${aiError.message}. Please review manually.` };
+    }
+    
+    // Upload file to storage regardless of verification result
+    const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const filePath = `ad_payments/${requestId}/${adRequest.userId}/${safeFileName}`;
     const fileRef = ref(storage, filePath);
-    await uploadBytes(fileRef, file);
+    const metadata = { customMetadata: { 'userId': adRequest.userId } };
+    await uploadBytes(fileRef, file, metadata);
     const downloadURL = await getDownloadURL(fileRef);
 
     const requestRef = doc(db, "adRequests", requestId);
-    await updateDoc(requestRef, {
-        status: 'payment_review',
-        paymentProofUrl: downloadURL,
-        updatedAt: serverTimestamp()
-    });
+
+    if (verificationResult.isVerified) {
+        await updateDoc(requestRef, {
+            status: 'active',
+            paymentProofUrl: downloadURL,
+            verificationNotes: verificationResult.reason || "AI Approval: Accepted. Payment verified.",
+            updatedAt: serverTimestamp()
+        });
+        await createNotification(
+            adRequest.userId,
+            'adPaymentConfirmedTitle',
+            'adPaymentConfirmedMessage',
+            `/dashboard/provider/ads/edit/${requestId}`
+        );
+    } else {
+        await updateDoc(requestRef, {
+            status: 'payment_review', // Status for manual admin review
+            paymentProofUrl: downloadURL,
+            verificationNotes: verificationResult.reason || "AI Approval: Rejected. Needs manual review.",
+            updatedAt: serverTimestamp()
+        });
+        await createNotification(
+            adRequest.userId,
+            'statusPaymentReview',
+            'adRequestInPaymentReviewMessage',
+            `/dashboard/provider/ads/edit/${requestId}`
+        );
+    }
 }
 
 export async function confirmAdPayment(requestId: string): Promise<void> {
@@ -1093,6 +1151,7 @@ export async function confirmAdPayment(requestId: string): Promise<void> {
 
     await updateDoc(requestRef, {
         status: 'active',
+        verificationNotes: "Manual Approval: Accepted.",
         updatedAt: serverTimestamp()
     });
     
@@ -1128,6 +1187,7 @@ export async function rejectAdPayment(requestId: string, reason: string): Promis
         status: 'pending_payment',
         rejectionReason: reason,
         paymentProofUrl: deleteField(),
+        verificationNotes: deleteField(),
         updatedAt: serverTimestamp()
     });
     

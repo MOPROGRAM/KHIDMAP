@@ -20,6 +20,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const StatusBadge = ({ status, t }: { status: AdRequestStatus, t: Translations }) => {
     const styles: Record<AdRequestStatus, string> = {
@@ -152,6 +153,15 @@ const AdRequestCard = ({ request, t, onUpdate }: { request: AdRequest, t: Transl
                                 <Image src={request.paymentProofUrl} alt="Payment Proof" width={150} height={150} className="rounded-md border object-cover" />
                              </Link>
                         </div>
+                    )}
+                    {request.verificationNotes && (
+                        <Alert variant={request.verificationNotes.includes("Rejected") ? "destructive" : "default"} className="mt-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>{request.verificationNotes.includes("Rejected") ? "AI Verification Failed" : "AI Note"}</AlertTitle>
+                            <AlertDescription>
+                                {request.verificationNotes}
+                            </AlertDescription>
+                        </Alert>
                     )}
                 </div>
                 <div className="space-y-2 flex flex-col items-center justify-center">

@@ -10,7 +10,7 @@ import { auth, storage } from '@/lib/firebase';
 import type { AdRequest, AdRequestStatus } from '@/lib/data';
 import { getAdRequestById, uploadAdPaymentProof } from '@/lib/data';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { Loader2, ArrowLeft, Hourglass, CheckCircle, AlertCircle, Upload, Send, FileCheck, CircleDollarSign, XCircle, Search } from 'lucide-react';
+import { Loader2, ArrowLeft, Hourglass, CheckCircle, AlertCircle, Upload, Send, FileCheck, CircleDollarSign, XCircle, Search, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -173,6 +173,16 @@ export default function AdDetailPage() {
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Rejection Reason</AlertTitle>
                     <AlertDescription>{adRequest.rejectionReason}</AlertDescription>
+                </Alert>
+            )}
+
+            {adRequest.status === 'payment_review' && adRequest.verificationNotes && (
+                <Alert variant={"default"}>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>{"Admin Note"}</AlertTitle>
+                    <AlertDescription>
+                        {adRequest.verificationNotes}
+                    </AlertDescription>
                 </Alert>
             )}
 
