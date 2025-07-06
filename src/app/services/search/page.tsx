@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { UserProfile, getAllProviders, ServiceCategory } from '@/lib/data';
 import Link from 'next/link';
-import { Search as SearchIcon, MapPin, User, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, HardHat, Layers, UserCircle, Star, Briefcase, LocateFixed } from 'lucide-react';
+import { Search as SearchIcon, MapPin, User, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, HardHat, Layers, UserCircle, Star, Briefcase, LocateFixed, BadgeCheck } from 'lucide-react';
 import { db } from '@/lib/firebase'; 
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -312,9 +312,12 @@ export default function ServiceSearchPage() {
                        </AvatarFallback>
                      </Avatar>
                      <div className='flex-1 overflow-hidden'>
-                       <CardTitle className="text-base font-semibold truncate hover:text-primary transition-colors" title={provider.name}>
-                          <Link href={`/services/ad/${provider.uid}`}>{provider.name}</Link>
-                       </CardTitle>
+                        <div className="flex items-center gap-1.5">
+                           <Link href={`/services/ad/${provider.uid}`} className="font-semibold truncate hover:text-primary transition-colors" title={provider.name}>
+                             {provider.name}
+                           </Link>
+                           {provider.verificationStatus === 'verified' && <BadgeCheck className="h-4 w-4 text-green-500 shrink-0" />}
+                        </div>
                        <div className="flex flex-wrap items-center gap-2 mt-1">
                         {(provider.serviceCategories || []).slice(0, 1).map(cat => {
                             if (!cat) return null;
@@ -342,7 +345,7 @@ export default function ServiceSearchPage() {
                 <CardFooter className="p-4 pt-0 mt-auto">
                   <Button asChild className="w-full group/button" size="sm">
                     <Link href={`/services/ad/${provider.uid}`}>
-                      {t.viewProfile} <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4 group-hover/button:translate-x-0.5 transition-transform" />
+                      {t.viewProfile} <ArrowRight className="ltr:ml-2 rtl:ml-2 h-4 w-4 group-hover/button:translate-x-0.5 transition-transform" />
                     </Link>
                   </Button>
                 </CardFooter>

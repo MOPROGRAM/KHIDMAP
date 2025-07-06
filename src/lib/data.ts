@@ -12,6 +12,7 @@ export type UserRole = 'provider' | 'seeker' | 'admin';
 export type OrderStatus = 'pending_approval' | 'pending_payment' | 'paid' | 'completed' | 'disputed' | 'declined';
 export type SupportRequestType = 'inquiry' | 'complaint' | 'payment_issue' | 'other';
 export type AdRequestStatus = 'pending_review' | 'pending_payment' | 'payment_review' | 'active' | 'rejected';
+export type VerificationStatus = 'not_submitted' | 'pending' | 'verified' | 'rejected';
 
 
 export interface UserProfile {
@@ -30,6 +31,9 @@ export interface UserProfile {
   updatedAt?: Timestamp;
   emailVerified?: boolean;
   videoCallsEnabled?: boolean;
+  verificationStatus?: VerificationStatus;
+  verificationDocuments?: string[];
+  verificationRejectionReason?: string;
 }
 
 export interface Rating {
@@ -242,6 +246,58 @@ export const getAllProviders = async (): Promise<UserProfile[]> => {
         return [];
     }
 };
+
+export async function uploadVerificationDocuments(files: FileList): Promise<void> {
+  if (!storage || !db || !auth.currentUser) throw new Error("Services not initialized or user not logged in.");
+  
+  const user = auth.currentUser;
+  const userDocRef = doc(db, "users", user.uid);
+
+  for (const file of Array.from(files)) {
+    const filePath = `verification_documents/${user.uid}/${Date.now()}_${file.name}`;
+    const fileRef = ref(storage, filePath);
+    await uploadBytes(fileRef, file);
+    const downloadURL = await getDownloadURL(fileRef);
+    await updateDoc(userDocRef, {
+      verificationDocuments: arrayUnion(downloadURL)
+    });
+  }
+
+  await updateDoc(userDocRef, {
+    verificationStatus: 'pending',
+    updatedAt: serverTimestamp()
+  });
+}
+
+export async function getPendingVerifications(): Promise<UserProfile[]> {
+  if (!db) throw new Error("Database not initialized.");
+  const q = query(
+    collection(db, "users"),
+    where("verificationStatus", "==", "pending")
+  );
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(d => ({ uid: d.id, ...d.data() } as UserProfile));
+}
+
+export async function approveVerification(userId: string): Promise<void> {
+  if (!db) throw new Error("Database not initialized.");
+  const userRef = doc(db, "users", userId);
+  await updateDoc(userRef, {
+    verificationStatus: 'verified',
+    verificationRejectionReason: deleteField()
+  });
+  await createNotification(userId, 'verificationApprovedTitle', 'verificationApprovedMessage', '/dashboard/provider/profile');
+}
+
+export async function rejectVerification(userId: string, reason: string): Promise<void> {
+  if (!db) throw new Error("Database not initialized.");
+  const userRef = doc(db, "users", userId);
+  await updateDoc(userRef, {
+    verificationStatus: 'rejected',
+    verificationRejectionReason: reason
+  });
+  await createNotification(userId, 'verificationRejectedTitle', 'verificationRejectedMessage', '/dashboard/provider/profile', { reason });
+}
 
 // --- Rating Firestore Functions ---
 export const addRating = async (ratingData: {

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, ChangeEvent, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,17 +11,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
-import { UserProfile, ServiceCategory } from '@/lib/data'; 
+import { UserProfile, ServiceCategory, VerificationStatus, uploadVerificationDocuments } from '@/lib/data'; 
 import { auth, db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'; 
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
-import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, Video, VideoIcon, AtSign } from 'lucide-react';
+import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, Video as VideoIcon, AtSign, BadgeCheck, Shield, Clock, ShieldAlert } from 'lucide-react';
 import { z } from 'zod';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const ProfileFormSchema = z.object({
   name: z.string().min(1, { message: "requiredField" }),
@@ -37,6 +38,7 @@ export default function ProviderProfilePage() {
   const t = useTranslation();
   const router = useRouter();
   const { toast } = useToast();
+  const verificationFileInputRef = useRef<HTMLInputElement>(null);
 
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
   
@@ -50,57 +52,67 @@ export default function ProviderProfilePage() {
   const [images, setImages] = useState<string[]>([]);
   const [videos, setVideos] = useState<string[]>([]);
   const [videoCallsEnabled, setVideoCallsEnabled] = useState(true);
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('not_submitted');
+  const [verificationRejectionReason, setVerificationRejectionReason] = useState<string | undefined>(undefined);
   
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [isUploadingVerification, setIsUploadingVerification] = useState(false);
   const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isCoreServicesAvailable, setIsCoreServicesAvailable] = useState(false);
 
+  const fetchProfile = useCallback(async (user: FirebaseUser) => {
+    try {
+      const userDocRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(userDocRef);
+      if (docSnap.exists()) {
+        const firestoreProfile = docSnap.data() as Omit<UserProfile, 'uid'>;
+        setName(firestoreProfile.name || user.displayName || ''); 
+        setPhoneNumber(firestoreProfile.phoneNumber || '');
+        setQualifications(firestoreProfile.qualifications || '');
+        setServiceAreasString((firestoreProfile.serviceAreas || []).join(', ')); 
+        setServiceCategories(firestoreProfile.serviceCategories || []);
+        setImages(firestoreProfile.images || []);
+        setVideos(firestoreProfile.videos || []);
+        setVideoCallsEnabled(firestoreProfile.videoCallsEnabled ?? true);
+        setVerificationStatus(firestoreProfile.verificationStatus || 'not_submitted');
+        setVerificationRejectionReason(firestoreProfile.verificationRejectionReason);
+        
+        if (firestoreProfile.location) {
+          setLocation({
+            latitude: firestoreProfile.location.latitude,
+            longitude: firestoreProfile.location.longitude,
+          });
+        }
+      } else {
+        toast({ variant: "default", title: t.welcome, description: t.completeYourProfile });
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotFetchProfile });
+    } finally {
+      setIsFetching(false);
+    }
+  }, [t, toast]);
+
+
   useEffect(() => {
     if (auth && db && storage) {
       setIsCoreServicesAvailable(true);
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        try {
-            if (user) {
-              setAuthUser(user);
-              setEmail(user.email || ''); 
-              setName(user.displayName || ''); 
-
-              const userDocRef = doc(db, "users", user.uid);
-              const docSnap = await getDoc(userDocRef);
-              if (docSnap.exists()) {
-                const firestoreProfile = docSnap.data() as Omit<UserProfile, 'uid'>;
-                setName(firestoreProfile.name || user.displayName || ''); 
-                setPhoneNumber(firestoreProfile.phoneNumber || '');
-                setQualifications(firestoreProfile.qualifications || '');
-                setServiceAreasString((firestoreProfile.serviceAreas || []).join(', ')); 
-                setServiceCategories(firestoreProfile.serviceCategories || []);
-                setImages(firestoreProfile.images || []);
-                setVideos(firestoreProfile.videos || []);
-                setVideoCallsEnabled(firestoreProfile.videoCallsEnabled ?? true);
-                
-                if (firestoreProfile.location) {
-                  setLocation({
-                    latitude: firestoreProfile.location.latitude,
-                    longitude: firestoreProfile.location.longitude,
-                  });
-                }
-              } else {
-                toast({ variant: "default", title: t.welcome, description: t.completeYourProfile });
-              }
-            } else {
-              toast({ variant: "destructive", title: t.authError, description: t.userNotIdentified });
-              router.push('/login');
-            }
-        } catch(error){
-            console.error("Error in auth/profile fetch useEffect:", error);
-            toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotFetchProfile });
-        } finally {
-            setIsFetching(false);
+        if (user) {
+          setAuthUser(user);
+          setEmail(user.email || ''); 
+          setName(user.displayName || ''); 
+          await fetchProfile(user);
+        } else {
+          toast({ variant: "destructive", title: t.authError, description: t.userNotIdentified });
+          router.push('/login');
+          setIsFetching(false);
         }
       });
       return () => unsubscribe();
@@ -109,7 +121,7 @@ export default function ProviderProfilePage() {
       setIsFetching(false);
       console.warn("Firebase Auth, DB, or Storage not initialized in ProviderProfilePage.");
     }
-  }, [router, t, toast]);
+  }, [router, t, toast, fetchProfile]);
   
 
   const handleFileUpload = async (
@@ -273,6 +285,21 @@ export default function ProviderProfilePage() {
       }
     );
   };
+  
+  const handleVerificationUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    setIsUploadingVerification(true);
+    try {
+      await uploadVerificationDocuments(e.target.files);
+      toast({ title: t.verificationDocsUploadedTitle, description: t.verificationDocsUploadedDescription });
+      if (authUser) await fetchProfile(authUser);
+    } catch (err: any) {
+      toast({ variant: "destructive", title: t.fileUploadErrorTitle, description: err.message });
+    } finally {
+      setIsUploadingVerification(false);
+    }
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -477,6 +504,56 @@ export default function ProviderProfilePage() {
               {t.saveChanges}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-xl">
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+                <Shield className="h-6 w-6 text-primary"/>
+                {t.identityVerification}
+            </CardTitle>
+            <CardDescription>{t.identityVerificationDescription}</CardDescription>
+        </CardHeader>
+        <CardContent>
+            {verificationStatus === 'not_submitted' && (
+                <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-4">{t.verificationNotSubmitted}</p>
+                    <Button onClick={() => verificationFileInputRef.current?.click()} disabled={isUploadingVerification || isLoading}>
+                        {isUploadingVerification ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
+                        {t.uploadDocuments}
+                    </Button>
+                </div>
+            )}
+            {verificationStatus === 'pending' && (
+                <Alert variant="default" className="bg-blue-50 border-blue-300 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                    <Clock className="h-4 w-4" />
+                    <AlertTitle>{t.verificationPendingTitle}</AlertTitle>
+                    <AlertDescription>{t.verificationPendingDescription}</AlertDescription>
+                </Alert>
+            )}
+            {verificationStatus === 'verified' && (
+                <Alert variant="default" className="bg-green-50 border-green-300 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                    <BadgeCheck className="h-4 w-4" />
+                    <AlertTitle>{t.verificationVerifiedTitle}</AlertTitle>
+                    <AlertDescription>{t.verificationVerifiedDescription}</AlertDescription>
+                </Alert>
+            )}
+            {verificationStatus === 'rejected' && (
+                <Alert variant="destructive">
+                    <ShieldAlert className="h-4 w-4" />
+                    <AlertTitle>{t.verificationRejectedTitle}</AlertTitle>
+                    <AlertDescription>
+                        <p>{t.verificationRejectedDescription}</p>
+                        <p className="font-semibold mt-2">{t.rejectionReason}: {verificationRejectionReason}</p>
+                         <Button onClick={() => verificationFileInputRef.current?.click()} size="sm" className="mt-4" disabled={isUploadingVerification || isLoading}>
+                            {isUploadingVerification ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
+                            {t.reUploadDocuments}
+                        </Button>
+                    </AlertDescription>
+                </Alert>
+            )}
+             <input type="file" ref={verificationFileInputRef} onChange={handleVerificationUpload} multiple className="hidden" accept="image/jpeg,image/png,application/pdf" />
         </CardContent>
       </Card>
 

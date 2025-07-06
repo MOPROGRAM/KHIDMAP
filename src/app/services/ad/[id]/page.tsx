@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft, MapPin, Mail, UserCircle, Info, Loader2, AlertTriangle, Hammer, Brush, SprayCan,
-  GripVertical, HardHat, Layers, Star, Wrench, Zap, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall, Camera, Video as VideoIcon, MessageSquare, PlusCircle
+  GripVertical, HardHat, Layers, Star, Wrench, Zap, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall, Camera, Video as VideoIcon, MessageSquare, PlusCircle, BadgeCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import { Timestamp, doc, getDoc } from 'firebase/firestore';
@@ -24,6 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const categoryIcons: Record<ServiceCategory, React.ElementType> = {
   Plumbing: Wrench,
@@ -348,7 +349,21 @@ export default function ProviderDetailsPage() {
                     </AvatarFallback>
                 </Avatar>
                 <div className="space-y-1">
-                    <h1 className="text-3xl md:text-4xl font-bold font-headline text-foreground">{provider.name || ''}</h1>
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-3xl md:text-4xl font-bold font-headline text-foreground">{provider.name || ''}</h1>
+                        {provider.verificationStatus === 'verified' && (
+                             <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <BadgeCheck className="h-7 w-7 text-green-500"/>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{t.verifiedProvider}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                             </TooltipProvider>
+                        )}
+                    </div>
                     
                     {serviceCategories?.[0] && (
                         <p className="text-lg text-primary font-semibold">
