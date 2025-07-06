@@ -463,6 +463,18 @@ export type Translations = {
   refundRequestedDescription: string;
   orderPastDue: string;
   orderPastDueDescription: string;
+  serviceStartedTitle: string,
+  serviceStartedMessage: string,
+  workFinishedTitle: string,
+  workFinishedMessage: string,
+  statusPendingCompletion: string,
+  statusPendingCompletionTitle: string,
+  statusPendingCompletionDescriptionSeeker: string,
+  statusPendingCompletionDescriptionProvider: string,
+  markAsFinished: string,
+  confirmCompletion: string,
+  reportProblem: string,
+
 
   // Notifications
   notifications: string;
@@ -962,7 +974,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paymentPendingDescription: "The seeker needs to upload proof of payment.",
     paymentApprovedTitle: "Payment Approved",
     paymentApprovedDescription: "The service provider can now begin the work.",
-    orderCompletedTitle: "Order Completed",
+    orderCompletedTitle: "Order Completed", // Renamed from "Service Completed" to avoid conflict
     orderCompletedMessage: "{seekerName} has marked the order as completed. Your funds will be processed.",
     orderDisputedTitle: "Order Disputed",
     orderDisputedMessage: "A dispute has been raised for your order with {userName}.",
@@ -1051,6 +1063,17 @@ export const translations: Record<'en' | 'ar', Translations> = {
     refundRequestedDescription: "Your refund request has been submitted and is under review by the administration.",
     orderPastDue: "Order Past Due",
     orderPastDueDescription: "The service start date has passed. You can request a refund or grant a grace period.",
+    serviceStartedTitle: "Service Started",
+    serviceStartedMessage: "{providerName} has started working on your order.",
+    workFinishedTitle: "Work Finished",
+    workFinishedMessage: "{providerName} has marked the work as finished. Please review and confirm completion.",
+    statusPendingCompletion: "Pending Confirmation",
+    statusPendingCompletionTitle: "Pending Your Confirmation",
+    statusPendingCompletionDescriptionSeeker: "The provider has marked the work as finished. Please review the service and either confirm completion or report a problem.",
+    statusPendingCompletionDescriptionProvider: "You have marked the work as finished. Waiting for the seeker to confirm completion.",
+    markAsFinished: "Mark as Finished",
+    confirmCompletion: "Confirm Completion",
+    reportProblem: "Report a Problem",
     notifications: "Notifications",
     noNotifications: "No new notifications.",
     markAllAsRead: "Mark all as read",
@@ -1059,16 +1082,10 @@ export const translations: Record<'en' | 'ar', Translations> = {
     newOrderRequestMessage: "{seekerName} has requested your service.",
     paymentReceivedTitle: "Payment Received!",
     paymentReceivedMessage: "{seekerName} has paid for the order. You can now start the service.",
-    //orderCompletedTitle: string;
-    orderCompletedMessage: "{seekerName} has marked the order as completed. Your funds will be processed.",
-    //orderDisputedTitle: string;
-    orderDisputedMessage: "A dispute has been raised for your order with {userName}.",
     allNotifications: "All Notifications",
     allNotificationsDescription: "View and manage all your notifications.",
     noNotificationsYet: "You have no notifications yet.",
     viewAll: "View All",
-
-    // Proof deletion
     deleteProof: "Delete Proof",
     uploadNewProof: "Upload New Proof",
     confirmDeleteProofTitle: "Delete Payment Proof?",
@@ -1081,7 +1098,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paymentProof: "Payment Proof",
     continue: "Continue",
     contactSupport: "Contact Support",
-    // Ad Requests
     requestSubmittedTitle: "Request Submitted",
     requestSubmittedDescription: "Your request has been sent to the admin for review.",
     adRequestApprovedTitle: "Ad Request Approved",
@@ -1092,8 +1108,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     pending: "Pending",
     approved: "Approved",
     rejected: "Rejected",
-
-    // Support Tickets
     loginToContactSupport: "Please log in to contact support.",
     supportRequestSentTitle: "Support Request Sent",
     supportRequestSentDescription: "Your request (ID: {ticketId}) has been sent. We will get back to you soon.",
@@ -1626,6 +1640,17 @@ export const translations: Record<'en' | 'ar', Translations> = {
     refundRequestedDescription: "تم تقديم طلب استرداد المبلغ الخاص بك وهو قيد المراجعة من قبل الإدارة.",
     orderPastDue: "الطلب متأخر",
     orderPastDueDescription: "لقد انقضى تاريخ بدء الخدمة. يمكنك طلب استرداد المبلغ أو منح فترة سماح.",
+    serviceStartedTitle: "بدأت الخدمة",
+    serviceStartedMessage: "لقد بدأ {providerName} العمل على طلبك.",
+    workFinishedTitle: "انتهى العمل",
+    workFinishedMessage: "{providerName} قام بتمييز العمل على أنه منتهي. يرجى المراجعة وتأكيد الإنجاز.",
+    statusPendingCompletion: "بانتظار التأكيد",
+    statusPendingCompletionTitle: "بانتظار تأكيدك",
+    statusPendingCompletionDescriptionSeeker: "لقد قام مقدم الخدمة بتمييز العمل على أنه منتهي. يرجى مراجعة الخدمة وتأكيد الإنجاز أو الإبلاغ عن مشكلة.",
+    statusPendingCompletionDescriptionProvider: "لقد قمت بتمييز العمل على أنه منتهي. بانتظار تأكيد العميل.",
+    markAsFinished: "تمييز كمنتهي",
+    confirmCompletion: "تأكيد الإنجاز",
+    reportProblem: "الإبلاغ عن مشكلة",
     notifications: "الإشعارات",
     noNotifications: "لا توجد إشعارات جديدة.",
     markAllAsRead: "وضع علامة على الكل كمقروء",
@@ -1634,16 +1659,10 @@ export const translations: Record<'en' | 'ar', Translations> = {
     newOrderRequestMessage: "{seekerName} لقد طلب خدمتك.",
     paymentReceivedTitle: "تم استلام الدفعة!",
     paymentReceivedMessage: "{seekerName} لقد دفع للطلب. يمكنك الآن بدء الخدمة.",
-    //orderCompletedTitle: string;
-    orderCompletedMessage: "{seekerName} لقد قام بتأكيد اكتمال الطلب. سيتم تحويل مستحقاتك.",
-    //orderDisputedTitle: string;
-    orderDisputedMessage: "تم رفع نزاع على طلبك مع {userName}.",
     allNotifications: "جميع الإشعارات",
     allNotificationsDescription: "عرض وإدارة جميع الإشعارات الخاصة بك.",
     noNotificationsYet: "ليس لديك أي إشعارات بعد.",
     viewAll: "عرض الكل",
-
-    // Proof deletion
     deleteProof: "حذف الإثبات",
     uploadNewProof: "رفع إثبات جديد",
     confirmDeleteProofTitle: "حذف إثبات الدفع؟",
@@ -1656,7 +1675,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paymentProof: "إثبات الدفع",
     continue: "متابعة",
     contactSupport: "الاتصال بالدعم",
-    // Ad Requests
     requestSubmittedTitle: "تم إرسال الطلب",
     requestSubmittedDescription: "تم إرسال طلبك إلى المسؤول للمراجعة.",
     adRequestApprovedTitle: "تمت الموافقة على طلب الإعلان",
@@ -1667,8 +1685,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     pending: "قيد الانتظار",
     approved: "موافق عليه",
     rejected: "مرفوض",
-
-    // Support Tickets
     loginToContactSupport: "يرجى تسجيل الدخول للاتصال بالدعم.",
     supportRequestSentTitle: "تم إرسال طلب الدعم",
     supportRequestSentDescription: "تم إرسال طلبك (رقم: {ticketId}). سنتواصل معك قريباً.",

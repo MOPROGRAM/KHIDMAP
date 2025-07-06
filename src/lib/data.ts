@@ -9,7 +9,7 @@ import type { Translations } from './translations';
 
 export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
 export type UserRole = 'provider' | 'seeker' | 'admin';
-export type OrderStatus = 'pending_approval' | 'pending_payment' | 'paid' | 'completed' | 'disputed' | 'declined' | 'resolved';
+export type OrderStatus = 'pending_approval' | 'pending_payment' | 'paid' | 'pending_completion' | 'completed' | 'disputed' | 'declined' | 'resolved';
 export type SupportRequestType = 'inquiry' | 'complaint' | 'payment_issue' | 'other';
 export type AdRequestStatus = 'pending_review' | 'pending_payment' | 'payment_review' | 'active' | 'rejected';
 export type VerificationStatus = 'not_submitted' | 'pending' | 'verified' | 'rejected';
@@ -113,6 +113,7 @@ export interface Order {
     serviceStartDate?: Timestamp;
     gracePeriodInDays?: number;
     serviceStartedAt?: Timestamp;
+    workFinishedAt?: Timestamp;
     disputeReason?: string;
     verificationNotes?: string;
     chatId?: string;
@@ -1024,6 +1025,17 @@ export async function startService(orderId: string): Promise<void> {
     await updateDoc(orderRef, {
         serviceStartedAt: serverTimestamp()
     });
+
+    const order = await getOrderById(orderId);
+    if (order) {
+        await createNotification(
+            order.seekerId,
+            'serviceStartedTitle',
+            'serviceStartedMessage',
+            `/dashboard/orders/${order.id}`,
+            { providerName: order.providerName }
+        );
+    }
 }
 
 export async function grantGracePeriod(orderId: string, days: number): Promise<void> {
@@ -1032,6 +1044,26 @@ export async function grantGracePeriod(orderId: string, days: number): Promise<v
     await updateDoc(orderRef, {
         gracePeriodInDays: days
     });
+}
+
+export async function markWorkAsFinishedByProvider(orderId: string): Promise<void> {
+    if (!db) throw new Error("Database not initialized.");
+    const orderRef = doc(db, "orders", orderId);
+    await updateDoc(orderRef, {
+        status: 'pending_completion',
+        workFinishedAt: serverTimestamp()
+    });
+
+    const order = await getOrderById(orderId);
+    if (order) {
+        await createNotification(
+            order.seekerId,
+            'workFinishedTitle',
+            'workFinishedMessage',
+            `/dashboard/orders/${order.id}`,
+            { providerName: order.providerName }
+        );
+    }
 }
 
 export async function getDisputedOrders(): Promise<Order[]> {

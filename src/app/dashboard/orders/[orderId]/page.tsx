@@ -10,9 +10,9 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { auth, storage } from '@/lib/firebase';
 import type { Order, OrderStatus } from '@/lib/data';
-import { getOrderById, uploadPaymentProofAndUpdateOrder, markOrderAsCompleted, disputeOrder, acceptOrder, declineOrder, startService, grantGracePeriod, deletePaymentProof } from '@/lib/data';
+import { getOrderById, uploadPaymentProofAndUpdateOrder, markOrderAsCompleted, disputeOrder, acceptOrder, declineOrder, startService, grantGracePeriod, deletePaymentProof, markWorkAsFinishedByProvider } from '@/lib/data';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { Loader2, ArrowLeft, Clock, CheckCircle, AlertCircle, Upload, Send, ShieldQuestion, FileCheck, DollarSign, Banknote, Landmark, Hourglass, XCircle, ThumbsUp, ThumbsDown, PlayCircle, CalendarDays, Trash2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Loader2, ArrowLeft, Clock, CheckCircle, AlertCircle, Upload, Send, ShieldQuestion, FileCheck, DollarSign, Banknote, Landmark, Hourglass, XCircle, ThumbsUp, ThumbsDown, PlayCircle, CalendarDays, Trash2, AlertTriangle, ShieldCheck, CheckCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -43,6 +43,12 @@ const StatusInfo = ({ status, t, isProvider }: { status: OrderStatus; t: Transla
             titleKey: 'paymentApprovedTitle',
             descKey: 'paymentApprovedDescription',
             style: 'bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
+        },
+        pending_completion: {
+            icon: ShieldQuestion,
+            titleKey: 'statusPendingCompletionTitle',
+            descKey: isProvider ? 'statusPendingCompletionDescriptionProvider' : 'statusPendingCompletionDescriptionSeeker',
+            style: 'bg-indigo-100 border-indigo-300 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300'
         },
         completed: {
             icon: CheckCircle,
@@ -246,7 +252,7 @@ export default function OrderDetailPage() {
     try {
       await startService(order.id);
       await fetchOrder();
-      toast({ title: t.serviceStarted, description: "The service is now marked as in progress."});
+      toast({ title: t.serviceStarted, description: "The seeker has been notified."});
     } catch (err:any) {
        toast({ variant: "destructive", title: "Error", description: err.message });
     } finally {
@@ -264,6 +270,20 @@ export default function OrderDetailPage() {
       toast({ title: "Grace Period Granted", description: t.gracePeriodGranted?.replace('{days}', days) });
     } catch (err:any) {
        toast({ variant: "destructive", title: "Error", description: err.message });
+    } finally {
+      setIsSubmittingAction(null);
+    }
+  };
+
+  const handleMarkAsFinished = async () => {
+    if(!order) return;
+    setIsSubmittingAction('finish');
+    try {
+      await markWorkAsFinishedByProvider(order.id);
+      await fetchOrder();
+      toast({ title: "Work Marked as Finished", description: "The seeker has been notified to review and confirm."});
+    } catch(err: any) {
+      toast({ variant: "destructive", title: "Error", description: err.message });
     } finally {
       setIsSubmittingAction(null);
     }
@@ -289,7 +309,9 @@ export default function OrderDetailPage() {
   const showProviderActionBox = isProvider && order.status === 'pending_approval';
   const showProviderStartServiceBox = isProvider && order.status === 'paid' && !order.serviceStartedAt;
   const showSeekerGraceAndRefundBox = isSeeker && order.status === 'paid' && !order.serviceStartedAt;
-  const showSeekerCompletionBox = isSeeker && order.status === 'paid' && !!order.serviceStartedAt;
+  const showProviderMarkFinishedBox = isProvider && order.status === 'paid' && !!order.serviceStartedAt && !order.workFinishedAt;
+  const showSeekerConfirmCompletionBox = isSeeker && order.status === 'pending_completion';
+
 
   const isPastDue = order.serviceStartDate && new Date() > new Date(order.serviceStartDate.toDate().setDate(order.serviceStartDate.toDate().getDate() + (order.gracePeriodInDays || 0)));
 
@@ -325,6 +347,7 @@ export default function OrderDetailPage() {
                 {order.serviceStartDate && <div><strong className="block text-muted-foreground">{t.proposedStartDate}</strong> {new Date(order.serviceStartDate.seconds * 1000).toLocaleDateString()}</div>}
                 {order.paymentApprovedAt && <div><strong className="block text-muted-foreground">Payment Approved</strong> {new Date(order.paymentApprovedAt.seconds * 1000).toLocaleDateString()}</div>}
                 {order.serviceStartedAt && <div><strong className="block text-muted-foreground">{t.serviceStarted}</strong> {new Date(order.serviceStartedAt.seconds * 1000).toLocaleString()}</div>}
+                {order.workFinishedAt && <div><strong className="block text-muted-foreground">{t.workFinishedTitle}</strong> {new Date(order.workFinishedAt.seconds * 1000).toLocaleString()}</div>}
             </div>
 
             <div>
@@ -426,7 +449,7 @@ export default function OrderDetailPage() {
               <Card className="bg-background">
                 <CardHeader>
                   <CardTitle>{t.startService}</CardTitle>
-                  <CardDescription>Click the button below to confirm you have started working on this service.</CardDescription>
+                  <CardDescription>Click the button below to confirm you have started working on this service. The seeker will be notified.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button className="w-full" onClick={handleStartService} disabled={isSubmittingAction === 'start'}>
@@ -435,6 +458,21 @@ export default function OrderDetailPage() {
                   </Button>
                 </CardContent>
               </Card>
+            )}
+
+            {showProviderMarkFinishedBox && (
+                <Card className="bg-background">
+                    <CardHeader>
+                        <CardTitle>{t.markAsFinished}</CardTitle>
+                        <CardDescription>Once you have fully completed the service, mark it as finished to notify the seeker for their final confirmation.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button className="w-full" onClick={handleMarkAsFinished} disabled={isSubmittingAction === 'finish'}>
+                            {isSubmittingAction === 'finish' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCheck className="mr-2 h-4 w-4"/>}
+                            {t.markAsFinished}
+                        </Button>
+                    </CardContent>
+                </Card>
             )}
 
             {showSeekerGraceAndRefundBox && (
@@ -469,21 +507,21 @@ export default function OrderDetailPage() {
                   </CardContent>
               </Card>
             )}
-
-            {showSeekerCompletionBox && (
-                 <Card className="bg-background">
+            
+            {showSeekerConfirmCompletionBox && (
+                 <Card className="bg-background border-primary">
                     <CardHeader>
-                        <CardTitle>Confirm Service Completion</CardTitle>
-                        <CardDescription>Once the service is completed to your satisfaction, please mark it as complete.</CardDescription>
+                        <CardTitle>{t.confirmCompletion}</CardTitle>
+                        <CardDescription>The provider has marked this service as complete. Please confirm if the work was done to your satisfaction.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col sm:flex-row gap-2">
                         <Button className="w-full" onClick={handleMarkAsCompleted} disabled={!!isSubmittingAction}>
                              {isSubmittingAction === 'complete' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
-                            Mark as Completed
+                            {t.confirmCompletion}
                         </Button>
                         <Button variant="destructive" className="w-full" onClick={() => handleDispute('Issue with completed service')} disabled={!!isSubmittingAction}>
-                            {isSubmittingAction === 'dispute' ? <ShieldQuestion className="mr-2 h-4 w-4"/> : <ShieldQuestion className="mr-2 h-4 w-4"/>}
-                            Report a Problem
+                            {isSubmittingAction === 'dispute' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ShieldQuestion className="mr-2 h-4 w-4"/>}
+                            {t.reportProblem}
                         </Button>
                     </CardContent>
                 </Card>
@@ -494,5 +532,3 @@ export default function OrderDetailPage() {
     </div>
   );
 }
-
-    

@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Briefcase, Loader2, AlertTriangle, ArrowRight, CheckCircle, Clock, AlertCircle, DollarSign, XCircle, Hourglass, ShieldCheck } from 'lucide-react';
+import { Briefcase, Loader2, AlertTriangle, ArrowRight, CheckCircle, Clock, AlertCircle, DollarSign, XCircle, Hourglass, ShieldCheck, ShieldQuestion } from 'lucide-react';
 import { Order, getOrdersForUser, OrderStatus } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -21,6 +21,7 @@ const StatusBadge = ({ status, t }: { status: OrderStatus; t: any }) => {
     pending_approval: 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/50 dark:text-orange-300',
     pending_payment: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/50 dark:text-yellow-300',
     paid: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300',
+    pending_completion: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-900/50 dark:text-indigo-300',
     completed: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-300',
     disputed: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/50 dark:text-red-300',
     resolved: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/50 dark:text-purple-300',
@@ -30,6 +31,7 @@ const StatusBadge = ({ status, t }: { status: OrderStatus; t: any }) => {
     pending_approval: Hourglass,
     pending_payment: DollarSign,
     paid: CheckCircle,
+    pending_completion: ShieldQuestion,
     completed: CheckCircle,
     disputed: AlertCircle,
     resolved: ShieldCheck,
@@ -39,6 +41,7 @@ const StatusBadge = ({ status, t }: { status: OrderStatus; t: any }) => {
     pending_approval: t.pendingApproval,
     pending_payment: t.pendingPayment,
     paid: t.paid,
+    pending_completion: t.statusPendingCompletion,
     completed: t.completed,
     disputed: t.disputed,
     resolved: t.resolved,
