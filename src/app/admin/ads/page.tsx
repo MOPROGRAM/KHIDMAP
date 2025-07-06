@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, AlertTriangle, CheckCircle, Megaphone, Clock, ThumbsUp, ThumbsDown, Search, CircleDollarSign } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle, Megaphone, Clock, ThumbsUp, ThumbsDown, Search, CircleDollarSign, Image as ImageIcon } from 'lucide-react';
 import type { AdRequest, AdRequestStatus } from '@/lib/data';
 import { getAdRequests, approveAdRequestAndSetPrice, rejectAdRequest, confirmAdPayment, rejectAdPayment } from '@/lib/data';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -139,7 +139,14 @@ const AdRequestCard = ({ request, t, onUpdate }: { request: AdRequest, t: Transl
                         <span className="text-muted-foreground">{formatRelativeTime(request.createdAt)}</span>
                     </div>
                     <div className="flex items-center gap-4">
-                        <Image src={request.imageUrl || 'https://placehold.co/150x150.png'} alt={request.title} width={100} height={100} className="rounded-md object-cover border aspect-square" />
+                        {request.imageUrl && (
+                            <Image src={request.imageUrl} alt={request.title} width={100} height={100} className="rounded-md object-cover border aspect-square" />
+                        )}
+                        {!request.imageUrl && (
+                           <div className="w-[100px] h-[100px] bg-muted rounded-md flex items-center justify-center border">
+                                <ImageIcon className="w-8 h-8 text-muted-foreground"/>
+                           </div>
+                        )}
                         <div className="space-y-1">
                             <h4 className="font-bold">{request.title}</h4>
                             <p><strong>From:</strong> {request.name} ({request.email})</p>

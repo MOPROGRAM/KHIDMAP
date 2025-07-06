@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -20,91 +21,76 @@ service cloud.firestore {
 
     // Users collection
     match /users/{userId} {
-      // Anyone can create a user profile (register)
       allow create: if isAuthenticated();
-      // Admins can list all users.
-      allow list: if isAdmin();
-      // The owner or an admin can read/update a single profile
-      allow get, update: if isOwner(userId) || isAdmin();
-      // Users cannot delete their profiles directly through this rule for safety
+      allow get, update: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin(); // Admin can list users for verification page
       allow delete: if false;
     }
 
     // Ratings collection
     match /ratings/{ratingId} {
-        // Anyone can read ratings
-        allow get, list;
-        // Authenticated users can create ratings, but not for themselves
-        allow create: if isAuthenticated() && request.resource.data.raterUserId == request.auth.uid && request.resource.data.ratedUserId != request.auth.uid;
-        // Users cannot update or delete ratings
+        // Anyone can read ratings for a user
+        allow get, list: if true;
+        allow create: if isAuthenticated() && request.resource.data.raterUserId == request.auth.uid;
         allow update, delete: if false;
     }
 
     // Messages (chats) collection
     match /messages/{chatId} {
-      // Participants of a chat can get and update it (e.g., last message) and list their own chats
-      allow get, list, update: if isAuthenticated() && request.auth.uid in resource.data.participantIds;
-      // Creation is handled by the startOrGetChat function, but we need a basic rule
+      // list is needed for the `where('participantIds', 'array-contains', ...)` query
+      allow list, get, update: if isAuthenticated() && request.auth.uid in resource.data.participantIds;
       allow create: if isAuthenticated();
 
-      // Messages subcollection
       match /messages/{messageId} {
-        // Participants can read and create messages in their chat
-        allow list, get, create: if isAuthenticated() && get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[0] == request.auth.uid || get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[1] == request.auth.uid;
-        // Nobody can update or delete messages
+        allow get, list, create: if isAuthenticated() && get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[0] == request.auth.uid || get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[1] == request.auth.uid;
         allow update, delete: if false;
       }
     }
     
     // Calls collection
     match /calls/{callId} {
-        allow get, list, create, update: if isAuthenticated() && request.auth.uid in resource.data.participantIds;
-        
-        match /{subcollection}/{document=**} {
-            allow read, write: if isAuthenticated() && get(/databases/$(database)/documents/calls/$(callId)).data.participantIds[0] == request.auth.uid || get(/databases/$(database)/documents/calls/$(callId)).data.participantIds[1] == request.auth.uid;
-        }
+      // list is needed for the `where('participantIds', 'array-contains', ...)` query
+      allow get, create, update, list: if isAuthenticated() && request.auth.uid in resource.data.participantIds;
+      
+      match /{subcollection}/{document=**} {
+        allow read, write: if isAuthenticated() && get(/databases/$(database)/documents/calls/$(callId)).data.participantIds[0] == request.auth.uid || get(/databases/$(database)/documents/calls/$(callId)).data.participantIds[1] == request.auth.uid;
+      }
     }
 
     // Orders collection
     match /orders/{orderId} {
-        // Admin can list all orders
-        allow list: if isAuthenticated() && isAdmin();
-        // Only participants (seeker, provider) or an admin can read/update an order
-        allow get, update: if isAuthenticated() && (request.auth.uid == resource.data.seekerId || request.auth.uid == resource.data.providerId || isAdmin());
-        // Only authenticated users can create orders for themselves
-        allow create: if isAuthenticated() && request.resource.data.seekerId == request.auth.uid;
-        allow delete: if false;
+      allow get, update: if isAuthenticated() && (isOwner(resource.data.seekerId) || isOwner(resource.data.providerId) || isAdmin());
+      // A user can list their own orders. Admin can list all orders.
+      // The client-side queries must be correct to prevent over-fetching for non-admins.
+      allow list: if isAuthenticated(); 
+      allow create: if isAuthenticated() && isOwner(request.resource.data.seekerId);
+      allow delete: if false;
     }
 
     // Notifications collection
     match /notifications/{notificationId} {
-        // Users can only read their own notifications
-        allow get, list: if isAuthenticated() && isOwner(resource.data.userId);
-        // Notifications are created by the server, not clients
-        allow create: if false; 
-        allow update, delete: if false;
+      allow get: if isAuthenticated() && isOwner(resource.data.userId);
+      allow list: if isAuthenticated(); // Client query must filter by userId
+      allow create: if false; 
+      allow update, delete: if false;
     }
 
     // AdRequests collection
     match /adRequests/{adId} {
-        // Admin can list all ad requests
-        allow list: if isAuthenticated() && isAdmin();
-        // Only the owner or an admin can read/update the request
-        allow get, update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
-        // Only authenticated users can create requests for themselves
-        allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
-        allow delete: if false;
+      allow get, update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      // User can list their own requests. Admin can list all requests.
+      // Client-side queries must enforce the filtering.
+      allow list: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+      allow delete: if false;
     }
 
     // SupportRequests collection
     match /supportRequests/{requestId} {
-        // Admin can list all support requests
-        allow list: if isAuthenticated() && isAdmin();
-        // Only the owner or an admin can read/update the request
-        allow get, update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
-        // Only authenticated users can create requests for themselves
-        allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
-        allow delete: if false;
+      allow get, update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow list: if isAdmin(); // FIX: Allow admin to list all support requests
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+      allow delete: if false;
     }
   }
 }

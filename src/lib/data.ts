@@ -820,7 +820,8 @@ export async function deletePaymentProof(orderId: string): Promise<void> {
     throw new Error("Order not found.");
   }
 
-  const orderData = orderData.proofOfPaymentUrl;
+  const orderData = orderSnap.data() as Order;
+  const proofUrl = orderData.proofOfPaymentUrl;
 
   if (proofUrl) {
     try {
@@ -1285,7 +1286,7 @@ export async function rejectAdPayment(requestId: string, reason: string): Promis
      const adSnap = await getDoc(requestRef);
     if (!adSnap.exists()) throw new Error("Ad request not found.");
 
-    const adData = adSnap.data();
+    const adData = adSnap.data() as AdRequest;
     if(adData.paymentProofUrl) {
          try {
             const fileRef = ref(storage, adData.paymentProofUrl);
