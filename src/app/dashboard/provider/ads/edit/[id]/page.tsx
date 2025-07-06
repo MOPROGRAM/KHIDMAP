@@ -160,9 +160,11 @@ export default function AdDetailPage() {
 
       <Card>
         <CardHeader>
-          <div className="relative h-48 w-full rounded-lg overflow-hidden mb-4">
-            <Image src={adRequest.imageUrl || 'https://placehold.co/600x400.png'} alt={adRequest.title} layout="fill" objectFit="cover" />
-          </div>
+          {adRequest.imageUrl && (
+            <div className="relative h-48 w-full rounded-lg overflow-hidden mb-4">
+              <Image src={adRequest.imageUrl} alt={adRequest.title} layout="fill" objectFit="cover" />
+            </div>
+          )}
           <CardTitle>{adRequest.title}</CardTitle>
           <CardDescription>Ad Request ID: {adRequest.id}</CardDescription>
         </CardHeader>

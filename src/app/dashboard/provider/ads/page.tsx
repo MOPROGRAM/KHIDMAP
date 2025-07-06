@@ -139,8 +139,8 @@ export default function MyAdsPage() {
                   <Card className="hover:border-primary hover:bg-muted/30 transition-all duration-200">
                     <CardContent className="p-4 grid grid-cols-1 md:grid-cols-4 items-center gap-4">
                         <div className="flex items-center gap-4">
-                            <Image src={ad.imageUrl || 'https://placehold.co/100x100.png'} alt={ad.title} width={64} height={64} className="rounded-md object-cover aspect-square border" />
-                            <div className="md:col-span-2">
+                            {ad.imageUrl && <Image src={ad.imageUrl} alt={ad.title} width={64} height={64} className="rounded-md object-cover aspect-square border" />}
+                            <div>
                                 <p className="font-semibold text-foreground line-clamp-1">{ad.title}</p>
                                 <div className="flex items-center gap-3 mt-1">
                                     <StatusBadge status={ad.status} t={t} />
