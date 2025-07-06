@@ -370,14 +370,14 @@ export type Translations = {
   orderDisputedDescription: string;
   approveManually: string;
   rejectManually: 'Reject Manually';
-  confirmRejectPaymentTitle: string;
+  confirmRejectPaymentTitle: 'Are you sure you want to reject this payment?';
   confirmRejectPaymentDescription: string;
   reject: 'Reject';
-  rejectionReason: string;
-  rejectionReasonPlaceholder: string;
-  rejectionFailedTitle: string;
-  rejectionSuccessTitle: string;
-  rejectionSuccessDescription: string;
+  rejectionReason: 'Reason for Rejection (optional)';
+  rejectionReasonPlaceholder: 'e.g., Unclear image, wrong amount...';
+  rejectionFailedTitle: 'Rejection Failed';
+  rejectionSuccessTitle: 'Payment Rejected';
+  rejectionSuccessDescription: 'The seeker has been notified to upload a new proof.';
   
   // Request Service Page
   requestService: string;
@@ -557,6 +557,16 @@ export type Translations = {
   adPaymentRejectedTitle: string;
   adPaymentRejectedMessage: string;
   adRequestInPaymentReviewMessage: string;
+
+  // Legal
+  termsOfService: string;
+  privacyPolicy: string;
+  termsTitle: string;
+  termsDescription: string;
+  termsContent: string;
+  privacyTitle: string;
+  privacyDescription: string;
+  privacyContent: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -1083,6 +1093,14 @@ export const translations: Record<'en' | 'ar', Translations> = {
     adPaymentRejectedTitle: "Ad Payment Rejected",
     adPaymentRejectedMessage: "Your payment proof was rejected. Reason: {reason}. Please upload new proof.",
     adRequestInPaymentReviewMessage: "Your ad payment is under review by the admin and will be activated shortly.",
+    termsOfService: "Terms of Service",
+    privacyPolicy: "Privacy Policy",
+    termsTitle: "Terms of Service",
+    termsDescription: "Last updated: July 2024",
+    termsContent: "Welcome to Khidmap. These terms and conditions outline the rules and regulations for the use of our application.\n\nBy accessing this app we assume you accept these terms and conditions. Do not continue to use Khidmap if you do not agree to take all of the terms and conditions stated on this page.\n\n<h2>1. Accounts</h2>\nWhen you create an account with us, you must provide us information that is accurate, complete, and current at all times. Failure to do so constitutes a breach of the Terms, which may result in immediate termination of your account on our Service.\n\n<h2>2. Service Orders</h2>\nAs a Service Seeker, you agree to pay for the services you request through the platform. As a Service Provider, you agree to deliver the services as described in your profile and agreed upon in the order. Khidmap facilitates the connection and payment but is not a party to the service agreement itself.\n\n<h2>3. Content</h2>\nOur Service allows you to post, link, store, share and otherwise make available certain information, text, graphics, videos, or other material. You are responsible for the Content that you post on or through the Service, including its legality, reliability, and appropriateness.",
+    privacyTitle: "Privacy Policy",
+    privacyDescription: "Last updated: July 2024",
+    privacyContent: "Your privacy is important to us. It is Khidmap's policy to respect your privacy regarding any information we may collect from you through our app.\n\n<h2>1. Information We Collect</h2>\nWe collect information you provide directly to us, such as when you create an account, update your profile, request services, or communicate with us. This may include your name, email address, phone number, and location data.\n\n<h2>2. How We Use Information</h2>\nWe use the information we collect to:\n- Provide, maintain, and improve our services;\n- Process transactions and send related information, including confirmations and invoices;\n- Send you technical notices, updates, security alerts, and support messages;\n- Communicate with you about products, services, offers, and events offered by Khidmap and others.\n\n<h2>3. Information Sharing</h2>\nWe do not share your personal information with third parties except as described in this privacy policy. We may share information with vendors, consultants, and other service providers who need access to such information to carry out work on our behalf.",
   },
   ar: {
     appName: "خدماب",
@@ -1604,5 +1622,13 @@ export const translations: Record<'en' | 'ar', Translations> = {
     adPaymentRejectedTitle: "تم رفض دفع الإعلان",
     adPaymentRejectedMessage: "تم رفض إثبات الدفع الخاص بك. السبب: {reason}. يرجى رفع إثبات جديد.",
     adRequestInPaymentReviewMessage: "دفعتك للإعلان قيد المراجعة من قبل المسؤول وسيتم تفعيلها قريباً.",
+    termsOfService: "شروط الخدمة",
+    privacyPolicy: "سياسة الخصوصية",
+    termsTitle: "شروط الخدمة",
+    termsDescription: "آخر تحديث: يوليو 2024",
+    termsContent: "مرحباً بك في خدماب. تحدد هذه الشروط والأحكام القواعد واللوائح لاستخدام تطبيقنا.\n\nمن خلال الوصول إلى هذا التطبيق، نفترض أنك تقبل هذه الشروط والأحكام. لا تستمر في استخدام خدماب إذا كنت لا توافق على جميع الشروط والأحكام المذكورة في هذه الصفحة.\n\n<h2>1. الحسابات</h2>\nعند إنشاء حساب معنا، يجب عليك تزويدنا بمعلومات دقيقة وكاملة وحديثة في جميع الأوقات. يشكل عدم القيام بذلك خرقًا للشروط، مما قد يؤدي إلى الإنهاء الفوري لحسابك على خدمتنا.\n\n<h2>2. طلبات الخدمة</h2>\nكمستخدم باحث عن خدمة، فإنك توافق على دفع مقابل الخدمات التي تطلبها عبر المنصة. كمقدم خدمة، فإنك توافق على تقديم الخدمات كما هو موضح في ملفك الشخصي والمتفق عليه في الطلب. يقوم خدماب بتسهيل الاتصال والدفع ولكنه ليس طرفًا في اتفاقية الخدمة نفسها.\n\n<h2>3. المحتوى</h2>\nتسمح لك خدمتنا بنشر وربط وتخزين ومشاركة وإتاحة معلومات ونصوص ورسومات ومقاطع فيديو أو مواد أخرى. أنت مسؤول عن المحتوى الذي تنشره على الخدمة أو من خلالها، بما في ذلك شرعيته وموثوقيته وملاءمته.",
+    privacyTitle: "سياسة الخصوصية",
+    privacyDescription: "آخر تحديث: يوليو 2024",
+    privacyContent: "خصوصيتك مهمة بالنسبة لنا. إن سياسة خدماب هي احترام خصوصيتك فيما يتعلق بأي معلومات قد نجمعها منك من خلال تطبيقنا.\n\n<h2>1. المعلومات التي نجمعها</h2>\nنحن نجمع المعلومات التي تقدمها لنا مباشرة، مثل عند إنشاء حساب، أو تحديث ملفك الشخصي، أو طلب الخدمات، أو التواصل معنا. قد يشمل ذلك اسمك وعنوان بريدك الإلكتروني ورقم هاتفك وبيانات الموقع.\n\n<h2>2. كيف نستخدم المعلومات</h2>\nنستخدم المعلومات التي نجمعها من أجل:\n- توفير خدماتنا وصيانتها وتحسينها؛\n- معالجة المعاملات وإرسال المعلومات ذات الصلة، بما في ذلك التأكيدات والفواتير؛\n- إرسال الإشعارات الفنية والتحديثات والتنبيهات الأمنية ورسائل الدعم؛\n- التواصل معك بشأن المنتجات والخدمات والعروض والأحداث التي يقدمها خدماب وغيره.\n\n<h2>3. مشاركة المعلومات</h2>\nنحن لا نشارك معلوماتك الشخصية مع أطراف ثالثة باستثناء ما هو موضح في سياسة الخصوصية هذه. قد نشارك المعلومات مع البائعين والمستشارين ومقدمي الخدمات الآخرين الذين يحتاجون إلى الوصول إلى هذه المعلومات للقيام بعمل نيابة عنا.",
   },
 };
