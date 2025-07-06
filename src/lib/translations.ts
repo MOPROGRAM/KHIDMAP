@@ -1634,13 +1634,15 @@ export const translations: Record<'en' | 'ar', Translations> = {
     newOrderRequestMessage: "{seekerName} لقد طلب خدمتك.",
     paymentReceivedTitle: "تم استلام الدفعة!",
     paymentReceivedMessage: "{seekerName} لقد دفع للطلب. يمكنك الآن بدء الخدمة.",
+    //orderCompletedTitle: string;
     orderCompletedMessage: "{seekerName} لقد قام بتأكيد اكتمال الطلب. سيتم تحويل مستحقاتك.",
+    //orderDisputedTitle: string;
     orderDisputedMessage: "تم رفع نزاع على طلبك مع {userName}.",
     allNotifications: "جميع الإشعارات",
     allNotificationsDescription: "عرض وإدارة جميع الإشعارات الخاصة بك.",
     noNotificationsYet: "ليس لديك أي إشعارات بعد.",
     viewAll: "عرض الكل",
-    
+
     // Proof deletion
     deleteProof: "حذف الإثبات",
     uploadNewProof: "رفع إثبات جديد",

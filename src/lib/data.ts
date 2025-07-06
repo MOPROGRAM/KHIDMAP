@@ -820,8 +820,7 @@ export async function deletePaymentProof(orderId: string): Promise<void> {
     throw new Error("Order not found.");
   }
 
-  const orderData = orderSnap.data();
-  const proofUrl = orderData.proofOfPaymentUrl;
+  const orderData = orderData.proofOfPaymentUrl;
 
   if (proofUrl) {
     try {
