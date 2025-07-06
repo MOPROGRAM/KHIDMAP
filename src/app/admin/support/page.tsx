@@ -7,13 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Loader2, AlertTriangle, CheckCircle, LifeBuoy, Clock, Check, Eye } from 'lucide-react';
 import type { SupportRequest } from '@/lib/data';
 import { getSupportRequests, updateSupportRequestStatus } from '@/lib/data';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { useSettings } from '@/contexts/SettingsContext';
 import type { Translations } from '@/lib/translations';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const StatusBadge = ({ status, t }: { status: SupportRequest['status'], t: Translations }) => {
     const styles: Record<SupportRequest['status'], string> = {
@@ -58,6 +62,7 @@ export default function AdminSupportPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
 
   const fetchRequests = async () => {
     setIsLoading(true);
@@ -76,12 +81,13 @@ export default function AdminSupportPage() {
     fetchRequests();
   }, []);
 
-  const handleUpdateStatus = async (requestId: string, status: 'in_progress' | 'closed') => {
+  const handleUpdateStatus = async (requestId: string, status: 'in_progress' | 'closed', reply?: string) => {
     setProcessingId(requestId);
     try {
-      await updateSupportRequestStatus(requestId, status);
+      await updateSupportRequestStatus(requestId, status, reply);
       toast({ title: t.ticketStatusUpdated, description: `The ticket has been marked as ${status.replace('_', ' ')}.` });
       fetchRequests(); // Re-fetch to update the list
+      setReplyText(''); // Clear reply text after submission
     } catch (err: any) {
       toast({ variant: 'destructive', title: "Update Failed", description: err.message });
     } finally {
@@ -142,6 +148,12 @@ export default function AdminSupportPage() {
                             <p><strong>From:</strong> {req.name} ({req.email})</p>
                             <p><strong>Subject:</strong> {req.subject}</p>
                             <p className="text-sm text-muted-foreground pt-2 whitespace-pre-wrap bg-muted/50 p-3 rounded-md"><strong>Message:</strong> {req.message}</p>
+                            {req.status === 'closed' && req.adminReply && (
+                                <Alert className="mt-2 bg-green-50 border-green-300 dark:bg-green-900/20">
+                                  <AlertTitle className="font-semibold text-green-800 dark:text-green-300">Admin Reply</AlertTitle>
+                                  <AlertDescription className="text-green-700 dark:text-green-400">{req.adminReply}</AlertDescription>
+                                </Alert>
+                            )}
                         </div>
                         <div className="space-y-2 flex flex-col items-center justify-center">
                             {req.status !== 'closed' && (
@@ -152,10 +164,30 @@ export default function AdminSupportPage() {
                                             {t.markAsInProgress}
                                         </Button>
                                     )}
-                                    <Button onClick={() => handleUpdateStatus(req.id, 'closed')} disabled={!!processingId} className="w-full bg-green-600 hover:bg-green-700">
-                                        {processingId === req.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
-                                        {t.markAsClosed}
-                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button disabled={!!processingId} className="w-full bg-green-600 hover:bg-green-700">
+                                                <Check className="mr-2 h-4 w-4" />
+                                                {t.markAsClosed}
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Close Support Ticket</AlertDialogTitle>
+                                                <AlertDialogDescription>Add a final reply to the user before closing the ticket. This will be sent as a notification.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="reply">Reply</Label>
+                                                <Textarea id="reply" value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Provide a resolution or final comment..."/>
+                                            </div>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel onClick={() => setReplyText('')}>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleUpdateStatus(req.id, 'closed', replyText)} disabled={!replyText.trim() || processingId === req.id} className={buttonVariants({ variant: 'default' })}>
+                                                    {processingId === req.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : 'Send Reply & Close'}
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
                             )}
                         </div>

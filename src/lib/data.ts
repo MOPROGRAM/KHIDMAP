@@ -161,6 +161,7 @@ export interface SupportRequest {
     status: 'open' | 'in_progress' | 'closed';
     createdAt: Timestamp;
     updatedAt: Timestamp;
+    adminReply?: string;
 }
 
 
@@ -1342,24 +1343,43 @@ export async function getSupportRequests(): Promise<SupportRequest[]> {
     return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as SupportRequest));
 }
 
-export async function updateSupportRequestStatus(requestId: string, status: 'in_progress' | 'closed'): Promise<void> {
+export async function updateSupportRequestStatus(requestId: string, status: 'in_progress' | 'closed', adminReply?: string): Promise<void> {
     if (!db) throw new Error("Database not initialized.");
     const requestRef = doc(db, "supportRequests", requestId);
     
-    await updateDoc(requestRef, {
+    const updateData: any = {
         status: status,
         updatedAt: serverTimestamp()
-    });
+    };
+    if (status === 'closed' && adminReply) {
+        updateData.adminReply = adminReply;
+    }
+
+    await updateDoc(requestRef, updateData);
 
     const requestSnap = await getDoc(requestRef);
     if(requestSnap.exists()){
         const requestData = requestSnap.data() as SupportRequest;
+        let titleKey: keyof Translations = 'supportRequestInProgressTitle';
+        let messageKey: keyof Translations = 'supportRequestInProgressMessage';
+        let params: { [key: string]: string } = { ticketId: requestId.slice(0, 6) };
+
+        if (status === 'closed') {
+            titleKey = 'supportRequestClosedTitle';
+            if (adminReply) {
+                messageKey = 'supportRequestClosedWithReplyMessage';
+                params.reply = adminReply;
+            } else {
+                messageKey = 'supportRequestClosedMessage';
+            }
+        }
+        
         await createNotification(
             requestData.userId,
-            status === 'closed' ? 'supportRequestClosedTitle' : 'supportRequestInProgressTitle',
-            status === 'closed' ? 'supportRequestClosedMessage' : 'supportRequestInProgressMessage',
-            '/contact', // For now, just link back to the contact page. Later this will be a ticket view page.
-            { ticketId: requestId.slice(0, 6) }
+            titleKey,
+            messageKey,
+            '/contact', 
+            params
         );
     }
 }

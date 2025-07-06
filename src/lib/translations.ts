@@ -531,6 +531,7 @@ export type Translations = {
   ticketStatusUpdated: string;
   supportRequestClosedTitle: string;
   supportRequestClosedMessage: string;
+  supportRequestClosedWithReplyMessage: string;
   supportRequestInProgressTitle: string;
   supportRequestInProgressMessage: string;
   myAds: string;
@@ -1116,6 +1117,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     ticketStatusUpdated: "Ticket Status Updated",
     supportRequestClosedTitle: "Support Ticket Closed",
     supportRequestClosedMessage: "Your support ticket #{ticketId} has been closed by an admin.",
+    supportRequestClosedWithReplyMessage: "Your support ticket #{ticketId} has been closed. Admin Response: {reply}",
     supportRequestInProgressTitle: "Support Ticket In Progress",
     supportRequestInProgressMessage: "An admin is now reviewing your support ticket #{ticketId}.",
     myAds: "My Ads",
@@ -1494,7 +1496,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     videoCall: "مكالمة فيديو",
     audioCall: "مكالمة صوتية",
     incomingCall: "مكالمة واردة",
-    isCallingYou: "{userName} is calling you...",
+    isCallingYou: "{userName} يتصل بك...",
     accept: "قبول",
     decline: "رفض",
     callFailed: "فشل الاتصال",
@@ -1688,6 +1690,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     ticketStatusUpdated: "تم تحديث حالة التذكرة",
     supportRequestClosedTitle: "تم إغلاق تذكرة الدعم",
     supportRequestClosedMessage: "تم إغلاق تذكرة الدعم الخاصة بك #{ticketId} من قبل المسؤول.",
+    supportRequestClosedWithReplyMessage: "تم إغلاق تذكرة الدعم #{ticketId}. رد المسؤول: {reply}",
     supportRequestInProgressTitle: "تذكرة الدعم قيد المراجعة",
     supportRequestInProgressMessage: "يقوم المسؤول الآن بمراجعة تذكرة الدعم الخاصة بك #{ticketId}.",
     myAds: "إعلاناتي",
