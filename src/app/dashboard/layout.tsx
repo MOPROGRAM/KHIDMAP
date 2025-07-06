@@ -197,6 +197,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navItems: NavItem[] = [
     { href: '/dashboard', labelKey: 'dashboard', icon: <Home className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
     { href: '/dashboard/orders', labelKey: 'myOrders', icon: <Briefcase className="h-5 w-5" />, roles: ['provider', 'seeker'] },
+    { href: '/dashboard/provider/ads', labelKey: 'myAds', icon: <Megaphone className="h-5 w-5" />, roles: ['provider', 'seeker'] },
     { href: '/dashboard/messages', labelKey: 'messages', icon: <MessageSquare className="h-5 w-5" />, roles: ['provider', 'seeker'] },
     { href: '/dashboard/notifications', labelKey: 'notifications', icon: <Bell className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
     { href: '/dashboard/provider/profile', labelKey: 'profile', icon: <User className="h-5 w-5" />, roles: ['provider'] },

@@ -472,8 +472,10 @@ export type Translations = {
   newOrderRequestMessage: string; // "{seekerName} has requested your service."
   paymentReceivedTitle: string;
   paymentReceivedMessage: string; // "{seekerName} has paid for the order. You can now start the service."
-  orderCompletedMessage: string; // "{seekerName} has marked the order as completed. Your funds will be processed."
-  orderDisputedMessage: string; // "A dispute has been raised for your order with {userName}."
+  //orderCompletedTitle: string;
+  //orderCompletedMessage: string; 
+  //orderDisputedTitle: string;
+  //orderDisputedMessage: string;
   allNotifications: string;
   allNotificationsDescription: string;
   noNotificationsYet: string;
@@ -530,6 +532,30 @@ export type Translations = {
   supportRequestClosedMessage: string;
   supportRequestInProgressTitle: string;
   supportRequestInProgressMessage: string;
+  myAds: string;
+  myAdsDescription: string;
+  newAdRequest: string;
+  noAdRequestsYet: string;
+  noAdRequestsYetDescription: string;
+  adTitle: string;
+  adImage: string;
+  uploadImage: string;
+  changeImage: string;
+  statusPendingReview: string;
+  statusPendingPayment: string;
+  statusPaymentReview: string;
+  statusActive: string;
+  statusRejected: string;
+  statusPendingReviewDescription: string;
+  statusPendingPaymentDescription: string;
+  statusPaymentReviewDescription: string;
+  statusActiveDescription: string;
+  statusRejectedDescription: string;
+  uploadPaymentProof: string;
+  adPaymentConfirmedTitle: string;
+  adPaymentConfirmedMessage: string;
+  adPaymentRejectedTitle: string;
+  adPaymentRejectedMessage: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -971,7 +997,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     newOrderRequestMessage: "{seekerName} has requested your service.",
     paymentReceivedTitle: "Payment Received!",
     paymentReceivedMessage: "{seekerName} has paid for the order. You can now start the service.",
+    //orderCompletedTitle: string;
     orderCompletedMessage: "{seekerName} has marked the order as completed. Your funds will be processed.",
+    //orderDisputedTitle: string;
     orderDisputedMessage: "A dispute has been raised for your order with {userName}.",
     allNotifications: "All Notifications",
     allNotificationsDescription: "View and manage all your notifications.",
@@ -995,9 +1023,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     requestSubmittedTitle: "Request Submitted",
     requestSubmittedDescription: "Your request has been sent to the admin for review.",
     adRequestApprovedTitle: "Ad Request Approved",
-    adRequestApprovedMessage: "Your advertisement request has been approved. An admin will contact you shortly.",
+    adRequestApprovedMessage: "Your ad request has been approved and is now pending payment of {price}. Please go to 'My Ads' to complete the payment.",
     adRequestRejectedTitle: "Ad Request Rejected",
-    adRequestRejectedMessage: "Unfortunately, your advertisement request has been rejected.",
+    adRequestRejectedMessage: "Unfortunately, your advertisement request has been rejected. Reason: {reason}",
     adRequests: "Ad Requests",
     pending: "Pending",
     approved: "Approved",
@@ -1029,6 +1057,30 @@ export const translations: Record<'en' | 'ar', Translations> = {
     supportRequestClosedMessage: "Your support ticket #{ticketId} has been closed by an admin.",
     supportRequestInProgressTitle: "Support Ticket In Progress",
     supportRequestInProgressMessage: "An admin is now reviewing your support ticket #{ticketId}.",
+    myAds: "My Ads",
+    myAdsDescription: "Track the status of your advertisement requests.",
+    newAdRequest: "New Ad Request",
+    noAdRequestsYet: "No Ad Requests Yet",
+    noAdRequestsYetDescription: "Create your first ad request to get started.",
+    adTitle: "Ad Title",
+    adImage: "Ad Image",
+    uploadImage: "Upload Image",
+    changeImage: "Change Image",
+    statusPendingReview: "Pending Review",
+    statusPendingPayment: "Pending Payment",
+    statusPaymentReview: "Payment Review",
+    statusActive: "Active",
+    statusRejected: "Rejected",
+    statusPendingReviewDescription: "Your ad is waiting for admin approval.",
+    statusPendingPaymentDescription: "Your ad is approved! Please complete the payment to activate it.",
+    statusPaymentReviewDescription: "Your payment is being reviewed by the admin.",
+    statusActiveDescription: "Your ad is live!",
+    statusRejectedDescription: "Your ad was rejected. See details for the reason.",
+    uploadPaymentProof: "Upload Payment Proof",
+    adPaymentConfirmedTitle: "Ad Payment Confirmed!",
+    adPaymentConfirmedMessage: "Your payment has been confirmed and your ad is now active.",
+    adPaymentRejectedTitle: "Ad Payment Rejected",
+    adPaymentRejectedMessage: "Your payment proof was rejected. Reason: {reason}. Please upload new proof.",
   },
   ar: {
     appName: "خدماب",
@@ -1465,7 +1517,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     newOrderRequestMessage: "{seekerName} لقد طلب خدمتك.",
     paymentReceivedTitle: "تم استلام الدفعة!",
     paymentReceivedMessage: "{seekerName} لقد دفع للطلب. يمكنك الآن بدء الخدمة.",
+    //orderCompletedTitle: string;
     orderCompletedMessage: "{seekerName} لقد قام بتأكيد اكتمال الطلب. سيتم تحويل مستحقاتك.",
+    //orderDisputedTitle: string;
     orderDisputedMessage: "تم رفع نزاع على طلبك مع {userName}.",
     allNotifications: "جميع الإشعارات",
     allNotificationsDescription: "عرض وإدارة جميع الإشعارات الخاصة بك.",
@@ -1489,9 +1543,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     requestSubmittedTitle: "تم إرسال الطلب",
     requestSubmittedDescription: "تم إرسال طلبك إلى المسؤول للمراجعة.",
     adRequestApprovedTitle: "تمت الموافقة على طلب الإعلان",
-    adRequestApprovedMessage: "تمت الموافقة على طلب الإعلان الخاص بك. سيتصل بك المسؤول قريبًا.",
+    adRequestApprovedMessage: "تمت الموافقة على طلب إعلانك وهو الآن في انتظار دفع مبلغ {price}. يرجى الذهاب إلى 'إعلاناتي' لإكمال الدفع.",
     adRequestRejectedTitle: "تم رفض طلب الإعلان",
-    adRequestRejectedMessage: "للأسف، تم رفض طلب الإعلان الخاص بك.",
+    adRequestRejectedMessage: "للأسف، تم رفض طلب إعلانك. السبب: {reason}",
     adRequests: "طلبات الإعلانات",
     pending: "قيد الانتظار",
     approved: "موافق عليه",
@@ -1523,5 +1577,29 @@ export const translations: Record<'en' | 'ar', Translations> = {
     supportRequestClosedMessage: "تم إغلاق تذكرة الدعم الخاصة بك #{ticketId} من قبل المسؤول.",
     supportRequestInProgressTitle: "تذكرة الدعم قيد المراجعة",
     supportRequestInProgressMessage: "يقوم المسؤول الآن بمراجعة تذكرة الدعم الخاصة بك #{ticketId}.",
+    myAds: "إعلاناتي",
+    myAdsDescription: "تتبع حالة طلبات إعلاناتك.",
+    newAdRequest: "طلب إعلان جديد",
+    noAdRequestsYet: "لا توجد طلبات إعلانات بعد",
+    noAdRequestsYetDescription: "قم بإنشاء طلب إعلانك الأول للبدء.",
+    adTitle: "عنوان الإعلان",
+    adImage: "صورة الإعلان",
+    uploadImage: "رفع صورة",
+    changeImage: "تغيير الصورة",
+    statusPendingReview: "بانتظار المراجعة",
+    statusPendingPayment: "بانتظار الدفع",
+    statusPaymentReview: "مراجعة الدفع",
+    statusActive: "نشط",
+    statusRejected: "مرفوض",
+    statusPendingReviewDescription: "إعلانك في انتظار موافقة المسؤول.",
+    statusPendingPaymentDescription: "تمت الموافقة على إعلانك! يرجى إكمال الدفع لتفعيله.",
+    statusPaymentReviewDescription: "يتم مراجعة دفعتك من قبل المسؤول.",
+    statusActiveDescription: "إعلانك نشط الآن!",
+    statusRejectedDescription: "تم رفض إعلانك. انظر التفاصيل لمعرفة السبب.",
+    uploadPaymentProof: "رفع إثبات الدفع",
+    adPaymentConfirmedTitle: "تم تأكيد دفع الإعلان!",
+    adPaymentConfirmedMessage: "تم تأكيد دفعتك وإعلانك الآن نشط.",
+    adPaymentRejectedTitle: "تم رفض دفع الإعلان",
+    adPaymentRejectedMessage: "تم رفض إثبات الدفع الخاص بك. السبب: {reason}. يرجى رفع إثبات جديد.",
   },
 };

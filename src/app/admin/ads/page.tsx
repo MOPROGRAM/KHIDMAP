@@ -1,33 +1,46 @@
+
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useEffect, useState, useMemo } from 'react';
+import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, AlertTriangle, CheckCircle, ThumbsUp, ThumbsDown, Megaphone, Clock } from 'lucide-react';
-import type { AdRequest } from '@/lib/data';
-import { getAdRequests, updateAdRequestStatus } from '@/lib/data';
-import { Button } from '@/components/ui/button';
+import { Loader2, AlertTriangle, CheckCircle, Megaphone, Clock, ThumbsUp, ThumbsDown, Search, CircleDollarSign } from 'lucide-react';
+import type { AdRequest, AdRequestStatus } from '@/lib/data';
+import { getAdRequests, approveAdRequestAndSetPrice, rejectAdRequest, confirmAdPayment, rejectAdPayment } from '@/lib/data';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { useSettings } from '@/contexts/SettingsContext';
-import type { Translations } from '@/lib/translations';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Image from 'next/image';
+import Link from 'next/link';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const StatusBadge = ({ status, t }: { status: AdRequest['status'], t: Translations }) => {
-    const styles: Record<AdRequest['status'], string> = {
-        pending: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/50 dark:text-yellow-300',
-        approved: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-300',
+const StatusBadge = ({ status, t }: { status: AdRequestStatus, t: Translations }) => {
+    const styles: Record<AdRequestStatus, string> = {
+        pending_review: 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/50 dark:text-orange-300',
+        pending_payment: 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/50 dark:text-yellow-300',
+        payment_review: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300',
+        active: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-300',
         rejected: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/50 dark:text-red-300',
     };
-    const text: Record<AdRequest['status'], keyof Translations> = {
-        pending: 'pending',
-        approved: 'approved',
-        rejected: 'rejected',
+    const text: Record<AdRequestStatus, keyof Translations> = {
+        pending_review: 'statusPendingReview',
+        pending_payment: 'statusPendingPayment',
+        payment_review: 'statusPaymentReview',
+        active: 'statusActive',
+        rejected: 'statusRejected',
     };
     const Icon = {
-        pending: Clock,
-        approved: ThumbsUp,
+        pending_review: Clock,
+        pending_payment: CircleDollarSign,
+        payment_review: Search,
+        active: ThumbsUp,
         rejected: ThumbsDown,
     }[status];
     return (
@@ -38,24 +51,190 @@ const StatusBadge = ({ status, t }: { status: AdRequest['status'], t: Translatio
     );
 };
 
+const AdRequestCard = ({ request, t, onUpdate }: { request: AdRequest, t: Translations, onUpdate: () => void }) => {
+    const { language, currency: defaultCurrency } = useSettings();
+    const { toast } = useToast();
+    const [processingId, setProcessingId] = useState<string | null>(null);
+    const [price, setPrice] = useState('');
+    const [currency, setCurrency] = useState(defaultCurrency);
+    const [reason, setReason] = useState('');
+
+    const formatRelativeTime = (timestamp: any) => {
+        if (!timestamp?.toDate) return '';
+        return formatDistanceToNow(timestamp.toDate(), { addSuffix: true, locale: language === 'ar' ? ar : enUS });
+    }
+
+    const handleApprove = async () => {
+        const numericPrice = parseFloat(price);
+        if (isNaN(numericPrice) || numericPrice <= 0) {
+            toast({ variant: 'destructive', title: 'Invalid Price', description: 'Please enter a valid positive number for the price.' });
+            return;
+        }
+        setProcessingId(request.id);
+        try {
+            await approveAdRequestAndSetPrice(request.id, numericPrice, currency);
+            toast({ title: 'Ad Approved', description: 'The user has been notified to make the payment.' });
+            onUpdate();
+        } catch (err: any) {
+            toast({ variant: 'destructive', title: "Approval Failed", description: err.message });
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    const handleReject = async () => {
+        if (!reason.trim()) {
+            toast({ variant: 'destructive', title: 'Reason Required', description: 'Please provide a reason for rejection.' });
+            return;
+        }
+        setProcessingId(request.id);
+        try {
+            await rejectAdRequest(request.id, reason);
+            toast({ title: 'Ad Rejected', description: 'The user has been notified.' });
+            onUpdate();
+        } catch (err: any) {
+            toast({ variant: 'destructive', title: "Rejection Failed", description: err.message });
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    const handleConfirmPayment = async () => {
+        setProcessingId(request.id);
+        try {
+            await confirmAdPayment(request.id);
+            toast({ title: 'Payment Confirmed', description: 'The ad is now active.' });
+            onUpdate();
+        } catch (err: any) {
+            toast({ variant: 'destructive', title: "Confirmation Failed", description: err.message });
+        } finally {
+            setProcessingId(null);
+        }
+    }
+
+    const handleRejectPayment = async () => {
+        if (!reason.trim()) {
+            toast({ variant: 'destructive', title: 'Reason Required', description: 'Please provide a reason for payment rejection.' });
+            return;
+        }
+        setProcessingId(request.id);
+        try {
+            await rejectAdPayment(request.id, reason);
+            toast({ title: 'Payment Rejected', description: 'The user has been notified to upload new proof.' });
+            onUpdate();
+        } catch (err: any) {
+            toast({ variant: 'destructive', title: "Rejection Failed", description: err.message });
+        } finally {
+            setProcessingId(null);
+        }
+    }
+
+    return (
+        <Card key={request.id} className="p-4">
+            <div className="grid md:grid-cols-3 gap-4 items-start">
+                <div className="md:col-span-2 space-y-3">
+                    <div className="flex items-center gap-2 text-sm">
+                        <StatusBadge status={request.status} t={t} />
+                        <span className="text-muted-foreground">{formatRelativeTime(request.createdAt)}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <Image src={request.imageUrl || 'https://placehold.co/150x150.png'} alt={request.title} width={100} height={100} className="rounded-md object-cover border aspect-square" />
+                        <div className="space-y-1">
+                            <h4 className="font-bold">{request.title}</h4>
+                            <p><strong>From:</strong> {request.name} ({request.email})</p>
+                            <p className="text-sm text-muted-foreground pt-1 whitespace-pre-wrap">{request.message}</p>
+                        </div>
+                    </div>
+                     {request.status === 'payment_review' && request.paymentProofUrl && (
+                        <div>
+                             <h5 className="font-semibold text-sm mb-1">Payment Proof:</h5>
+                             <Link href={request.paymentProofUrl} target="_blank" rel="noopener noreferrer">
+                                <Image src={request.paymentProofUrl} alt="Payment Proof" width={150} height={150} className="rounded-md border object-cover" />
+                             </Link>
+                        </div>
+                    )}
+                </div>
+                <div className="space-y-2 flex flex-col items-center justify-center">
+                    {request.status === 'pending_review' && (
+                        <div className="flex flex-col sm:flex-row md:flex-col gap-2 w-full">
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button disabled={!!processingId} className="w-full bg-green-600 hover:bg-green-700">
+                                        <ThumbsUp className="mr-2 h-4 w-4" /> Approve & Set Price
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>Approve Ad Request</AlertDialogTitle><AlertDialogDescription>Set the price for this ad. The user will be notified to pay.</AlertDialogDescription></AlertDialogHeader>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="price">Price</Label>
+                                        <Input id="price" type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="e.g., 50.00" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="currency">Currency</Label>
+                                        <Select value={currency} onValueChange={(v) => setCurrency(v)}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="USD">USD</SelectItem><SelectItem value="SAR">SAR</SelectItem><SelectItem value="EGP">EGP</SelectItem><SelectItem value="AED">AED</SelectItem><SelectItem value="QAR">QAR</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleApprove} disabled={!price}>Confirm Approval</AlertDialogAction></AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button disabled={!!processingId} variant="destructive" className="w-full">
+                                        <ThumbsDown className="mr-2 h-4 w-4" /> Reject
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>Reject Ad Request</AlertDialogTitle><AlertDialogDescription>Provide a reason for rejecting this ad request.</AlertDialogDescription></AlertDialogHeader>
+                                    <div className="space-y-2"><Label htmlFor="reason">Rejection Reason</Label><Input id="reason" value={reason} onChange={e => setReason(e.target.value)} /></div>
+                                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleReject} disabled={!reason.trim()} className={buttonVariants({ variant: "destructive" })}>Confirm Rejection</AlertDialogAction></AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    )}
+                     {request.status === 'payment_review' && (
+                        <div className="flex flex-col sm:flex-row md:flex-col gap-2 w-full">
+                             <Button onClick={handleConfirmPayment} disabled={!!processingId} className="w-full bg-green-600 hover:bg-green-700">
+                                {processingId === request.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ThumbsUp className="mr-2 h-4 w-4" />}
+                                Confirm Payment
+                            </Button>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button disabled={!!processingId} variant="destructive" className="w-full">
+                                        <ThumbsDown className="mr-2 h-4 w-4" /> Reject Payment
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>Reject Payment Proof</AlertDialogTitle><AlertDialogDescription>Provide a reason for rejecting this payment proof.</AlertDialogDescription></AlertDialogHeader>
+                                    <div className="space-y-2"><Label htmlFor="reason-payment">Rejection Reason</Label><Input id="reason-payment" value={reason} onChange={e => setReason(e.target.value)} /></div>
+                                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleRejectPayment} disabled={!reason.trim()} className={buttonVariants({ variant: "destructive" })}>Confirm Rejection</AlertDialogAction></AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </Card>
+    )
+}
 
 export default function AdminAdRequestsPage() {
   const t = useTranslation();
-  const { toast } = useToast();
-  const { language } = useSettings();
   const [requests, setRequests] = useState<AdRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const fetchRequests = async () => {
-    setIsLoading(true);
+    // No need to set loading to true here, happens in the initial load
     try {
       const adRequests = await getAdRequests();
       setRequests(adRequests);
     } catch (err: any) {
       setError(t.errorOccurred + ": " + err.message);
-      toast({ variant: 'destructive', title: t.errorOccurred, description: err.message });
     } finally {
       setIsLoading(false);
     }
@@ -64,24 +243,14 @@ export default function AdminAdRequestsPage() {
   useEffect(() => {
     fetchRequests();
   }, []);
-
-  const handleUpdateStatus = async (requestId: string, status: 'approved' | 'rejected') => {
-    setProcessingId(requestId);
-    try {
-      await updateAdRequestStatus(requestId, status);
-      toast({ title: "Request Updated", description: `The request has been ${status}.` });
-      fetchRequests(); // Re-fetch to update the list
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: "Update Failed", description: err.message });
-    } finally {
-      setProcessingId(null);
-    }
-  };
   
-  const formatRelativeTime = (timestamp: any) => {
-    if (!timestamp?.toDate) return '';
-    return formatDistanceToNow(timestamp.toDate(), { addSuffix: true, locale: language === 'ar' ? ar : enUS });
-  }
+  const filteredRequests = useMemo(() => {
+    const pendingReview = requests.filter(r => r.status === 'pending_review');
+    const paymentReview = requests.filter(r => r.status === 'payment_review');
+    const active = requests.filter(r => r.status === 'active');
+    const rejected = requests.filter(r => r.status === 'rejected');
+    return { pendingReview, paymentReview, active, rejected };
+  }, [requests]);
 
   if (isLoading) {
     return (
@@ -111,45 +280,55 @@ export default function AdminAdRequestsPage() {
               <span>{error}</span>
             </div>
           )}
-          {requests.length === 0 && !error ? (
-            <div className="text-center py-12">
-              <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
-              <h3 className="text-xl font-semibold">No Ad Requests</h3>
-              <p className="text-muted-foreground">There are currently no pending advertisement requests.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {requests.map((req) => (
-                  <Card key={req.id} className="p-4">
-                    <div className="grid md:grid-cols-3 gap-4 items-start">
-                        <div className="md:col-span-2 space-y-2">
-                            <div className="flex items-center gap-2 text-sm">
-                                <StatusBadge status={req.status} t={t} />
-                                <span className="text-muted-foreground">{formatRelativeTime(req.createdAt)}</span>
-                            </div>
-                            <p><strong>From:</strong> {req.name} ({req.email})</p>
-                            {req.company && <p><strong>Company:</strong> {req.company}</p>}
-                            <p className="text-sm text-muted-foreground pt-2 whitespace-pre-wrap bg-muted/50 p-3 rounded-md"><strong>Message:</strong> {req.message}</p>
-                        </div>
-                        <div className="space-y-2 flex flex-col items-center justify-center">
-                            {req.status === 'pending' && (
-                                <div className="flex flex-col sm:flex-row md:flex-col gap-2 w-full">
-                                    <Button onClick={() => handleUpdateStatus(req.id, 'approved')} disabled={!!processingId} className="w-full bg-green-600 hover:bg-green-700">
-                                        {processingId === req.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ThumbsUp className="mr-2 h-4 w-4" />}
-                                        Approve
-                                    </Button>
-                                    <Button onClick={() => handleUpdateStatus(req.id, 'rejected')} disabled={!!processingId} variant="destructive" className="w-full">
-                                        {processingId === req.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ThumbsDown className="mr-2 h-4 w-4" />}
-                                        Reject
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
+          <Tabs defaultValue="pending_review" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="pending_review">Pending Review ({filteredRequests.pendingReview.length})</TabsTrigger>
+              <TabsTrigger value="payment_review">Payment Review ({filteredRequests.paymentReview.length})</TabsTrigger>
+              <TabsTrigger value="active">Active ({filteredRequests.active.length})</TabsTrigger>
+              <TabsTrigger value="rejected">Rejected ({filteredRequests.rejected.length})</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="pending_review" className="mt-4">
+                {filteredRequests.pendingReview.length === 0 ? (
+                     <div className="text-center py-12"><CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" /><h3 className="text-xl font-semibold">No New Ad Requests</h3><p className="text-muted-foreground">There are no new requests awaiting review.</p></div>
+                ) : (
+                    <div className="space-y-4">
+                        {filteredRequests.pendingReview.map(req => <AdRequestCard key={req.id} request={req} t={t} onUpdate={fetchRequests} />)}
                     </div>
-                  </Card>
-                ))}
-            </div>
-          )}
+                )}
+            </TabsContent>
+
+             <TabsContent value="payment_review" className="mt-4">
+                {filteredRequests.paymentReview.length === 0 ? (
+                     <div className="text-center py-12"><CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" /><h3 className="text-xl font-semibold">No Payments to Review</h3><p className="text-muted-foreground">There are no payments awaiting confirmation.</p></div>
+                ) : (
+                    <div className="space-y-4">
+                        {filteredRequests.paymentReview.map(req => <AdRequestCard key={req.id} request={req} t={t} onUpdate={fetchRequests} />)}
+                    </div>
+                )}
+            </TabsContent>
+
+             <TabsContent value="active" className="mt-4">
+                {filteredRequests.active.length === 0 ? (
+                     <div className="text-center py-12"><CheckCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" /><h3 className="text-xl font-semibold">No Active Ads</h3><p className="text-muted-foreground">There are currently no active ads.</p></div>
+                ) : (
+                    <div className="space-y-4">
+                        {filteredRequests.active.map(req => <AdRequestCard key={req.id} request={req} t={t} onUpdate={fetchRequests} />)}
+                    </div>
+                )}
+            </TabsContent>
+
+             <TabsContent value="rejected" className="mt-4">
+                {filteredRequests.rejected.length === 0 ? (
+                     <div className="text-center py-12"><CheckCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" /><h3 className="text-xl font-semibold">No Rejected Ads</h3><p className="text-muted-foreground">There are no rejected ad requests.</p></div>
+                ) : (
+                    <div className="space-y-4">
+                        {filteredRequests.rejected.map(req => <AdRequestCard key={req.id} request={req} t={t} onUpdate={fetchRequests} />)}
+                    </div>
+                )}
+            </TabsContent>
+
+          </Tabs>
         </CardContent>
       </Card>
     </div>

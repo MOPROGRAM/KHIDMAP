@@ -11,6 +11,7 @@ export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Paintin
 export type UserRole = 'provider' | 'seeker' | 'admin';
 export type OrderStatus = 'pending_approval' | 'pending_payment' | 'paid' | 'completed' | 'disputed' | 'declined';
 export type SupportRequestType = 'inquiry' | 'complaint' | 'payment_issue' | 'other';
+export type AdRequestStatus = 'pending_review' | 'pending_payment' | 'payment_review' | 'active' | 'rejected';
 
 
 export interface UserProfile {
@@ -126,14 +127,20 @@ export interface Notification {
 export interface AdRequest {
     id: string;
     userId: string;
-    name: string;
-    email: string;
-    company?: string;
-    message: string;
-    status: 'pending' | 'approved' | 'rejected';
+    name: string; // User's name
+    email: string; // User's email
+    title: string; // Ad Title
+    message: string; // Ad Description
+    imageUrl?: string; // URL for the ad image
+    status: AdRequestStatus;
+    price?: number; // Set by admin upon approval
+    currency?: string; // Set by admin
+    paymentProofUrl?: string; // Uploaded by user after price is set
+    rejectionReason?: string; // Set by admin if rejected
     createdAt: Timestamp;
     updatedAt: Timestamp;
 }
+
 
 export interface SupportRequest {
     id: string;
@@ -956,21 +963,32 @@ export async function grantGracePeriod(orderId: string, days: number): Promise<v
 
 // --- Ad Request Functions ---
 
-export async function createAdRequest(data: { name: string; email: string; company?: string; message: string; }): Promise<string> {
-    if (!db) throw new Error("Database not initialized.");
-    if (!auth.currentUser) throw new Error("User must be logged in to submit a request.");
+export async function createAdRequest(
+    data: { name: string; email: string; title: string; message: string; },
+    imageFile: File
+): Promise<string> {
+    if (!db || !storage || !auth.currentUser) throw new Error("Authentication or services are unavailable.");
+
+    const userId = auth.currentUser.uid;
+    const filePath = `ad_images/${userId}/${Date.now()}_${imageFile.name}`;
+    const imageRef = ref(storage, filePath);
+
+    await uploadBytes(imageRef, imageFile);
+    const imageUrl = await getDownloadURL(imageRef);
 
     const adRequestData = {
         ...data,
-        status: 'pending' as const,
+        imageUrl,
+        userId,
+        status: 'pending_review' as const,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        userId: auth.currentUser.uid,
     };
 
     const adRequestRef = await addDoc(collection(db, 'adRequests'), adRequestData);
     return adRequestRef.id;
 }
+
 
 export async function getAdRequests(): Promise<AdRequest[]> {
     if (!db) throw new Error("Database not initialized.");
@@ -982,12 +1000,36 @@ export async function getAdRequests(): Promise<AdRequest[]> {
     return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as AdRequest));
 }
 
-export async function updateAdRequestStatus(requestId: string, status: 'approved' | 'rejected'): Promise<void> {
+export async function getAdRequestById(id: string): Promise<AdRequest | null> {
+    if (!db) throw new Error("Database not initialized.");
+    const docRef = doc(db, 'adRequests', id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as AdRequest;
+    }
+    return null;
+}
+
+export async function getAdRequestsForUser(userId: string): Promise<AdRequest[]> {
+    if (!db) throw new Error("Database not initialized.");
+    const q = query(
+        collection(db, 'adRequests'),
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as AdRequest));
+}
+
+
+export async function approveAdRequestAndSetPrice(requestId: string, price: number, currency: string): Promise<void> {
     if (!db) throw new Error("Database not initialized.");
     const requestRef = doc(db, "adRequests", requestId);
     
     await updateDoc(requestRef, {
-        status: status,
+        status: 'pending_payment',
+        price,
+        currency,
         updatedAt: serverTimestamp()
     });
 
@@ -996,12 +1038,109 @@ export async function updateAdRequestStatus(requestId: string, status: 'approved
         const requestData = requestSnap.data() as AdRequest;
         await createNotification(
             requestData.userId,
-            status === 'approved' ? 'adRequestApprovedTitle' : 'adRequestRejectedTitle',
-            status === 'approved' ? 'adRequestApprovedMessage' : 'adRequestRejectedMessage',
-            '/advertise'
+            'adRequestApprovedTitle',
+            'adRequestApprovedMessage',
+            `/dashboard/provider/ads/edit/${requestId}`,
+            { price: `${price} ${currency}` }
         );
     }
 }
+
+export async function rejectAdRequest(requestId: string, reason: string): Promise<void> {
+    if (!db) throw new Error("Database not initialized.");
+    const requestRef = doc(db, "adRequests", requestId);
+    
+    await updateDoc(requestRef, {
+        status: 'rejected',
+        rejectionReason: reason,
+        updatedAt: serverTimestamp()
+    });
+
+    const requestSnap = await getDoc(requestRef);
+    if(requestSnap.exists()){
+        const requestData = requestSnap.data() as AdRequest;
+        await createNotification(
+            requestData.userId,
+            'adRequestRejectedTitle',
+            'adRequestRejectedMessage',
+            `/dashboard/provider/ads/edit/${requestId}`,
+            { reason }
+        );
+    }
+}
+
+
+export async function uploadAdPaymentProof(requestId: string, file: File): Promise<void> {
+    if (!db || !storage || !auth.currentUser) throw new Error("Authentication or services are unavailable.");
+    const userId = auth.currentUser.uid;
+
+    const filePath = `ad_payments/${requestId}/${userId}_${file.name}`;
+    const fileRef = ref(storage, filePath);
+    await uploadBytes(fileRef, file);
+    const downloadURL = await getDownloadURL(fileRef);
+
+    const requestRef = doc(db, "adRequests", requestId);
+    await updateDoc(requestRef, {
+        status: 'payment_review',
+        paymentProofUrl: downloadURL,
+        updatedAt: serverTimestamp()
+    });
+}
+
+export async function confirmAdPayment(requestId: string): Promise<void> {
+    if (!db) throw new Error("Database not initialized.");
+    const requestRef = doc(db, "adRequests", requestId);
+
+    await updateDoc(requestRef, {
+        status: 'active',
+        updatedAt: serverTimestamp()
+    });
+    
+    const requestSnap = await getDoc(requestRef);
+    if (requestSnap.exists()) {
+        const adData = requestSnap.data() as AdRequest;
+         await createNotification(
+            adData.userId,
+            'adPaymentConfirmedTitle',
+            'adPaymentConfirmedMessage',
+            `/dashboard/provider/ads/edit/${requestId}`
+        );
+    }
+}
+
+export async function rejectAdPayment(requestId: string, reason: string): Promise<void> {
+    if (!db) throw new Error("Database not initialized.");
+    const requestRef = doc(db, "adRequests", requestId);
+     const adSnap = await getDoc(requestRef);
+    if (!adSnap.exists()) throw new Error("Ad request not found.");
+
+    const adData = adSnap.data();
+    if(adData.paymentProofUrl) {
+         try {
+            const fileRef = ref(storage, adData.paymentProofUrl);
+            await deleteObject(fileRef);
+         } catch(e) {
+            console.error("Could not delete previous payment proof, it might not exist.", e)
+         }
+    }
+
+    await updateDoc(requestRef, {
+        status: 'pending_payment',
+        rejectionReason: reason,
+        paymentProofUrl: deleteField(),
+        updatedAt: serverTimestamp()
+    });
+    
+     await createNotification(
+        adData.userId,
+        'adPaymentRejectedTitle',
+        'adPaymentRejectedMessage',
+        `/dashboard/provider/ads/edit/${requestId}`,
+        { reason }
+    );
+}
+
+
 
 // --- Support Request Functions ---
 

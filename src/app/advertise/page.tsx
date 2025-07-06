@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,32 +9,35 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
-import { Megaphone, Loader2, Send, CheckCircle } from 'lucide-react';
+import { Megaphone, Loader2, Send, CheckCircle, Upload, Image as ImageIcon } from 'lucide-react';
 import { z } from 'zod';
 import { createAdRequest } from '@/lib/data';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 const AdvertiseFormSchema = z.object({
   name: z.string().min(1, { message: "requiredField" }),
   email: z.string().email({ message: "invalidEmail" }),
-  company: z.string().optional(),
+  title: z.string().min(5, { message: "Title must be at least 5 characters." }),
   message: z.string().min(10, { message: "Message must be at least 10 characters." }),
 });
-
-type AdvertiseFormInputs = z.infer<typeof AdvertiseFormSchema>;
 
 export default function AdvertisePage() {
   const t = useTranslation();
   const { toast } = useToast();
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState<AdvertiseFormInputs>({
-    name: '',
-    email: '',
-    company: '',
-    message: '',
-  });
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -44,21 +47,26 @@ export default function AdvertisePage() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setAuthUser(user);
       if (user) {
-        setFormData(prev => ({
-          ...prev,
-          name: user.displayName || prev.name,
-          email: user.email || prev.email,
-        }));
+        setName(user.displayName || '');
+        setEmail(user.email || '');
       }
     });
     return () => unsubscribe();
   }, []);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({ variant: 'destructive', title: t.fileTooLargeTitle, description: t.fileTooLargeDescription?.replace('{size}', '5MB') });
+        return;
+      }
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -72,12 +80,16 @@ export default function AdvertisePage() {
       });
       return;
     }
+    if (!imageFile) {
+        toast({ variant: 'destructive', title: "Image Required", description: "Please upload an image for your ad." });
+        return;
+    }
     
     setIsLoading(true);
     setErrors({});
     setIsSubmitted(false);
 
-    const validationResult = AdvertiseFormSchema.safeParse(formData);
+    const validationResult = AdvertiseFormSchema.safeParse({ name, email, title, message });
     if (!validationResult.success) {
       const fieldErrors: Record<string, string> = {};
       validationResult.error.errors.forEach(err => {
@@ -91,12 +103,13 @@ export default function AdvertisePage() {
     }
 
     try {
-      await createAdRequest(validationResult.data);
+      const adId = await createAdRequest(validationResult.data, imageFile);
       toast({
         title: t.requestSubmittedTitle,
         description: t.requestSubmittedDescription,
       });
       setIsSubmitted(true);
+      router.push(`/dashboard/provider/ads/edit/${adId}`);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -123,7 +136,7 @@ export default function AdvertisePage() {
               <h3 className="text-xl font-semibold text-green-700 dark:text-green-300 mb-2">{t.requestSubmittedTitle}</h3>
               <p className="text-muted-foreground">{t.requestSubmittedDescription}</p>
               <Button asChild className="mt-6">
-                <Link href="/dashboard">{t.backToDashboard}</Link>
+                <Link href="/dashboard/provider/ads">{t.myAds}</Link>
               </Button>
             </div>
           ) : !authUser ? (
@@ -141,25 +154,44 @@ export default function AdvertisePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">{t.yourName}</Label>
-                    <Input id="name" name="name" value={formData.name} onChange={handleChange} disabled={isLoading || !!authUser?.displayName} />
+                    <Input id="name" name="name" value={name} onChange={(e) => setName(e.target.value)} disabled={isLoading || !!authUser?.displayName} />
                     {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">{t.yourEmail}</Label>
-                    <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} disabled={isLoading || !!authUser?.email} />
+                    <Input id="email" name="email" type="email" value={email} disabled={true} />
                     {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="company">Company (Optional)</Label>
-                  <Input id="company" name="company" value={formData.company || ''} onChange={handleChange} disabled={isLoading} />
+                 <div className="space-y-2">
+                  <Label htmlFor="title">{t.adTitle}</Label>
+                  <Input id="title" name="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={isLoading} />
+                  {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="message">{t.message}</Label>
-                  <Textarea id="message" name="message" value={formData.message} onChange={handleChange} placeholder={t.adInquiryPlaceholder} rows={5} disabled={isLoading}/>
+                  <Textarea id="message" name="message" value={message} onChange={(e) => setMessage(e.target.value)} placeholder={t.adInquiryPlaceholder} rows={5} disabled={isLoading}/>
                   {errors.message && <p className="text-sm text-destructive">{errors.message}</p>}
                 </div>
-                <Button type="submit" className="w-full text-lg py-3 group" disabled={isLoading}>
+                
+                <div className="space-y-2">
+                    <Label htmlFor="ad-image">{t.adImage}</Label>
+                    <Card className="p-4 border-dashed flex flex-col items-center gap-4 text-center">
+                        {imagePreview ? (
+                            <Image src={imagePreview} alt="Ad preview" width={200} height={150} className="rounded-md object-cover" />
+                        ) : (
+                            <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                        )}
+                        <Input id="ad-image" type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" className="hidden" />
+                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
+                            <Upload className="mr-2 h-4 w-4" />
+                            {imageFile ? t.changeImage : t.uploadImage}
+                        </Button>
+                         <p className="text-xs text-muted-foreground">PNG, JPG, WEBP up to 5MB</p>
+                    </Card>
+                </div>
+
+                <Button type="submit" className="w-full text-lg py-3 group" disabled={isLoading || !imageFile}>
                   {isLoading ? <Loader2 className="ltr:mr-2 rtl:ml-2 h-5 w-5 animate-spin" /> : <Send className="ltr:mr-2 rtl:ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300"/>}
                   {t.submitRequest}
                 </Button>
