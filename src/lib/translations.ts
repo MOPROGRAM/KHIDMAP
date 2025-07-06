@@ -356,6 +356,7 @@ export type Translations = {
   paid: string;
   completed: string;
   disputed: string;
+  resolved: string;
   paymentApprovals: string;
   paymentRejectedTitle: string;
   paymentRejectedMessage: string;
@@ -567,6 +568,54 @@ export type Translations = {
   privacyTitle: string;
   privacyDescription: string;
   privacyContent: string;
+  
+  // Verification
+  identityVerification: string;
+  identityVerificationDescription: string;
+  verificationNotSubmitted: string;
+  uploadDocuments: string;
+  reUploadDocuments: string;
+  verificationPendingTitle: string;
+  verificationPendingDescription: string;
+  verificationVerifiedTitle: string;
+  verificationVerifiedDescription: string;
+  verificationRejectedTitle: string;
+  verificationRejectedDescription: string;
+  rejectionReason: string;
+  verificationDocsUploadedTitle: string;
+  verificationDocsUploadedDescription: string;
+  providerVerifications: string;
+  providerVerificationsDescription: string;
+  noPendingVerifications: string;
+  noPendingVerificationsDescription: string;
+  approve: string;
+  uploadedDocuments: string;
+  confirmRejectVerificationTitle: string;
+  confirmRejectVerificationDescription: string;
+  verifiedProvider: string;
+
+  // Dispute Management
+  disputeResolution: string;
+  disputeResolutionDescription: string;
+  noDisputes: string;
+  noDisputesDescription: string;
+  viewDispute: string;
+  disputeDetails: string;
+  disputeTimeline: string;
+  disputeReason: string;
+  disputeConversation: string;
+  resolution: string;
+  adminNotes: string;
+  sideWithSeeker: string;
+  sideWithProvider: string;
+  submitResolution: string;
+  confirmResolutionTitle: string;
+  confirmResolutionDescription: string;
+  resolutionSubmitted: string;
+  failedToSubmitResolution: string;
+  disputeResolvedTitle: string;
+  disputeResolvedSeekerFavorMessage: string;
+  disputeResolvedProviderFavorMessage: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -904,6 +953,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paid: "Paid",
     completed: "Completed",
     disputed: "Disputed",
+    resolved: "Resolved",
     paymentApprovals: "Payment Approvals",
     paymentRejectedTitle: "Payment Proof Rejected",
     paymentRejectedMessage: "The payment proof for your order {orderId} was rejected by the admin. Please check your order details and upload a new proof.",
@@ -1101,6 +1151,50 @@ export const translations: Record<'en' | 'ar', Translations> = {
     privacyTitle: "Privacy Policy",
     privacyDescription: "Last updated: July 2024",
     privacyContent: "Your privacy is important to us. It is Khidmap's policy to respect your privacy regarding any information we may collect from you through our app.\n\n<h2>1. Information We Collect</h2>\nWe collect information you provide directly to us, such as when you create an account, update your profile, request services, or communicate with us. This may include your name, email address, phone number, and location data.\n\n<h2>2. How We Use Information</h2>\nWe use the information we collect to:\n- Provide, maintain, and improve our services;\n- Process transactions and send related information, including confirmations and invoices;\n- Send you technical notices, updates, security alerts, and support messages;\n- Communicate with you about products, services, offers, and events offered by Khidmap and others.\n\n<h2>3. Information Sharing</h2>\nWe do not share your personal information with third parties except as described in this privacy policy. We may share information with vendors, consultants, and other service providers who need access to such information to carry out work on our behalf.",
+    identityVerification: "إثبات الهوية",
+    identityVerificationDescription: "قم بإثبات هويتك لزيادة ثقة العملاء.",
+    verificationNotSubmitted: "لم تقم بتقديم مستندات لإثبات الهوية بعد.",
+    uploadDocuments: "رفع المستندات",
+    reUploadDocuments: "إعادة رفع المستندات",
+    verificationPendingTitle: "التحقق قيد المراجعة",
+    verificationPendingDescription: "يقوم فريقنا بمراجعة مستنداتك. سيتم إعلامك بالنتيجة قريبًا.",
+    verificationVerifiedTitle: "تم التحقق",
+    verificationVerifiedDescription: "تم التحقق من حسابك بنجاح.",
+    verificationRejectedTitle: "تم رفض التحقق",
+    verificationRejectedDescription: "تم رفض طلب التحقق الخاص بك. يرجى مراجعة السبب وإعادة رفع المستندات الصحيحة.",
+    rejectionReason: "سبب الرفض",
+    verificationDocsUploadedTitle: "تم رفع المستندات",
+    verificationDocsUploadedDescription: "تم رفع مستنداتك بنجاح وهي الآن قيد المراجعة.",
+    providerVerifications: "طلبات التحقق",
+    providerVerificationsDescription: "مراجعة والموافقة على طلبات التحقق من هوية مقدمي الخدمات.",
+    noPendingVerifications: "لا توجد طلبات تحقق معلقة",
+    noPendingVerificationsDescription: "لا يوجد مقدمو خدمات في انتظار التحقق حاليًا.",
+    approve: "موافقة",
+    uploadedDocuments: "المستندات المرفوعة",
+    confirmRejectVerificationTitle: "تأكيد رفض التحقق؟",
+    confirmRejectVerificationDescription: "سيتم إعلام مقدم الخدمة بالرفض والسبب. هل أنت متأكد؟",
+    verifiedProvider: "مقدم خدمة موثوق",
+    disputeResolution: "إدارة النزاعات",
+    disputeResolutionDescription: "مراجعة وحل النزاعات بين المستخدمين.",
+    noDisputes: "لا توجد نزاعات",
+    noDisputesDescription: "لا توجد حاليًا طلبات متنازع عليها.",
+    viewDispute: "عرض النزاع",
+    disputeDetails: "تفاصيل النزاع",
+    disputeTimeline: "الجدول الزمني للطلب",
+    disputeReason: "سبب النزاع",
+    disputeConversation: "المحادثة بين الطرفين",
+    resolution: "القرار",
+    adminNotes: "ملاحظات المسؤول (سيتم مشاركتها مع المستخدمين)",
+    sideWithSeeker: "الحكم لصالح الباحث عن الخدمة (استرداد)",
+    sideWithProvider: "الحكم لصالح مقدم الخدمة (دفع)",
+    submitResolution: "إرسال القرار",
+    confirmResolutionTitle: "تأكيد القرار؟",
+    confirmResolutionDescription: "سيتم إعلام كلا المستخدمين بهذا القرار. لا يمكن التراجع عن هذا الإجراء.",
+    resolutionSubmitted: "تم إرسال القرار بنجاح.",
+    failedToSubmitResolution: "فشل إرسال القرار.",
+    disputeResolvedTitle: "تم حل النزاع",
+    disputeResolvedSeekerFavorMessage: "تم حل النزاع على الطلب {orderId} لصالح الباحث عن الخدمة. سيتم متابعة عملية استرداد المبلغ.",
+    disputeResolvedProviderFavorMessage: "تم حل النزاع على الطلب {orderId} لصالح مقدم الخدمة. سيتم متابعة عملية الدفع.",
   },
   ar: {
     appName: "خدماب",
@@ -1433,6 +1527,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paid: "مدفوع",
     completed: "مكتمل",
     disputed: "متنازع عليه",
+    resolved: "تم الحل",
     paymentApprovals: "الموافقات المالية",
     paymentRejectedTitle: "تم رفض إثبات الدفع",
     paymentRejectedMessage: "تم رفض إثبات الدفع الخاص بك للطلب {orderId} من قبل المسؤول. يرجى التحقق من تفاصيل طلبك ورفع إثبات جديد.",
@@ -1537,9 +1632,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     newOrderRequestMessage: "{seekerName} لقد طلب خدمتك.",
     paymentReceivedTitle: "تم استلام الدفعة!",
     paymentReceivedMessage: "{seekerName} لقد دفع للطلب. يمكنك الآن بدء الخدمة.",
-    //orderCompletedTitle: string;
     orderCompletedMessage: "{seekerName} لقد قام بتأكيد اكتمال الطلب. سيتم تحويل مستحقاتك.",
-    //orderDisputedTitle: string;
     orderDisputedMessage: "تم رفع نزاع على طلبك مع {userName}.",
     allNotifications: "جميع الإشعارات",
     allNotificationsDescription: "عرض وإدارة جميع الإشعارات الخاصة بك.",
@@ -1630,5 +1723,49 @@ export const translations: Record<'en' | 'ar', Translations> = {
     privacyTitle: "سياسة الخصوصية",
     privacyDescription: "آخر تحديث: يوليو 2024",
     privacyContent: "خصوصيتك مهمة بالنسبة لنا. إن سياسة خدماب هي احترام خصوصيتك فيما يتعلق بأي معلومات قد نجمعها منك من خلال تطبيقنا.\n\n<h2>1. المعلومات التي نجمعها</h2>\nنحن نجمع المعلومات التي تقدمها لنا مباشرة، مثل عند إنشاء حساب، أو تحديث ملفك الشخصي، أو طلب الخدمات، أو التواصل معنا. قد يشمل ذلك اسمك وعنوان بريدك الإلكتروني ورقم هاتفك وبيانات الموقع.\n\n<h2>2. كيف نستخدم المعلومات</h2>\nنستخدم المعلومات التي نجمعها من أجل:\n- توفير خدماتنا وصيانتها وتحسينها؛\n- معالجة المعاملات وإرسال المعلومات ذات الصلة، بما في ذلك التأكيدات والفواتير؛\n- إرسال الإشعارات الفنية والتحديثات والتنبيهات الأمنية ورسائل الدعم؛\n- التواصل معك بشأن المنتجات والخدمات والعروض والأحداث التي يقدمها خدماب وغيره.\n\n<h2>3. مشاركة المعلومات</h2>\nنحن لا نشارك معلوماتك الشخصية مع أطراف ثالثة باستثناء ما هو موضح في سياسة الخصوصية هذه. قد نشارك المعلومات مع البائعين والمستشارين ومقدمي الخدمات الآخرين الذين يحتاجون إلى الوصول إلى هذه المعلومات للقيام بعمل نيابة عنا.",
+    identityVerification: "إثبات الهوية",
+    identityVerificationDescription: "قم بإثبات هويتك لزيادة ثقة العملاء.",
+    verificationNotSubmitted: "لم تقم بتقديم مستندات لإثبات الهوية بعد.",
+    uploadDocuments: "رفع المستندات",
+    reUploadDocuments: "إعادة رفع المستندات",
+    verificationPendingTitle: "التحقق قيد المراجعة",
+    verificationPendingDescription: "يقوم فريقنا بمراجعة مستنداتك. سيتم إعلامك بالنتيجة قريبًا.",
+    verificationVerifiedTitle: "تم التحقق",
+    verificationVerifiedDescription: "تم التحقق من حسابك بنجاح.",
+    verificationRejectedTitle: "تم رفض التحقق",
+    verificationRejectedDescription: "تم رفض طلب التحقق الخاص بك. يرجى مراجعة السبب وإعادة رفع المستندات الصحيحة.",
+    rejectionReason: "سبب الرفض",
+    verificationDocsUploadedTitle: "تم رفع المستندات",
+    verificationDocsUploadedDescription: "تم رفع مستنداتك بنجاح وهي الآن قيد المراجعة.",
+    providerVerifications: "طلبات التحقق",
+    providerVerificationsDescription: "مراجعة والموافقة على طلبات التحقق من هوية مقدمي الخدمات.",
+    noPendingVerifications: "لا توجد طلبات تحقق معلقة",
+    noPendingVerificationsDescription: "لا يوجد مقدمو خدمات في انتظار التحقق حاليًا.",
+    approve: "موافقة",
+    uploadedDocuments: "المستندات المرفوعة",
+    confirmRejectVerificationTitle: "تأكيد رفض التحقق؟",
+    confirmRejectVerificationDescription: "سيتم إعلام مقدم الخدمة بالرفض والسبب. هل أنت متأكد؟",
+    verifiedProvider: "مقدم خدمة موثوق",
+    disputeResolution: "إدارة النزاعات",
+    disputeResolutionDescription: "مراجعة وحل النزاعات بين المستخدمين.",
+    noDisputes: "لا توجد نزاعات",
+    noDisputesDescription: "لا توجد حاليًا طلبات متنازع عليها.",
+    viewDispute: "عرض النزاع",
+    disputeDetails: "تفاصيل النزاع",
+    disputeTimeline: "الجدول الزمني للطلب",
+    disputeReason: "سبب النزاع",
+    disputeConversation: "المحادثة بين الطرفين",
+    resolution: "القرار",
+    adminNotes: "ملاحظات المسؤول (سيتم مشاركتها مع المستخدمين)",
+    sideWithSeeker: "الحكم لصالح الباحث عن الخدمة (استرداد)",
+    sideWithProvider: "الحكم لصالح مقدم الخدمة (دفع)",
+    submitResolution: "إرسال القرار",
+    confirmResolutionTitle: "تأكيد القرار؟",
+    confirmResolutionDescription: "سيتم إعلام كلا المستخدمين بهذا القرار. لا يمكن التراجع عن هذا الإجراء.",
+    resolutionSubmitted: "تم إرسال القرار بنجاح.",
+    failedToSubmitResolution: "فشل إرسال القرار.",
+    disputeResolvedTitle: "تم حل النزاع",
+    disputeResolvedSeekerFavorMessage: "تم حل النزاع على الطلب {orderId} لصالح الباحث عن الخدمة. سيتم متابعة عملية استرداد المبلغ.",
+    disputeResolvedProviderFavorMessage: "تم حل النزاع على الطلب {orderId} لصالح مقدم الخدمة. سيتم متابعة عملية الدفع.",
   },
 };

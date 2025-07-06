@@ -10,7 +10,7 @@ import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useToast } from "@/hooks/use-toast";
 import { ADMIN_EMAIL } from '@/lib/config';
-import { Loader2, AlertTriangle, ServerCrash, ShieldCheck, DollarSign, Megaphone, LifeBuoy, BadgeCheck } from 'lucide-react';
+import { Loader2, AlertTriangle, ServerCrash, ShieldCheck, DollarSign, Megaphone, LifeBuoy, BadgeCheck, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 
 interface NavItem {
@@ -25,6 +25,7 @@ const navItems: NavItem[] = [
     { href: '/admin/ads', labelKey: 'adRequests', icon: <Megaphone /> },
     { href: '/admin/support', labelKey: 'supportRequests', icon: <LifeBuoy /> },
     { href: '/admin/verifications', labelKey: 'providerVerifications', icon: <BadgeCheck /> },
+    { href: '/admin/disputes', labelKey: 'disputeResolution', icon: <ShieldAlert /> },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

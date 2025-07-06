@@ -1,10 +1,11 @@
 
+
 "use client";
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Briefcase, Loader2, AlertTriangle, ArrowRight, CheckCircle, Clock, AlertCircle, DollarSign, XCircle, Hourglass } from 'lucide-react';
+import { Briefcase, Loader2, AlertTriangle, ArrowRight, CheckCircle, Clock, AlertCircle, DollarSign, XCircle, Hourglass, ShieldCheck } from 'lucide-react';
 import { Order, getOrdersForUser, OrderStatus } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +23,7 @@ const StatusBadge = ({ status, t }: { status: OrderStatus; t: any }) => {
     paid: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/50 dark:text-blue-300',
     completed: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-300',
     disputed: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/50 dark:text-red-300',
+    resolved: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/50 dark:text-purple-300',
     declined: 'bg-gray-200 text-gray-800 border-gray-400 dark:bg-gray-700 dark:text-gray-300',
   };
   const statusIcons: Record<OrderStatus, React.ElementType> = {
@@ -30,6 +32,7 @@ const StatusBadge = ({ status, t }: { status: OrderStatus; t: any }) => {
     paid: CheckCircle,
     completed: CheckCircle,
     disputed: AlertCircle,
+    resolved: ShieldCheck,
     declined: XCircle,
   };
   const statusText: Record<OrderStatus, string> = {
@@ -38,6 +41,7 @@ const StatusBadge = ({ status, t }: { status: OrderStatus; t: any }) => {
     paid: t.paid,
     completed: t.completed,
     disputed: t.disputed,
+    resolved: t.resolved,
     declined: t.declined,
   };
   

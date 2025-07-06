@@ -9,7 +9,7 @@ import type { Translations } from './translations';
 
 export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
 export type UserRole = 'provider' | 'seeker' | 'admin';
-export type OrderStatus = 'pending_approval' | 'pending_payment' | 'paid' | 'completed' | 'disputed' | 'declined';
+export type OrderStatus = 'pending_approval' | 'pending_payment' | 'paid' | 'completed' | 'disputed' | 'declined' | 'resolved';
 export type SupportRequestType = 'inquiry' | 'complaint' | 'payment_issue' | 'other';
 export type AdRequestStatus = 'pending_review' | 'pending_payment' | 'payment_review' | 'active' | 'rejected';
 export type VerificationStatus = 'not_submitted' | 'pending' | 'verified' | 'rejected';
@@ -115,6 +115,9 @@ export interface Order {
     serviceStartedAt?: Timestamp;
     disputeReason?: string;
     verificationNotes?: string;
+    chatId?: string;
+    resolutionNotes?: string;
+    disputeResolution?: 'seeker_favor' | 'provider_favor';
 }
 
 export interface Notification {
@@ -572,6 +575,15 @@ export const markChatAsRead = async (chatId: string): Promise<void> => {
     }
 };
 
+export async function getMessagesForChat(chatId: string): Promise<Message[]> {
+    if (!db) throw new Error("Database not initialized.");
+    const messagesRef = collection(db, 'messages', chatId, 'messages');
+    const q = query(messagesRef, orderBy('createdAt', 'asc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+}
+
+
 // --- Call Functions ---
 
 export const initiateCall = async (chatId: string, calleeId: string, callType: 'audio' | 'video'): Promise<string | null> => {
@@ -682,6 +694,8 @@ export async function createOrder(providerId: string, serviceDescription: string
   const commission = amount * commissionRate;
   const payoutAmount = amount - commission;
 
+  const chatId = await startOrGetChat(providerId);
+
   const orderData: any = {
     seekerId,
     providerId,
@@ -694,6 +708,7 @@ export async function createOrder(providerId: string, serviceDescription: string
     payoutAmount,
     status: 'pending_approval',
     createdAt: serverTimestamp(),
+    chatId: chatId,
   };
 
   if (serviceStartDate) {
@@ -1017,6 +1032,47 @@ export async function grantGracePeriod(orderId: string, days: number): Promise<v
         gracePeriodInDays: days
     });
 }
+
+export async function getDisputedOrders(): Promise<Order[]> {
+    if (!db) throw new Error("Database not initialized.");
+    const q = query(
+        collection(db, "orders"),
+        where("status", "==", "disputed"),
+        orderBy("createdAt", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+}
+
+export async function resolveDispute(orderId: string, resolution: 'seeker' | 'provider', notes: string): Promise<void> {
+    if (!db) throw new Error("Database not initialized.");
+    const orderRef = doc(db, "orders", orderId);
+    await updateDoc(orderRef, {
+        status: 'resolved',
+        disputeResolution: resolution === 'seeker' ? 'seeker_favor' : 'provider_favor',
+        resolutionNotes: notes,
+    });
+
+    const order = await getOrderById(orderId);
+    if (order) {
+        const resolutionMessage = resolution === 'seeker' ? 'disputeResolvedSeekerFavorMessage' : 'disputeResolvedProviderFavorMessage';
+        await createNotification(
+            order.seekerId,
+            'disputeResolvedTitle',
+            resolutionMessage,
+            `/dashboard/orders/${order.id}`,
+            { orderId: order.id.slice(0, 6) }
+        );
+        await createNotification(
+            order.providerId,
+            'disputeResolvedTitle',
+            resolutionMessage,
+            `/dashboard/orders/${order.id}`,
+            { orderId: order.id.slice(0, 6) }
+        );
+    }
+}
+
 
 // --- Ad Request Functions ---
 

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -11,7 +12,7 @@ import { auth, storage } from '@/lib/firebase';
 import type { Order, OrderStatus } from '@/lib/data';
 import { getOrderById, uploadPaymentProofAndUpdateOrder, markOrderAsCompleted, disputeOrder, acceptOrder, declineOrder, startService, grantGracePeriod, deletePaymentProof } from '@/lib/data';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { Loader2, ArrowLeft, Clock, CheckCircle, AlertCircle, Upload, Send, ShieldQuestion, FileCheck, DollarSign, Banknote, Landmark, Hourglass, XCircle, ThumbsUp, ThumbsDown, PlayCircle, CalendarDays, Trash2, AlertTriangle } from 'lucide-react';
+import { Loader2, ArrowLeft, Clock, CheckCircle, AlertCircle, Upload, Send, ShieldQuestion, FileCheck, DollarSign, Banknote, Landmark, Hourglass, XCircle, ThumbsUp, ThumbsDown, PlayCircle, CalendarDays, Trash2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -54,6 +55,12 @@ const StatusInfo = ({ status, t, isProvider }: { status: OrderStatus; t: Transla
             titleKey: 'orderDisputedTitle',
             descKey: 'orderDisputedDescription',
             style: 'bg-red-100 border-red-300 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+        },
+        resolved: {
+            icon: ShieldCheck,
+            titleKey: 'disputeResolvedTitle',
+            descKey: 'disputeResolvedSeekerFavorMessage', // Generic, will be overridden by notes
+            style: 'bg-purple-100 border-purple-300 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
         },
         declined: {
             icon: XCircle,
@@ -302,6 +309,13 @@ export default function OrderDetailPage() {
         </CardHeader>
         <CardContent className="space-y-4">
             <StatusInfo status={order.status} t={t} isProvider={isProvider}/>
+             {order.status === 'resolved' && order.resolutionNotes && (
+                <Alert variant="default" className="bg-purple-100 border-purple-300 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                    <ShieldCheck className="h-4 w-4" />
+                    <AlertTitle>Dispute Resolution</AlertTitle>
+                    <AlertDescription>{order.resolutionNotes}</AlertDescription>
+                </Alert>
+            )}
 
             <div className="grid grid-cols-2 gap-4 text-sm">
                 <div><strong className="block text-muted-foreground">Provider</strong> {order.providerName}</div>
