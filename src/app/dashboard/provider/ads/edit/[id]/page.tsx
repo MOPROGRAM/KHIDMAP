@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
@@ -37,19 +36,19 @@ const StatusInfo = ({ status, t }: { status: AdRequestStatus; t: Translations; }
             icon: Search,
             titleKey: 'statusPaymentReview',
             descKey: 'statusPaymentReviewDescription',
-            style: 'bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+            style: 'bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
         },
         active: {
             icon: CheckCircle,
             titleKey: 'statusActive',
             descKey: 'statusActiveDescription',
-            style: 'bg-green-100 border-green-300 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+            style: 'bg-green-100 border-green-300 text-green-800 dark:bg-green-900/50 dark:text-green-300'
         },
         rejected: {
             icon: XCircle,
             titleKey: 'statusRejected',
             descKey: 'statusRejectedDescription',
-            style: 'bg-red-100 border-red-300 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+            style: 'bg-red-100 border-red-300 text-red-800 dark:bg-red-900/50 dark:text-red-300'
         },
     };
 
