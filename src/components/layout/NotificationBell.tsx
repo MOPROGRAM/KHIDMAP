@@ -1,76 +1,31 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Bell, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { auth, db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, limit, doc, writeBatch } from 'firebase/firestore';
 import type { Notification } from '@/lib/data';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useTranslation, Translations } from '@/hooks/useTranslation';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { useSettings } from '@/contexts/SettingsContext';
-import type { User as FirebaseUser } from 'firebase/auth';
 
-export default function NotificationBell({ user }: { user: FirebaseUser | null }) {
+interface NotificationBellProps {
+    notifications: Notification[];
+    unreadCount: number;
+    handleMarkAllAsRead: () => void;
+}
+
+export default function NotificationBell({ notifications, unreadCount, handleMarkAllAsRead }: NotificationBellProps) {
     const t = useTranslation();
     const { language } = useSettings();
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
-
-    useEffect(() => {
-        if (!user || !db) {
-            setNotifications([]);
-            setUnreadCount(0);
-            return;
-        }
-
-        const notificationsRef = collection(db, "notifications");
-        const q = query(
-            notificationsRef,
-            where("userId", "==", user.uid),
-            orderBy("createdAt", "desc"),
-            limit(10)
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
-            setNotifications(fetchedNotifications);
-            const newUnreadCount = fetchedNotifications.filter(n => !n.isRead).length;
-            setUnreadCount(newUnreadCount);
-        }, (error) => {
-            console.error("Error fetching notifications:", error);
-        });
-
-        return () => unsubscribe();
-    }, [user, db]);
-
-    const handleMarkAllAsRead = async () => {
-        if (!db || !user || unreadCount === 0) return;
-
-        const batch = writeBatch(db);
-        notifications.forEach(notification => {
-            if (!notification.isRead) {
-                const docRef = doc(db, 'notifications', notification.id);
-                batch.update(docRef, { isRead: true });
-            }
-        });
-
-        try {
-            await batch.commit();
-        } catch (error) {
-            console.error("Error marking notifications as read:", error);
-        }
-    };
 
     const handleOpenChange = (open: boolean) => {
         setIsOpen(open);
         if (open && unreadCount > 0) {
-            // Mark as read after a short delay to allow the dropdown to open
             setTimeout(handleMarkAllAsRead, 1000);
         }
     };
@@ -81,7 +36,7 @@ export default function NotificationBell({ user }: { user: FirebaseUser | null }
     }
 
     const renderMessage = (notification: Notification) => {
-        let message = t[notification.messageKey] || '...';
+        let message = t[notification.messageKey as keyof Translations] || '...';
         if (notification.messageParams) {
             Object.keys(notification.messageParams).forEach(key => {
                 const placeholder = `{${key}}`;
@@ -91,7 +46,7 @@ export default function NotificationBell({ user }: { user: FirebaseUser | null }
         return message;
     }
     
-    const title = (notification: Notification) => t[notification.titleKey] || 'Notification';
+    const title = (notification: Notification) => t[notification.titleKey as keyof Translations] || 'Notification';
 
 
     return (
@@ -134,6 +89,12 @@ export default function NotificationBell({ user }: { user: FirebaseUser | null }
                         <DropdownMenuItem disabled className="p-4 text-center text-muted-foreground">{t.noNotifications}</DropdownMenuItem>
                     )}
                 </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="p-0 focus:bg-transparent">
+                     <Link href="/dashboard/notifications" className="w-full block text-center py-2 text-sm text-primary font-semibold hover:bg-accent/50 rounded-b-md focus:bg-accent/50 focus:text-primary outline-none">
+                        {t.viewAll}
+                    </Link>
+                </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     );

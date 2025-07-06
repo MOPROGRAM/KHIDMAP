@@ -1,4 +1,5 @@
 
+
 import { db, auth, storage } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch, GeoPoint, arrayUnion, arrayRemove, increment, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
@@ -170,6 +171,17 @@ export async function createNotification(
         console.error("Error creating notification:", error);
         // Don't throw, as notification failure shouldn't block the main action.
     }
+}
+
+export async function getAllNotificationsForUser(userId: string): Promise<Notification[]> {
+    if (!db) throw new Error("Database not initialized.");
+    const q = query(
+        collection(db, "notifications"),
+        where("userId", "==", userId),
+        orderBy("createdAt", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Notification));
 }
 
 

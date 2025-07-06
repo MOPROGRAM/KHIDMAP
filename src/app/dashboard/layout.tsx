@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, User, Search, History, LogOut, Settings, MessageSquare, Loader2, ShieldCheck, AlertTriangle, ServerCrash, Briefcase, DollarSign, Menu, Mail, Megaphone, LifeBuoy } from 'lucide-react';
+import { Home, User, Search, History, LogOut, Settings, MessageSquare, Loader2, ShieldCheck, AlertTriangle, ServerCrash, Briefcase, DollarSign, Menu, Mail, Megaphone, LifeBuoy, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
@@ -12,12 +12,13 @@ import Logo from '@/components/shared/Logo';
 import { Separator } from '@/components/ui/separator';
 import { auth, db } from '@/lib/firebase'; 
 import { onAuthStateChanged, signOut, User as FirebaseUser, sendEmailVerification } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, orderBy, limit, writeBatch } from 'firebase/firestore';
 import { useToast } from "@/hooks/use-toast";
 import { ADMIN_EMAIL } from '@/lib/config';
 import CallNotification from '@/components/chat/CallNotification';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import NotificationBell from '@/components/layout/NotificationBell';
+import type { Notification } from '@/lib/data';
 
 type UserRole = 'provider' | 'seeker' | 'admin';
 
@@ -72,6 +73,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [isCoreServicesAvailable, setIsCoreServicesAvailable] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const isMessagesPage = pathname.startsWith('/dashboard/messages');
 
@@ -82,6 +86,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (user) {
           setAuthUser(user);
           setIsEmailVerified(user.emailVerified); 
+          setNotifications([]);
+          setUnreadCount(0);
 
           const roleFromStorage = localStorage.getItem('userRole') as UserRole | null;
           if (roleFromStorage) {
@@ -142,11 +148,57 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [router, toast, t]);
 
+  useEffect(() => {
+    if (!authUser || !db) {
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
+    }
+
+    const notificationsRef = collection(db, "notifications");
+    const q = query(
+        notificationsRef,
+        where("userId", "==", authUser.uid),
+        orderBy("createdAt", "desc"),
+        limit(10)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const fetchedNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+        setNotifications(fetchedNotifications);
+        const newUnreadCount = fetchedNotifications.filter(n => !n.isRead).length;
+        setUnreadCount(newUnreadCount);
+    }, (error) => {
+        console.error("Error fetching notifications in layout:", error);
+    });
+
+    return () => unsubscribe();
+  }, [authUser]);
+
+  const handleMarkAllAsRead = async () => {
+    if (!db || !authUser || unreadCount === 0) return;
+
+    const batch = writeBatch(db);
+    notifications.forEach(notification => {
+        if (!notification.isRead) {
+            const docRef = doc(db, 'notifications', notification.id);
+            batch.update(docRef, { isRead: true });
+        }
+    });
+
+    try {
+        await batch.commit();
+    } catch (error) {
+        console.error("Error marking notifications as read in layout:", error);
+    }
+  };
+
 
   const navItems: NavItem[] = [
     { href: '/dashboard', labelKey: 'dashboard', icon: <Home className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
     { href: '/dashboard/orders', labelKey: 'myOrders', icon: <Briefcase className="h-5 w-5" />, roles: ['provider', 'seeker'] },
     { href: '/dashboard/messages', labelKey: 'messages', icon: <MessageSquare className="h-5 w-5" />, roles: ['provider', 'seeker'] },
+    { href: '/dashboard/notifications', labelKey: 'notifications', icon: <Bell className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
     { href: '/dashboard/provider/profile', labelKey: 'profile', icon: <User className="h-5 w-5" />, roles: ['provider'] },
     { href: '/services/search', labelKey: 'search', icon: <Search className="h-5 w-5" />, roles: ['seeker', 'provider'] },
     { href: '/dashboard/seeker/history', labelKey: 'searchHistory', icon: <History className="h-5 w-5" />, roles: ['seeker'] },
@@ -260,7 +312,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     {/* Optionally, a search bar can go here */}
                  </div>
                  <div className="flex items-center gap-2">
-                    {authUser && <NotificationBell user={authUser} />}
+                    {authUser && <NotificationBell notifications={notifications} unreadCount={unreadCount} handleMarkAllAsRead={handleMarkAllAsRead} />}
                  </div>
             </header>
             <main className="flex flex-1 flex-col overflow-hidden">

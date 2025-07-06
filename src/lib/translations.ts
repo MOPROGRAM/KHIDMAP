@@ -1,4 +1,5 @@
 
+
 export type Translations = {
   appName: string;
   tagline: string;
@@ -473,6 +474,10 @@ export type Translations = {
   paymentReceivedMessage: string; // "{seekerName} has paid for the order. You can now start the service."
   orderCompletedMessage: string; // "{seekerName} has marked the order as completed. Your funds will be processed."
   orderDisputedMessage: string; // "A dispute has been raised for your order with {userName}."
+  allNotifications: string;
+  allNotificationsDescription: string;
+  noNotificationsYet: string;
+  viewAll: string;
 
   // Proof deletion
   deleteProof: string;
@@ -968,6 +973,12 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paymentReceivedMessage: "{seekerName} has paid for the order. You can now start the service.",
     orderCompletedMessage: "{seekerName} has marked the order as completed. Your funds will be processed.",
     orderDisputedMessage: "A dispute has been raised for your order with {userName}.",
+    allNotifications: "All Notifications",
+    allNotificationsDescription: "View and manage all your notifications.",
+    noNotificationsYet: "You have no notifications yet.",
+    viewAll: "View All",
+
+    // Proof deletion
     deleteProof: "Delete Proof",
     uploadNewProof: "Upload New Proof",
     confirmDeleteProofTitle: "Delete Payment Proof?",
@@ -980,6 +991,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paymentProof: "Payment Proof",
     continue: "Continue",
     contactSupport: "Contact Support",
+    // Ad Requests
     requestSubmittedTitle: "Request Submitted",
     requestSubmittedDescription: "Your request has been sent to the admin for review.",
     adRequestApprovedTitle: "Ad Request Approved",
@@ -1455,6 +1467,12 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paymentReceivedMessage: "{seekerName} لقد دفع للطلب. يمكنك الآن بدء الخدمة.",
     orderCompletedMessage: "{seekerName} لقد قام بتأكيد اكتمال الطلب. سيتم تحويل مستحقاتك.",
     orderDisputedMessage: "تم رفع نزاع على طلبك مع {userName}.",
+    allNotifications: "جميع الإشعارات",
+    allNotificationsDescription: "عرض وإدارة جميع الإشعارات الخاصة بك.",
+    noNotificationsYet: "ليس لديك أي إشعارات بعد.",
+    viewAll: "عرض الكل",
+    
+    // Proof deletion
     deleteProof: "حذف الإثبات",
     uploadNewProof: "رفع إثبات جديد",
     confirmDeleteProofTitle: "حذف إثبات الدفع؟",
@@ -1467,6 +1485,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paymentProof: "إثبات الدفع",
     continue: "متابعة",
     contactSupport: "الاتصال بالدعم",
+    // Ad Requests
     requestSubmittedTitle: "تم إرسال الطلب",
     requestSubmittedDescription: "تم إرسال طلبك إلى المسؤول للمراجعة.",
     adRequestApprovedTitle: "تمت الموافقة على طلب الإعلان",
