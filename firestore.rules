@@ -1,4 +1,3 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -23,8 +22,10 @@ service cloud.firestore {
     match /users/{userId} {
       // Anyone can create a user profile (register)
       allow create: if isAuthenticated();
-      // Only the owner or an admin can read/update their own profile
-      allow read, update: if isOwner(userId) || isAdmin();
+      // Admins can list all users.
+      allow list: if isAdmin();
+      // The owner or an admin can read/update a single profile
+      allow get, update: if isOwner(userId) || isAdmin();
       // Users cannot delete their profiles directly through this rule for safety
       allow delete: if false;
     }
@@ -32,7 +33,7 @@ service cloud.firestore {
     // Ratings collection
     match /ratings/{ratingId} {
         // Anyone can read ratings
-        allow get;
+        allow get, list;
         // Authenticated users can create ratings, but not for themselves
         allow create: if isAuthenticated() && request.resource.data.raterUserId == request.auth.uid && request.resource.data.ratedUserId != request.auth.uid;
         // Users cannot update or delete ratings
@@ -41,15 +42,15 @@ service cloud.firestore {
 
     // Messages (chats) collection
     match /messages/{chatId} {
-      // Participants of a chat can get and update it (e.g., last message)
-      allow get, update: if isAuthenticated() && request.auth.uid in resource.data.participantIds;
+      // Participants of a chat can get and update it (e.g., last message) and list their own chats
+      allow get, list, update: if isAuthenticated() && request.auth.uid in resource.data.participantIds;
       // Creation is handled by the startOrGetChat function, but we need a basic rule
       allow create: if isAuthenticated();
 
       // Messages subcollection
       match /messages/{messageId} {
         // Participants can read and create messages in their chat
-        allow get, create: if isAuthenticated() && get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[0] == request.auth.uid || get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[1] == request.auth.uid;
+        allow list, get, create: if isAuthenticated() && get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[0] == request.auth.uid || get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[1] == request.auth.uid;
         // Nobody can update or delete messages
         allow update, delete: if false;
       }
@@ -57,7 +58,7 @@ service cloud.firestore {
     
     // Calls collection
     match /calls/{callId} {
-        allow get, create, update: if isAuthenticated() && request.auth.uid in resource.data.participantIds;
+        allow get, list, create, update: if isAuthenticated() && request.auth.uid in resource.data.participantIds;
         
         match /{subcollection}/{document=**} {
             allow read, write: if isAuthenticated() && get(/databases/$(database)/documents/calls/$(callId)).data.participantIds[0] == request.auth.uid || get(/databases/$(database)/documents/calls/$(callId)).data.participantIds[1] == request.auth.uid;
@@ -66,6 +67,8 @@ service cloud.firestore {
 
     // Orders collection
     match /orders/{orderId} {
+        // Admin can list all orders
+        allow list: if isAuthenticated() && isAdmin();
         // Only participants (seeker, provider) or an admin can read/update an order
         allow get, update: if isAuthenticated() && (request.auth.uid == resource.data.seekerId || request.auth.uid == resource.data.providerId || isAdmin());
         // Only authenticated users can create orders for themselves
@@ -76,7 +79,7 @@ service cloud.firestore {
     // Notifications collection
     match /notifications/{notificationId} {
         // Users can only read their own notifications
-        allow get: if isAuthenticated() && isOwner(resource.data.userId);
+        allow get, list: if isAuthenticated() && isOwner(resource.data.userId);
         // Notifications are created by the server, not clients
         allow create: if false; 
         allow update, delete: if false;
@@ -84,6 +87,8 @@ service cloud.firestore {
 
     // AdRequests collection
     match /adRequests/{adId} {
+        // Admin can list all ad requests
+        allow list: if isAuthenticated() && isAdmin();
         // Only the owner or an admin can read/update the request
         allow get, update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
         // Only authenticated users can create requests for themselves
@@ -93,6 +98,8 @@ service cloud.firestore {
 
     // SupportRequests collection
     match /supportRequests/{requestId} {
+        // Admin can list all support requests
+        allow list: if isAuthenticated() && isAdmin();
         // Only the owner or an admin can read/update the request
         allow get, update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
         // Only authenticated users can create requests for themselves
