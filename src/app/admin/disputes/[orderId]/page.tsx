@@ -110,12 +110,12 @@ export default function DisputeDetailPage() {
   
   const handleAdminSendMessage = async (e: FormEvent) => {
     e.preventDefault();
-    if (!adminMessage.trim() || !order?.chatId) return;
+    if (!adminMessage.trim() || !order?.chatId || !auth.currentUser) return;
 
     setIsSendingMessage(true);
     try {
         await sendMessage(order.chatId, adminMessage, 'text');
-        setAdminMessage('');
+        
         // Manually add message to UI for instant feedback, as firestore listener might have a delay
         const tempMessage: Message = {
             id: new Date().toISOString(),
@@ -127,6 +127,7 @@ export default function DisputeDetailPage() {
             readBy: {}
         };
         setMessages(prev => [...prev, tempMessage]);
+        setAdminMessage('');
     } catch(err: any) {
         toast({
             variant: 'destructive',
@@ -184,7 +185,7 @@ export default function DisputeDetailPage() {
                  let badgeVariant: "default" | "secondary" | "destructive" = "secondary";
                  let messageBg: string = "bg-muted";
 
-                 if (msg.senderId === 'system') {
+                 if (msg.senderId === 'system_call_status') { // Corrected this line
                     const callIcon = msg.content === 'unanswered' ? PhoneMissed : msg.content === 'declined' ? PhoneOff : Phone;
                     const callTypeIcon = msg.callMetadata?.type === 'video' ? VideoIcon : Phone;
                     const durationText = msg.callMetadata?.duration ? ` - ${formatCallDuration(msg.callMetadata.duration)}` : '';
@@ -212,7 +213,7 @@ export default function DisputeDetailPage() {
                     messageAlignment = "end";
                     badgeVariant = "default";
                     messageBg = "bg-primary text-primary-foreground";
-                 } else {
+                 } else { // Admin message
                     senderName = "Admin";
                     messageAlignment = "center";
                     badgeVariant = "destructive";
