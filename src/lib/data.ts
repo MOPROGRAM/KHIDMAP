@@ -1160,11 +1160,14 @@ export async function getAdRequestsForUser(userId: string): Promise<AdRequest[]>
     if (!db) throw new Error("Database not initialized.");
     const q = query(
         collection(db, 'adRequests'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', userId)
+        // orderBy('createdAt', 'desc') // Removed to avoid needing a composite index that might not be deployed.
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as AdRequest));
+    const adRequests = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as AdRequest));
+    // Sort client-side instead
+    adRequests.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+    return adRequests;
 }
 
 
