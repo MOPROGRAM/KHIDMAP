@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, ChangeEvent, useRef } from 'react';
@@ -23,6 +22,7 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { categorizeProvider } from '@/ai/flows/categorize-provider-flow';
 
 const ProfileFormSchema = z.object({
   name: z.string().min(1, { message: "requiredField" }),
@@ -311,13 +311,39 @@ export default function ProviderProfilePage() {
     setIsLoading(true);
     setErrors({});
 
+    let finalCategories = [...serviceCategories];
+    if (qualifications.trim()) {
+        try {
+            toast({ title: t.analyzingBioTitle, description: t.analyzingBioDescription });
+            const result = await categorizeProvider({ description: qualifications });
+            if (result.category && result.category !== 'Other') {
+                const newCategory = result.category as ServiceCategory;
+                if (serviceCategories.length !== 1 || serviceCategories[0] !== newCategory) {
+                    setServiceCategories([newCategory]);
+                    finalCategories = [newCategory];
+                    toast({
+                        title: t.categoryAutoDetectedTitle,
+                        description: t.categoryAutoDetectedDescription.replace('{category}', t[newCategory.toLowerCase() as keyof Translations] || newCategory)
+                    });
+                }
+            }
+        } catch (aiError: any) {
+            console.error("AI categorization failed:", aiError);
+            toast({
+                variant: "default",
+                title: t.aiCategorizationUnavailableTitle,
+                description: t.aiCategorizationUnavailableDescription
+            });
+        }
+    }
+
     const validationResult = ProfileFormSchema.safeParse({ 
       name, 
       email, 
       phoneNumber, 
       qualifications, 
       serviceAreasString, 
-      serviceCategories,
+      serviceCategories: finalCategories,
       videoCallsEnabled
     });
 

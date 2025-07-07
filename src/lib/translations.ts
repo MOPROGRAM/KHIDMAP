@@ -283,6 +283,14 @@ export type Translations = {
   analyzingVideoTitle?: string;
   analyzingVideoDescription?: string;
 
+  // AI Categorization
+  analyzingBioTitle: string;
+  analyzingBioDescription: string;
+  categoryAutoDetectedTitle: string;
+  categoryAutoDetectedDescription: string; // "We've set your primary category to: {category}. You can change it manually if needed."
+  aiCategorizationUnavailableTitle: string;
+  aiCategorizationUnavailableDescription: string;
+
   // Messaging
   messages: string;
   messageProvider: string; // "Message {providerName}"
@@ -902,6 +910,12 @@ export const translations: Record<'en' | 'ar', Translations> = {
     analyzingImageDescription: "Please wait while we check the image for safety.",
     analyzingVideoTitle: "Analyzing Video...",
     analyzingVideoDescription: "Please wait while we check the video for safety.",
+    analyzingBioTitle: "Analyzing Your Bio...",
+    analyzingBioDescription: "Automatically detecting your primary service category...",
+    categoryAutoDetectedTitle: "Category Auto-Detected!",
+    categoryAutoDetectedDescription: "We've set your primary category to: {category}. You can change it manually if needed.",
+    aiCategorizationUnavailableTitle: "AI Assistance Unavailable",
+    aiCategorizationUnavailableDescription: "Could not auto-detect category. Please select one manually.",
     messages: "Messages",
     messageProvider: "Message {providerName}",
     startChatError: "Error starting chat",
@@ -1479,6 +1493,12 @@ export const translations: Record<'en' | 'ar', Translations> = {
     analyzingImageDescription: "يرجى الانتظار بينما نتحقق من سلامة الصورة.",
     analyzingVideoTitle: "جاري تحليل الفيديو...",
     analyzingVideoDescription: "يرجى الانتظار بينما نتحقق من سلامة الفيديو.",
+    analyzingBioTitle: "جاري تحليل سيرتك الذاتية...",
+    analyzingBioDescription: "نحدد فئة خدمتك الأساسية تلقائيًا...",
+    categoryAutoDetectedTitle: "تم تحديد الفئة تلقائيًا!",
+    categoryAutoDetectedDescription: "لقد قمنا بتعيين فئتك الأساسية إلى: {category}. يمكنك تغييرها يدويًا إذا لزم الأمر.",
+    aiCategorizationUnavailableTitle: "مساعدة الذكاء الاصطناعي غير متاحة",
+    aiCategorizationUnavailableDescription: "تعذر تحديد الفئة تلقائيًا. يرجى تحديد واحدة يدويًا.",
     messages: "الرسائل",
     messageProvider: "مراسلة {providerName}",
     startChatError: "خطأ في بدء المحادثة",
