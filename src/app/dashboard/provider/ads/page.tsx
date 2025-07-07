@@ -39,7 +39,7 @@ const StatusBadge = ({ status, t }: { status: AdRequestStatus; t: Translations }
     rejected: 'statusRejected',
   };
   
-  const Icon = statusIcons[status];
+  const Icon = statusIcons[status] || AlertTriangle;
 
   return (
     <Badge variant="outline" className={cn("gap-1.5", statusStyles[status])}>

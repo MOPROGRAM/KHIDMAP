@@ -43,7 +43,7 @@ const StatusBadge = ({ status, t }: { status: AdRequestStatus, t: Translations }
         payment_review: Search,
         active: ThumbsUp,
         rejected: ThumbsDown,
-    }[status];
+    }[status] || AlertTriangle;
     return (
         <Badge variant="outline" className={`gap-1.5 ${styles[status]}`}>
             <Icon className="h-3.5 w-3.5" />
