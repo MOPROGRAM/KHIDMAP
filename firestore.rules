@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -20,20 +21,15 @@ service cloud.firestore {
     // Users collection
     match /users/{userId} {
       allow create: if isAuthenticated();
-      // Allow any authenticated user to read a profile (needed for provider details page)
-      // Allow only the owner or an admin to update
       allow get: if isAuthenticated();
       allow update: if isOwner(userId) || isAdmin();
-      // Allow authenticated users to list providers (for search page)
       allow list: if isAuthenticated(); 
-      allow delete: if false; // Deletion should be handled via a secure function
+      allow delete: if false;
     }
 
     // Ratings collection
     match /ratings/{ratingId} {
-        // Anyone can read ratings for a user
         allow get, list: if true; 
-        // Authenticated users can create ratings, but not for themselves
         allow create: if isAuthenticated() && request.resource.data.raterUserId == request.auth.uid;
         allow update, delete: if false;
     }
@@ -46,7 +42,7 @@ service cloud.firestore {
 
       // Messages subcollection
       match /messages/{messageId} {
-        // Admin can create messages in any chat.
+        // Participants or an admin can read/write messages within a chat.
         allow get, list, create: if isAuthenticated() && (get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[0] == request.auth.uid || get(/databases/$(database)/documents/messages/$(chatId)).data.participantIds[1] == request.auth.uid || isAdmin());
         allow update, delete: if false;
       }
@@ -54,7 +50,6 @@ service cloud.firestore {
     
     // Calls collection
     match /calls/{callId} {
-        // list is needed for the `where('participantIds', 'array-contains', ...)` query
         allow get, create, update, list: if isAuthenticated() && request.auth.uid in resource.data.participantIds;
         
         match /{subcollection}/{document=**} {
@@ -65,8 +60,6 @@ service cloud.firestore {
     // Orders collection
     match /orders/{orderId} {
         allow get, update: if isAuthenticated() && (isOwner(resource.data.seekerId) || isOwner(resource.data.providerId) || isAdmin());
-        // A user needs to query the collection to get their orders.
-        // The client-side code MUST enforce filtering by user ID for security.
         allow list: if isAuthenticated(); 
         allow create: if isAuthenticated() && isOwner(request.resource.data.seekerId);
         allow delete: if false;
@@ -75,16 +68,14 @@ service cloud.firestore {
     // Notifications collection
     match /notifications/{notificationId} {
         allow get, update: if isAuthenticated() && isOwner(resource.data.userId);
-        // The list query in the app must be secured by a `where("userId", "==", request.auth.uid)` clause.
         allow list: if isAuthenticated();
-        allow create: if false; // Only server can create
+        allow create: if false; 
         allow delete: if false;
     }
 
     // AdRequests collection
     match /adRequests/{adId} {
         allow get, update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
-        // The list query in the app must be secured by a `where` clause for regular users.
         allow list: if isAuthenticated();
         allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
         allow delete: if false;
