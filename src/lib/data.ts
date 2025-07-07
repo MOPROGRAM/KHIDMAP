@@ -518,12 +518,12 @@ export const sendMessage = async (
     if (!chatSnap.exists()) throw new Error("Chat does not exist.");
     
     const chatData = chatSnap.data() as Chat;
-    const receiverId = chatData.participantIds.find(id => id !== senderId);
-    if (!receiverId) throw new Error("Could not find recipient for the message.");
-
+    
     const messagesCollectionRef = collection(chatRef, "messages");
     const batch = writeBatch(db);
     const newMessageRef = doc(messagesCollectionRef);
+
+    const initialReadBy = chatData.participantIds.reduce((acc, pid) => ({...acc, [pid]: pid === senderId }), {});
 
     batch.set(newMessageRef, {
         chatId,
@@ -531,14 +531,21 @@ export const sendMessage = async (
         content: messageContent,
         type,
         createdAt: serverTimestamp(),
-        readBy: { [senderId]: true, [receiverId]: false }
+        readBy: initialReadBy
+    });
+    
+    const unreadUpdates: { [key: string]: any } = {};
+    chatData.participantIds.forEach(participantId => {
+        if (participantId !== senderId) {
+            unreadUpdates[`unreadCount.${participantId}`] = increment(1);
+        }
     });
 
     batch.update(chatRef, {
         lastMessage: lastMessageText,
         lastMessageAt: serverTimestamp(),
         lastMessageSenderId: senderId,
-        [`unreadCount.${receiverId}`]: increment(1)
+        ...unreadUpdates
     });
     
     await batch.commit();

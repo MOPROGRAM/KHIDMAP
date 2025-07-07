@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
-import { Order, Message, getOrderById, getMessagesForChat, resolveDispute } from '@/lib/data';
+import { Order, Message, getOrderById, getMessagesForChat, resolveDispute, sendMessage } from '@/lib/data';
 import { Loader2, ArrowLeft, ShieldAlert, User, MessageSquare, Check, CheckCheck, Phone, PhoneMissed, PhoneOff, Video as VideoIcon, Send } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -41,8 +41,10 @@ export default function DisputeDetailPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
+  const [adminMessage, setAdminMessage] = useState('');
   
   const formatRelativeTime = (timestamp: any) => {
     if (!timestamp?.toDate) return '';
@@ -106,6 +108,36 @@ export default function DisputeDetailPage() {
     }
   };
   
+  const handleAdminSendMessage = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!adminMessage.trim() || !order?.chatId) return;
+
+    setIsSendingMessage(true);
+    try {
+        await sendMessage(order.chatId, adminMessage, 'text');
+        setAdminMessage('');
+        // Manually add message to UI for instant feedback, as firestore listener might have a delay
+        const tempMessage: Message = {
+            id: new Date().toISOString(),
+            chatId: order.chatId,
+            senderId: auth.currentUser!.uid,
+            content: adminMessage,
+            type: 'text',
+            createdAt: Timestamp.now(),
+            readBy: {}
+        };
+        setMessages(prev => [...prev, tempMessage]);
+    } catch(err: any) {
+        toast({
+            variant: 'destructive',
+            title: t.messageSentErrorTitle,
+            description: err.message
+        });
+    } finally {
+        setIsSendingMessage(false);
+    }
+  }
+
   const formatDate = (date: Timestamp | undefined): string => {
     if (!date) return 'N/A';
     return date.toDate().toLocaleString();
@@ -147,8 +179,12 @@ export default function DisputeDetailPage() {
             <h3 className="text-lg font-semibold mb-2 flex items-center gap-2"><MessageSquare className="h-5 w-5"/>{t.disputeConversation}</h3>
             <div className="border rounded-lg p-4 h-96 overflow-y-auto space-y-4 bg-background">
               {messages.length > 0 ? messages.map(msg => {
-                const isSystemMessage = msg.senderId === 'system';
-                 if (isSystemMessage) {
+                 let senderName: string;
+                 let messageAlignment: "start" | "end" | "center" = "start";
+                 let badgeVariant: "default" | "secondary" | "destructive" = "secondary";
+                 let messageBg: string = "bg-muted";
+
+                 if (msg.senderId === 'system') {
                     const callIcon = msg.content === 'unanswered' ? PhoneMissed : msg.content === 'declined' ? PhoneOff : Phone;
                     const callTypeIcon = msg.callMetadata?.type === 'video' ? VideoIcon : Phone;
                     const durationText = msg.callMetadata?.duration ? ` - ${formatCallDuration(msg.callMetadata.duration)}` : '';
@@ -167,19 +203,45 @@ export default function DisputeDetailPage() {
                         </div>
                     )
                   }
-                const senderName = msg.senderId === order.seekerId ? order.seekerName : order.providerName;
+
+                 if(msg.senderId === order.seekerId){
+                    senderName = order.seekerName;
+                    messageAlignment = "start";
+                 } else if (msg.senderId === order.providerId) {
+                    senderName = order.providerName;
+                    messageAlignment = "end";
+                    badgeVariant = "default";
+                    messageBg = "bg-primary text-primary-foreground";
+                 } else {
+                    senderName = "Admin";
+                    messageAlignment = "center";
+                    badgeVariant = "destructive";
+                    messageBg = "bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300";
+                 }
+
                 return (
-                  <div key={msg.id} className={cn("flex items-start gap-3", msg.senderId === order.providerId ? "justify-end" : "")}>
-                    {msg.senderId === order.seekerId && <Badge variant="secondary" className="mt-1">{senderName.split(' ')[0]}</Badge>}
-                    <div className={cn("p-3 rounded-lg max-w-sm", msg.senderId === order.providerId ? "bg-primary text-primary-foreground" : "bg-muted")}>
+                  <div key={msg.id} className={cn("flex flex-col", {
+                    "items-start": messageAlignment === 'start',
+                    "items-end": messageAlignment === 'end',
+                    "items-center": messageAlignment === 'center'
+                  })}>
+                    <div className={cn("p-3 rounded-lg max-w-sm", messageBg)}>
+                      {messageAlignment !== 'center' && <span className="text-xs font-bold block mb-1">{senderName.split(' ')[0]}</span>}
                       <p className="text-sm">{msg.content}</p>
                       <p className="text-xs text-right mt-1 opacity-70">{formatRelativeTime(msg.createdAt)}</p>
                     </div>
-                     {msg.senderId === order.providerId && <Badge variant="default" className="mt-1">{senderName.split(' ')[0]}</Badge>}
                   </div>
                 )
               }) : <p className="text-muted-foreground text-center">{t.noConversations}</p>}
             </div>
+            {order.chatId && (
+                <form onSubmit={handleAdminSendMessage} className="mt-2 flex gap-2">
+                    <Textarea value={adminMessage} onChange={(e) => setAdminMessage(e.target.value)} placeholder="Send a message to both parties..." rows={1} disabled={isSendingMessage} className="flex-1"/>
+                    <Button type="submit" size="icon" disabled={isSendingMessage || !adminMessage.trim()}>
+                        {isSendingMessage ? <Loader2 className="h-4 w-4 animate-spin"/> : <Send className="h-4 w-4"/>}
+                    </Button>
+                </form>
+            )}
           </div>
           
           <Separator />
