@@ -1070,11 +1070,15 @@ export async function getDisputedOrders(): Promise<Order[]> {
     if (!db) throw new Error("Database not initialized.");
     const q = query(
         collection(db, "orders"),
-        where("status", "==", "disputed"),
-        orderBy("createdAt", "desc")
+        where("status", "==", "disputed")
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+    const orders = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+    
+    // Sort client-side to avoid needing an index
+    orders.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+
+    return orders;
 }
 
 export async function resolveDispute(orderId: string, resolution: 'seeker' | 'provider', notes: string): Promise<void> {
