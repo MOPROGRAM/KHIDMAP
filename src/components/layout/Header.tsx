@@ -52,7 +52,7 @@ export default function Header() {
   const handleLogout = async () => {
     if (isMobileMenuOpen) setIsMobileMenuOpen(false);
     if (!auth) {
-      toast({ variant: "destructive", title: "Error", description: "Authentication service is unavailable." });
+      toast({ variant: "destructive", title: t.errorOccurred, description: t.authServiceUnavailable });
       return;
     }
     try {
@@ -60,7 +60,7 @@ export default function Header() {
       router.push('/login');
     } catch (error) {
       console.error("Error signing out: ", error);
-      toast({ variant: "destructive", title: "Logout Failed", description: (error as Error).message });
+      toast({ variant: "destructive", title: t.logoutFailed, description: (error as Error).message });
     }
   };
 
@@ -138,13 +138,13 @@ export default function Header() {
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
                 <Menu className="h-6 w-6" />
-                <span className="sr-only">Toggle menu</span>
+                <span className="sr-only">{t.toggleNavigationMenu}</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-full max-w-xs p-6">
               <SheetHeader className="mb-6 text-left">
-                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                <SheetDescription className="sr-only">Main menu for navigating the site.</SheetDescription>
+                <SheetTitle className="sr-only">{t.dashboardMenu}</SheetTitle>
+                <SheetDescription className="sr-only">{t.dashboardMenuDesc}</SheetDescription>
                 <Logo />
               </SheetHeader>
               <nav className="flex flex-col gap-2">

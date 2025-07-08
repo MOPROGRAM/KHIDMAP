@@ -65,14 +65,14 @@ export default function AdminPaymentsPage() {
     try {
       await approvePayment(orderId);
       toast({
-        title: "Payment Approved",
-        description: `Order ${orderId} has been marked as paid.`
+        title: t.paymentApproved,
+        description: t.orderMarkedAsPaid.replace('{orderId}', orderId)
       });
       fetchOrdersForReview();
     } catch (err: any) {
       toast({
         variant: 'destructive',
-        title: "Approval Failed",
+        title: t.approvalFailed,
         description: err.message
       });
     } finally {
@@ -118,8 +118,8 @@ export default function AdminPaymentsPage() {
           <div className="flex items-center gap-3">
              <Search className="h-10 w-10 text-primary" />
             <div>
-                <CardTitle className="text-2xl font-headline">Manual Payment Review</CardTitle>
-                <CardDescription>Review payments that failed automatic AI verification or require manual checks.</CardDescription>
+                <CardTitle className="text-2xl font-headline">{t.manualPaymentReview}</CardTitle>
+                <CardDescription>{t.manualPaymentReviewDesc}</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -133,8 +133,8 @@ export default function AdminPaymentsPage() {
           {ordersForReview.length === 0 && !error ? (
             <div className="text-center py-12">
               <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
-              <h3 className="text-xl font-semibold">No Manual Reviews Needed</h3>
-              <p className="text-muted-foreground">All uploaded payments have been verified automatically.</p>
+              <h3 className="text-xl font-semibold">{t.noManualReviewsNeeded}</h3>
+              <p className="text-muted-foreground">{t.noManualReviewsNeededDesc}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -144,15 +144,15 @@ export default function AdminPaymentsPage() {
                 return (
                   <Card key={order.id} className="grid md:grid-cols-3 gap-4 p-4 items-start">
                     <div className="md:col-span-2 space-y-2">
-                      <div className="text-sm text-muted-foreground">Order ID: <Badge variant="secondary">{order.id}</Badge></div>
-                      <p><strong>Seeker:</strong> {order.seekerName}</p>
-                      <p><strong>Provider:</strong> {order.providerName}</p>
-                      <p><strong>Amount:</strong> <span className="font-mono">{currencySymbol}{order.amount.toFixed(2)}</span></p>
-                      <p className="text-sm text-muted-foreground pt-2"><strong>Description:</strong> {order.serviceDescription}</p>
+                      <div className="text-sm text-muted-foreground">{t.orderId}: <Badge variant="secondary">{order.id}</Badge></div>
+                      <p><strong>{t.seeker}:</strong> {order.seekerName}</p>
+                      <p><strong>{t.provider}:</strong> {order.providerName}</p>
+                      <p><strong>{t.amount}:</strong> <span className="font-mono">{currencySymbol}{order.amount.toFixed(2)}</span></p>
+                      <p className="text-sm text-muted-foreground pt-2"><strong>{t.description}:</strong> {order.serviceDescription}</p>
                        {order.verificationNotes && (
                           <Alert variant={order.verificationNotes.includes("Rejected") ? "destructive" : "default"} className="mt-2">
                               <AlertTriangle className="h-4 w-4" />
-                              <AlertTitle>{order.verificationNotes.includes("Rejected") ? "AI Verification Failed" : "AI Note"}</AlertTitle>
+                              <AlertTitle>{order.verificationNotes.includes("Rejected") ? t.aiVerificationFailed : t.aiNote}</AlertTitle>
                               <AlertDescription>
                                   {order.verificationNotes}
                               </AlertDescription>
@@ -163,7 +163,7 @@ export default function AdminPaymentsPage() {
                       {order.proofOfPaymentUrl ? (
                         <>
                           <Link href={order.proofOfPaymentUrl} target="_blank" rel="noopener noreferrer" className="block relative w-40 h-40 group">
-                            <Image src={order.proofOfPaymentUrl} alt="Payment Proof" layout="fill" className="rounded-md object-cover border" />
+                            <Image src={order.proofOfPaymentUrl} alt={t.paymentProof} layout="fill" className="rounded-md object-cover border" />
                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
                                   <ExternalLink className="h-8 w-8 text-white" />
                              </div>
@@ -224,7 +224,7 @@ export default function AdminPaymentsPage() {
                       ) : (
                           <div className="flex flex-col items-center justify-center text-center p-4 bg-muted rounded-md h-full w-full">
                               <ImageIcon className="h-8 w-8 text-muted-foreground mb-2"/>
-                              <p className="text-sm text-muted-foreground">No proof uploaded yet.</p>
+                              <p className="text-sm text-muted-foreground">{t.noProofUploaded}</p>
                           </div>
                       )}
                     </div>

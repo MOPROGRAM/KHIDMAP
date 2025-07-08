@@ -49,14 +49,14 @@ export default function AdminVerificationsPage() {
     try {
       await approveVerification(userId);
       toast({
-        title: "Verification Approved",
-        description: `Provider has been marked as verified.`
+        title: t.verificationApproved,
+        description: t.verificationApprovedDesc
       });
       fetchVerifications();
     } catch (err: any) {
       toast({
         variant: 'destructive',
-        title: "Approval Failed",
+        title: t.approvalFailed,
         description: err.message
       });
     } finally {
@@ -70,15 +70,15 @@ export default function AdminVerificationsPage() {
     try {
       await rejectVerification(userId, rejectionReason || "The uploaded documents were not sufficient.");
       toast({
-        title: "Verification Rejected",
-        description: "The provider has been notified.",
+        title: t.verificationRejected,
+        description: t.verificationRejectedDesc,
       });
       setRejectionReason('');
       fetchVerifications();
     } catch (err: any) {
       toast({
         variant: 'destructive',
-        title: "Rejection Failed",
+        title: t.rejectionFailed,
         description: err.message
       });
     } finally {
@@ -143,7 +143,7 @@ export default function AdminVerificationsPage() {
                             <div className="flex flex-col gap-2">
                                 {profile.verificationDocuments?.map((docUrl, index) => (
                                     <a href={docUrl} target="_blank" rel="noopener noreferrer" key={index} className="text-sm text-primary hover:underline flex items-center gap-2">
-                                        <ExternalLink className="h-4 w-4" /> Document {index + 1}
+                                        <ExternalLink className="h-4 w-4" /> {t.document} {index + 1}
                                     </a>
                                 ))}
                             </div>

@@ -46,7 +46,7 @@ export default function CallNotification() {
       }
     }, (error) => {
         console.error("Error listening for incoming calls:", error);
-        toast({ variant: "destructive", title: t.errorOccurred, description: "Failed to listen for calls." });
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.failedToListenForCalls });
     });
 
     return () => unsubscribe();
@@ -59,7 +59,7 @@ export default function CallNotification() {
         toast({ title: t.callAccepted, description: t.connecting });
         router.push(`/call/${incomingCall.id}`);
     } catch(error) {
-        toast({ variant: "destructive", title: "Error", description: "Failed to accept call." });
+        toast({ variant: "destructive", title: t.callFailed, description: t.failedToAcceptCall });
     } finally {
         setIncomingCall(null);
     }
@@ -70,7 +70,7 @@ export default function CallNotification() {
      try {
         await updateCallStatus(incomingCall.id, 'declined');
     } catch(error) {
-        toast({ variant: "destructive", title: "Error", description: "Failed to decline call." });
+        toast({ variant: "destructive", title: t.callFailed, description: t.failedToDeclineCall });
     } finally {
         setIncomingCall(null);
     }
@@ -87,7 +87,7 @@ export default function CallNotification() {
             </Avatar>
             <AlertDialogTitle className="text-2xl">{t.incomingCall}</AlertDialogTitle>
             <AlertDialogDescription className="text-lg">
-              {incomingCall?.callerName} {t.isCallingYou}
+              {t.isCallingYou?.replace('{userName}', incomingCall?.callerName || t.unknownUser)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-center gap-6 mt-4">

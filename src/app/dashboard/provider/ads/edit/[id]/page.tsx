@@ -91,16 +91,16 @@ export default function AdDetailPage() {
     try {
         const fetchedAd = await getAdRequestById(adId);
         if (!fetchedAd) {
-            setError("Ad request not found.");
+            setError(t.adRequestNotFound);
             return;
         }
         if (fetchedAd.userId !== user.uid) {
-            setError("You are not authorized to view this ad request.");
+            setError(t.unauthorizedViewAd);
             return;
         }
         setAdRequest(fetchedAd);
     } catch (err: any) {
-        setError("Failed to fetch ad request details.");
+        setError(t.failedToFetchAdDetails);
     } finally {
         setIsLoading(false);
     }
@@ -128,9 +128,9 @@ export default function AdDetailPage() {
     try {
         await uploadAdPaymentProof(adRequest.id, file);
         await fetchAdRequest();
-        toast({ title: "Proof Uploaded Successfully", description: "The admin will review your payment shortly."});
+        toast({ title: t.proofUploadedSuccessTitle, description: t.proofUploadedSuccessDescription });
     } catch (err: any) {
-        toast({ variant: "destructive", title: "Upload Failed", description: err.message });
+        toast({ variant: "destructive", title: t.uploadFailed, description: err.message });
     } finally {
         setIsSubmitting(false);
         if (event.target) event.target.value = '';
@@ -146,7 +146,7 @@ export default function AdDetailPage() {
   }
   
   if (!adRequest) {
-    return <div className="text-center p-8">Ad request not found.</div>;
+    return <div className="text-center p-8">{t.adRequestNotFound}</div>;
   }
 
   const showPaymentBox = adRequest.status === 'pending_payment';
@@ -166,7 +166,7 @@ export default function AdDetailPage() {
             </div>
           )}
           <CardTitle>{adRequest.title}</CardTitle>
-          <CardDescription>Ad Request ID: {adRequest.id}</CardDescription>
+          <CardDescription>{t.adRequestId}: {adRequest.id}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <StatusInfo status={adRequest.status} t={t} />
@@ -174,7 +174,7 @@ export default function AdDetailPage() {
             {adRequest.rejectionReason && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Rejection Reason</AlertTitle>
+                    <AlertTitle>{t.rejectionReason}</AlertTitle>
                     <AlertDescription>{adRequest.rejectionReason}</AlertDescription>
                 </Alert>
             )}
@@ -182,7 +182,7 @@ export default function AdDetailPage() {
             {adRequest.status === 'payment_review' && adRequest.verificationNotes && (
                 <Alert variant={"default"}>
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>{"Admin Note"}</AlertTitle>
+                    <AlertTitle>{t.adminNote}</AlertTitle>
                     <AlertDescription>
                         {adRequest.verificationNotes}
                     </AlertDescription>
@@ -190,25 +190,25 @@ export default function AdDetailPage() {
             )}
 
             <div>
-                <strong className="block text-sm font-medium text-muted-foreground">Ad Description</strong>
+                <strong className="block text-sm font-medium text-muted-foreground">{t.adDescription}</strong>
                 <p className="p-3 bg-muted/50 rounded-md mt-1 whitespace-pre-wrap">{adRequest.message}</p>
             </div>
             
             {showPaymentBox && (
                 <Card className="bg-background border-primary">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">Payment Required</CardTitle>
-                        <CardDescription>Your ad has been approved. Please pay the amount below to activate it.</CardDescription>
+                        <CardTitle className="flex items-center gap-2">{t.paymentRequired}</CardTitle>
+                        <CardDescription>{t.paymentRequiredDesc}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="text-center p-4 bg-muted rounded-lg">
-                            <p className="text-sm text-muted-foreground">Amount Due</p>
+                            <p className="text-sm text-muted-foreground">{t.amountDue}</p>
                             <p className="text-3xl font-bold">{adRequest.price} {adRequest.currency}</p>
                         </div>
                         <div>
-                            <h4 className="font-semibold">Bank Transfer Details</h4>
-                            <p className="text-sm text-muted-foreground">Bank Name: Khidmap National Bank</p>
-                            <p className="text-sm text-muted-foreground">Account Number: 123-456-7890</p>
+                            <h4 className="font-semibold">{t.bankTransferDetails}</h4>
+                            <p className="text-sm text-muted-foreground">{t.bankName}: {t.bankNameValue}</p>
+                            <p className="text-sm text-muted-foreground">{t.accountNumber}: {t.accountNumberValue}</p>
                         </div>
                         <Separator />
                          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/jpeg,image/png,application/pdf" />
@@ -224,12 +224,12 @@ export default function AdDetailPage() {
              {adRequest.status === 'payment_review' && (
                  <Card className="bg-background border-blue-500">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">Payment Under Review</CardTitle>
-                        <CardDescription>Your payment proof has been uploaded and is being reviewed by the admin. You will be notified once it's approved.</CardDescription>
+                        <CardTitle className="flex items-center gap-2">{t.paymentUnderReview}</CardTitle>
+                        <CardDescription>{t.paymentUnderReviewDesc}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Link href={adRequest.paymentProofUrl || '#'} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({variant: 'outline'}), 'w-full')}>
-                            <FileCheck className="mr-2 h-4 w-4"/> View Uploaded Proof
+                            <FileCheck className="mr-2 h-4 w-4"/> {t.viewUploadedProof}
                         </Link>
                     </CardContent>
                  </Card>

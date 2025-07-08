@@ -75,13 +75,13 @@ export default function AdvertisePage() {
     if (!authUser) {
       toast({
         variant: "destructive",
-        title: "Authentication Required",
-        description: "You must be logged in to submit an advertisement request.",
+        title: t.authError,
+        description: t.loginToSubmitAd,
       });
       return;
     }
     if (!imageFile) {
-        toast({ variant: 'destructive', title: "Image Required", description: "Please upload an image for your ad." });
+        toast({ variant: 'destructive', title: t.imageRequired, description: t.imageRequiredDesc });
         return;
     }
     
@@ -141,7 +141,7 @@ export default function AdvertisePage() {
             </div>
           ) : !authUser ? (
             <div className="text-center p-6">
-              <p className="text-muted-foreground mb-4">Please log in to submit an advertisement request.</p>
+              <p className="text-muted-foreground mb-4">{t.loginToSubmitAd}</p>
               <Button asChild>
                  <Link href="/login">
                   {t.login}
@@ -187,7 +187,7 @@ export default function AdvertisePage() {
                             <Upload className="mr-2 h-4 w-4" />
                             {imageFile ? t.changeImage : t.uploadImage}
                         </Button>
-                         <p className="text-xs text-muted-foreground">PNG, JPG, WEBP up to 5MB</p>
+                         <p className="text-xs text-muted-foreground">{t.adImageHint}</p>
                     </Card>
                 </div>
 

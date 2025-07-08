@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from 'react';
@@ -153,7 +154,7 @@ export default function CallPage() {
         pc.onconnectionstatechange = () => {
             console.log("Connection State:", pc.connectionState);
             if (pc.connectionState === "failed") {
-                setError("Call connection failed.");
+                setError(t.callConnectionFailed);
             }
         };
 
@@ -271,7 +272,7 @@ export default function CallPage() {
         // @ts-ignore some browsers use this property
         remoteAudioRef.current.setSinkId?.(isSpeakerphoneOn ? 'default' : 'speaker')
     }
-    toast({ title: !isSpeakerphoneOn ? "Speaker On" : "Speaker Off" });
+    toast({ title: !isSpeakerphoneOn ? t.speakerOn : t.speakerOff });
   };
   
   const getOtherParticipant = () => {

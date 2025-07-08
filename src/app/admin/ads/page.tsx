@@ -68,16 +68,16 @@ const AdRequestCard = ({ request, t, onUpdate }: { request: AdRequest, t: Transl
     const handleApprove = async () => {
         const numericPrice = parseFloat(price);
         if (isNaN(numericPrice) || numericPrice <= 0) {
-            toast({ variant: 'destructive', title: 'Invalid Price', description: 'Please enter a valid positive number for the price.' });
+            toast({ variant: 'destructive', title: t.invalidPrice, description: t.enterPositivePrice });
             return;
         }
         setProcessingId(request.id);
         try {
             await approveAdRequestAndSetPrice(request.id, numericPrice, currency);
-            toast({ title: 'Ad Approved', description: 'The user has been notified to make the payment.' });
+            toast({ title: t.adApproved, description: t.userNotifiedForPayment });
             onUpdate();
         } catch (err: any) {
-            toast({ variant: 'destructive', title: "Approval Failed", description: err.message });
+            toast({ variant: 'destructive', title: t.approvalFailed, description: err.message });
         } finally {
             setProcessingId(null);
         }
@@ -85,16 +85,16 @@ const AdRequestCard = ({ request, t, onUpdate }: { request: AdRequest, t: Transl
 
     const handleReject = async () => {
         if (!reason.trim()) {
-            toast({ variant: 'destructive', title: 'Reason Required', description: 'Please provide a reason for rejection.' });
+            toast({ variant: 'destructive', title: t.reasonRequired, description: t.provideRejectionReason });
             return;
         }
         setProcessingId(request.id);
         try {
             await rejectAdRequest(request.id, reason);
-            toast({ title: 'Ad Rejected', description: 'The user has been notified.' });
+            toast({ title: t.adRequestRejected, description: t.userNotified });
             onUpdate();
         } catch (err: any) {
-            toast({ variant: 'destructive', title: "Rejection Failed", description: err.message });
+            toast({ variant: 'destructive', title: t.rejectionFailed, description: err.message });
         } finally {
             setProcessingId(null);
         }
@@ -104,10 +104,10 @@ const AdRequestCard = ({ request, t, onUpdate }: { request: AdRequest, t: Transl
         setProcessingId(request.id);
         try {
             await confirmAdPayment(request.id);
-            toast({ title: 'Payment Confirmed', description: 'The ad is now active.' });
+            toast({ title: t.paymentConfirmed, description: t.adIsActiveNow });
             onUpdate();
         } catch (err: any) {
-            toast({ variant: 'destructive', title: "Confirmation Failed", description: err.message });
+            toast({ variant: 'destructive', title: t.confirmationFailed, description: err.message });
         } finally {
             setProcessingId(null);
         }
@@ -115,16 +115,16 @@ const AdRequestCard = ({ request, t, onUpdate }: { request: AdRequest, t: Transl
 
     const handleRejectPayment = async () => {
         if (!reason.trim()) {
-            toast({ variant: 'destructive', title: 'Reason Required', description: 'Please provide a reason for payment rejection.' });
+            toast({ variant: 'destructive', title: t.reasonRequired, description: t.providePaymentRejectionReason });
             return;
         }
         setProcessingId(request.id);
         try {
             await rejectAdPayment(request.id, reason);
-            toast({ title: 'Payment Rejected', description: 'The user has been notified to upload new proof.' });
+            toast({ title: t.paymentRejected, description: t.userNotifiedToUploadNewProof });
             onUpdate();
         } catch (err: any) {
-            toast({ variant: 'destructive', title: "Rejection Failed", description: err.message });
+            toast({ variant: 'destructive', title: t.rejectionFailed, description: err.message });
         } finally {
             setProcessingId(null);
         }
@@ -149,22 +149,22 @@ const AdRequestCard = ({ request, t, onUpdate }: { request: AdRequest, t: Transl
                         )}
                         <div className="space-y-1">
                             <h4 className="font-bold">{request.title}</h4>
-                            <p><strong>From:</strong> {request.name} ({request.email})</p>
+                            <p><strong>{t.from}:</strong> {request.name} ({request.email})</p>
                             <p className="text-sm text-muted-foreground pt-1 whitespace-pre-wrap">{request.message}</p>
                         </div>
                     </div>
                      {request.status === 'payment_review' && request.paymentProofUrl && (
                         <div>
-                             <h5 className="font-semibold text-sm mb-1">Payment Proof:</h5>
+                             <h5 className="font-semibold text-sm mb-1">{t.paymentProof}:</h5>
                              <Link href={request.paymentProofUrl} target="_blank" rel="noopener noreferrer">
-                                <Image src={request.paymentProofUrl} alt="Payment Proof" width={150} height={150} className="rounded-md border object-cover" />
+                                <Image src={request.paymentProofUrl} alt={t.paymentProof} width={150} height={150} className="rounded-md border object-cover" />
                              </Link>
                         </div>
                     )}
                     {request.verificationNotes && (
                         <Alert variant={request.verificationNotes.includes("Rejected") ? "destructive" : "default"} className="mt-2">
                             <AlertTriangle className="h-4 w-4" />
-                            <AlertTitle>{request.verificationNotes.includes("Rejected") ? "AI Verification Failed" : "AI Note"}</AlertTitle>
+                            <AlertTitle>{request.verificationNotes.includes("Rejected") ? t.aiVerificationFailed : t.aiNote}</AlertTitle>
                             <AlertDescription>
                                 {request.verificationNotes}
                             </AlertDescription>
@@ -177,38 +177,38 @@ const AdRequestCard = ({ request, t, onUpdate }: { request: AdRequest, t: Transl
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button disabled={!!processingId} className="w-full bg-green-600 hover:bg-green-700">
-                                        <ThumbsUp className="mr-2 h-4 w-4" /> Approve & Set Price
+                                        <ThumbsUp className="mr-2 h-4 w-4" /> {t.approveAndSetPrice}
                                     </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
-                                    <AlertDialogHeader><AlertDialogTitle>Approve Ad Request</AlertDialogTitle><AlertDialogDescription>Set the price for this ad. The user will be notified to pay.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogHeader><AlertDialogTitle>{t.approveAdRequest}</AlertDialogTitle><AlertDialogDescription>{t.approveAdRequestDesc}</AlertDialogDescription></AlertDialogHeader>
                                     <div className="space-y-2">
-                                        <Label htmlFor="price">Price</Label>
+                                        <Label htmlFor="price">{t.price}</Label>
                                         <Input id="price" type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="e.g., 50.00" />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="currency">Currency</Label>
+                                        <Label htmlFor="currency">{t.currency}</Label>
                                         <Select value={currency} onValueChange={(v) => setCurrency(v)}>
                                             <SelectTrigger><SelectValue /></SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="USD">USD</SelectItem><SelectItem value="SAR">SAR</SelectItem><SelectItem value="EGP">EGP</SelectItem><SelectItem value="AED">AED</SelectItem><SelectItem value="QAR">QAR</SelectItem>
+                                                <SelectItem value="USD">{t.USD}</SelectItem><SelectItem value="SAR">{t.SAR}</SelectItem><SelectItem value="EGP">{t.EGP}</SelectItem><SelectItem value="AED">{t.AED}</SelectItem><SelectItem value="QAR">{t.QAR}</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleApprove} disabled={!price}>Confirm Approval</AlertDialogAction></AlertDialogFooter>
+                                    <AlertDialogFooter><AlertDialogCancel>{t.cancel}</AlertDialogCancel><AlertDialogAction onClick={handleApprove} disabled={!price}>{t.confirmApproval}</AlertDialogAction></AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                             
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button disabled={!!processingId} variant="destructive" className="w-full">
-                                        <ThumbsDown className="mr-2 h-4 w-4" /> Reject
+                                        <ThumbsDown className="mr-2 h-4 w-4" /> {t.reject}
                                     </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
-                                    <AlertDialogHeader><AlertDialogTitle>Reject Ad Request</AlertDialogTitle><AlertDialogDescription>Provide a reason for rejecting this ad request.</AlertDialogDescription></AlertDialogHeader>
-                                    <div className="space-y-2"><Label htmlFor="reason">Rejection Reason</Label><Input id="reason" value={reason} onChange={e => setReason(e.target.value)} /></div>
-                                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleReject} disabled={!reason.trim()} className={buttonVariants({ variant: "destructive" })}>Confirm Rejection</AlertDialogAction></AlertDialogFooter>
+                                    <AlertDialogHeader><AlertDialogTitle>{t.rejectAdRequest}</AlertDialogTitle><AlertDialogDescription>{t.rejectAdRequestDesc}</AlertDialogDescription></AlertDialogHeader>
+                                    <div className="space-y-2"><Label htmlFor="reason">{t.rejectionReason}</Label><Input id="reason" value={reason} onChange={e => setReason(e.target.value)} /></div>
+                                    <AlertDialogFooter><AlertDialogCancel>{t.cancel}</AlertDialogCancel><AlertDialogAction onClick={handleReject} disabled={!reason.trim()} className={buttonVariants({ variant: "destructive" })}>{t.confirmRejection}</AlertDialogAction></AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                         </div>
@@ -217,18 +217,18 @@ const AdRequestCard = ({ request, t, onUpdate }: { request: AdRequest, t: Transl
                         <div className="flex flex-col sm:flex-row md:flex-col gap-2 w-full">
                              <Button onClick={handleConfirmPayment} disabled={!!processingId} className="w-full bg-green-600 hover:bg-green-700">
                                 {processingId === request.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ThumbsUp className="mr-2 h-4 w-4" />}
-                                Confirm Payment
+                                {t.confirmPayment}
                             </Button>
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button disabled={!!processingId} variant="destructive" className="w-full">
-                                        <ThumbsDown className="mr-2 h-4 w-4" /> Reject Payment
+                                        <ThumbsDown className="mr-2 h-4 w-4" /> {t.rejectPayment}
                                     </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
-                                    <AlertDialogHeader><AlertDialogTitle>Reject Payment Proof</AlertDialogTitle><AlertDialogDescription>Provide a reason for rejecting this payment proof.</AlertDialogDescription></AlertDialogHeader>
-                                    <div className="space-y-2"><Label htmlFor="reason-payment">Rejection Reason</Label><Input id="reason-payment" value={reason} onChange={e => setReason(e.target.value)} /></div>
-                                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleRejectPayment} disabled={!reason.trim()} className={buttonVariants({ variant: "destructive" })}>Confirm Rejection</AlertDialogAction></AlertDialogFooter>
+                                    <AlertDialogHeader><AlertDialogTitle>{t.rejectPaymentProof}</AlertDialogTitle><AlertDialogDescription>{t.rejectPaymentProofDesc}</AlertDialogDescription></AlertDialogHeader>
+                                    <div className="space-y-2"><Label htmlFor="reason-payment">{t.rejectionReason}</Label><Input id="reason-payment" value={reason} onChange={e => setReason(e.target.value)} /></div>
+                                    <AlertDialogFooter><AlertDialogCancel>{t.cancel}</AlertDialogCancel><AlertDialogAction onClick={handleRejectPayment} disabled={!reason.trim()} className={buttonVariants({ variant: "destructive" })}>{t.confirmRejection}</AlertDialogAction></AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                         </div>
@@ -285,8 +285,8 @@ export default function AdminAdRequestsPage() {
           <div className="flex items-center gap-3">
              <Megaphone className="h-10 w-10 text-primary" />
             <div>
-                <CardTitle className="text-2xl font-headline">Advertisement Requests</CardTitle>
-                <CardDescription>Review, approve, or reject advertisement inquiries from users.</CardDescription>
+                <CardTitle className="text-2xl font-headline">{t.adRequests}</CardTitle>
+                <CardDescription>{t.adRequestsDescription}</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -299,15 +299,15 @@ export default function AdminAdRequestsPage() {
           )}
           <Tabs defaultValue="pending_review" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="pending_review">Pending Review ({filteredRequests.pendingReview.length})</TabsTrigger>
-              <TabsTrigger value="payment_review">Payment Review ({filteredRequests.paymentReview.length})</TabsTrigger>
-              <TabsTrigger value="active">Active ({filteredRequests.active.length})</TabsTrigger>
-              <TabsTrigger value="rejected">Rejected ({filteredRequests.rejected.length})</TabsTrigger>
+              <TabsTrigger value="pending_review">{t.statusPendingReview} ({filteredRequests.pendingReview.length})</TabsTrigger>
+              <TabsTrigger value="payment_review">{t.statusPaymentReview} ({filteredRequests.paymentReview.length})</TabsTrigger>
+              <TabsTrigger value="active">{t.statusActive} ({filteredRequests.active.length})</TabsTrigger>
+              <TabsTrigger value="rejected">{t.statusRejected} ({filteredRequests.rejected.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="pending_review" className="mt-4">
                 {filteredRequests.pendingReview.length === 0 ? (
-                     <div className="text-center py-12"><CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" /><h3 className="text-xl font-semibold">No New Ad Requests</h3><p className="text-muted-foreground">There are no new requests awaiting review.</p></div>
+                     <div className="text-center py-12"><CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" /><h3 className="text-xl font-semibold">{t.noNewAdRequests}</h3><p className="text-muted-foreground">{t.noNewAdRequestsDesc}</p></div>
                 ) : (
                     <div className="space-y-4">
                         {filteredRequests.pendingReview.map(req => <AdRequestCard key={req.id} request={req} t={t} onUpdate={fetchRequests} />)}
@@ -317,7 +317,7 @@ export default function AdminAdRequestsPage() {
 
              <TabsContent value="payment_review" className="mt-4">
                 {filteredRequests.paymentReview.length === 0 ? (
-                     <div className="text-center py-12"><CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" /><h3 className="text-xl font-semibold">No Payments to Review</h3><p className="text-muted-foreground">There are no payments awaiting confirmation.</p></div>
+                     <div className="text-center py-12"><CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" /><h3 className="text-xl font-semibold">{t.noPaymentsToReview}</h3><p className="text-muted-foreground">{t.noPaymentsToReviewDesc}</p></div>
                 ) : (
                     <div className="space-y-4">
                         {filteredRequests.paymentReview.map(req => <AdRequestCard key={req.id} request={req} t={t} onUpdate={fetchRequests} />)}
@@ -327,7 +327,7 @@ export default function AdminAdRequestsPage() {
 
              <TabsContent value="active" className="mt-4">
                 {filteredRequests.active.length === 0 ? (
-                     <div className="text-center py-12"><CheckCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" /><h3 className="text-xl font-semibold">No Active Ads</h3><p className="text-muted-foreground">There are currently no active ads.</p></div>
+                     <div className="text-center py-12"><CheckCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" /><h3 className="text-xl font-semibold">{t.noActiveAds}</h3><p className="text-muted-foreground">{t.noActiveAdsDesc}</p></div>
                 ) : (
                     <div className="space-y-4">
                         {filteredRequests.active.map(req => <AdRequestCard key={req.id} request={req} t={t} onUpdate={fetchRequests} />)}
@@ -337,7 +337,7 @@ export default function AdminAdRequestsPage() {
 
              <TabsContent value="rejected" className="mt-4">
                 {filteredRequests.rejected.length === 0 ? (
-                     <div className="text-center py-12"><CheckCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" /><h3 className="text-xl font-semibold">No Rejected Ads</h3><p className="text-muted-foreground">There are no rejected ad requests.</p></div>
+                     <div className="text-center py-12"><CheckCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" /><h3 className="text-xl font-semibold">{t.noRejectedAds}</h3><p className="text-muted-foreground">{t.noRejectedAdsDesc}</p></div>
                 ) : (
                     <div className="space-y-4">
                         {filteredRequests.rejected.map(req => <AdRequestCard key={req.id} request={req} t={t} onUpdate={fetchRequests} />)}

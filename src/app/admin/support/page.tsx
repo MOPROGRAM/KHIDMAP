@@ -85,11 +85,11 @@ export default function AdminSupportPage() {
     setProcessingId(requestId);
     try {
       await updateSupportRequestStatus(requestId, status, reply);
-      toast({ title: t.ticketStatusUpdated, description: `The ticket has been marked as ${status.replace('_', ' ')}.` });
+      toast({ title: t.ticketStatusUpdated, description: t.ticketStatusUpdatedDesc.replace('{status}', status.replace('_', ' ')) });
       fetchRequests(); // Re-fetch to update the list
       setReplyText(''); // Clear reply text after submission
     } catch (err: any) {
-      toast({ variant: 'destructive', title: "Update Failed", description: err.message });
+      toast({ variant: 'destructive', title: t.updateFailed, description: err.message });
     } finally {
       setProcessingId(null);
     }
@@ -145,12 +145,12 @@ export default function AdminSupportPage() {
                                 <TypeBadge type={req.type} t={t} />
                                 <span className="text-muted-foreground">{formatRelativeTime(req.createdAt)}</span>
                             </div>
-                            <p><strong>From:</strong> {req.name} ({req.email})</p>
-                            <p><strong>Subject:</strong> {req.subject}</p>
-                            <p className="text-sm text-muted-foreground pt-2 whitespace-pre-wrap bg-muted/50 p-3 rounded-md"><strong>Message:</strong> {req.message}</p>
+                            <p><strong>{t.from}:</strong> {req.name} ({req.email})</p>
+                            <p><strong>{t.subject}:</strong> {req.subject}</p>
+                            <p className="text-sm text-muted-foreground pt-2 whitespace-pre-wrap bg-muted/50 p-3 rounded-md"><strong>{t.message}:</strong> {req.message}</p>
                             {req.status === 'closed' && req.adminReply && (
                                 <Alert className="mt-2 bg-green-50 border-green-300 dark:bg-green-900/20">
-                                  <AlertTitle className="font-semibold text-green-800 dark:text-green-300">Admin Reply</AlertTitle>
+                                  <AlertTitle className="font-semibold text-green-800 dark:text-green-300">{t.adminReply}</AlertTitle>
                                   <AlertDescription className="text-green-700 dark:text-green-400">{req.adminReply}</AlertDescription>
                                 </Alert>
                             )}
@@ -173,17 +173,17 @@ export default function AdminSupportPage() {
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
-                                                <AlertDialogTitle>Close Support Ticket</AlertDialogTitle>
-                                                <AlertDialogDescription>Add a final reply to the user before closing the ticket. This will be sent as a notification.</AlertDialogDescription>
+                                                <AlertDialogTitle>{t.closeSupportTicket}</AlertDialogTitle>
+                                                <AlertDialogDescription>{t.closeSupportTicketDesc}</AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <div className="space-y-2">
-                                                <Label htmlFor="reply">Reply</Label>
-                                                <Textarea id="reply" value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Provide a resolution or final comment..."/>
+                                                <Label htmlFor="reply">{t.reply}</Label>
+                                                <Textarea id="reply" value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder={t.finalCommentPlaceholder}/>
                                             </div>
                                             <AlertDialogFooter>
-                                                <AlertDialogCancel onClick={() => setReplyText('')}>Cancel</AlertDialogCancel>
+                                                <AlertDialogCancel onClick={() => setReplyText('')}>{t.cancel}</AlertDialogCancel>
                                                 <AlertDialogAction onClick={() => handleUpdateStatus(req.id, 'closed', replyText)} disabled={!replyText.trim() || processingId === req.id} className={buttonVariants({ variant: 'default' })}>
-                                                    {processingId === req.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : 'Send Reply & Close'}
+                                                    {processingId === req.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : t.sendReplyAndClose}
                                                 </AlertDialogAction>
                                             </AlertDialogFooter>
                                         </AlertDialogContent>

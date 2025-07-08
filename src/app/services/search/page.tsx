@@ -96,7 +96,7 @@ export default function ServiceSearchPage() {
       .finally(() => {
         setIsLoading(false);
       });
-  }, []); // Only on mount
+  }, [t]);
 
   const updateSearchHistory = (query: string) => {
     if (!query.trim()) return;
@@ -178,7 +178,7 @@ export default function ServiceSearchPage() {
           longitude: position.coords.longitude,
         };
         setSeekerLocation(newLocation);
-        toast({ title: t.sortedByDistance });
+        toast({ title: t.locationSet, description: t.sortedByDistance });
         setIsFindingLocation(false);
       },
       (error) => {

@@ -54,7 +54,7 @@ export default function DisputeDetailPage() {
   useEffect(() => {
     const fetchDisputeDetails = async () => {
       if (!orderId) {
-        setError("Order ID is missing.");
+        setError(t.orderIdMissing);
         setIsLoading(false);
         return;
       }
@@ -63,7 +63,7 @@ export default function DisputeDetailPage() {
       try {
         const fetchedOrder = await getOrderById(orderId);
         if (!fetchedOrder) {
-          setError("Order not found.");
+          setError(t.orderNotFound);
           setIsLoading(false);
           return;
         }
@@ -74,21 +74,21 @@ export default function DisputeDetailPage() {
           setMessages(chatMessages);
         }
       } catch (err: any) {
-        setError("Failed to fetch dispute details.");
+        setError(t.failedToFetchDisputeDetails);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchDisputeDetails();
-  }, [orderId]);
+  }, [orderId, t]);
 
   const handleResolve = async (resolution: 'seeker' | 'provider') => {
     if (!orderId || !resolutionNotes.trim()) {
         toast({
             variant: 'destructive',
             title: t.errorOccurred,
-            description: "Resolution notes are required to make a decision."
+            description: t.resolutionNotesRequired
         });
         return;
     }
@@ -149,7 +149,7 @@ export default function DisputeDetailPage() {
   }
 
   if (error || !order) {
-    return <div className="text-center text-destructive p-8">{error || "Order could not be loaded."}</div>;
+    return <div className="text-center text-destructive p-8">{error || t.orderCouldNotBeLoaded}</div>;
   }
 
   return (
@@ -162,17 +162,17 @@ export default function DisputeDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert className="h-6 w-6"/>{t.disputeDetails}</CardTitle>
-          <CardDescription>Order ID: {order.id}</CardDescription>
+          <CardDescription>{t.orderId}: {order.id}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <Card className="bg-muted/30">
-            <CardHeader><CardTitle className="text-lg">Order Summary</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg">{t.orderSummary}</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-2 gap-4 text-sm">
-              <div><strong className="block text-muted-foreground">Seeker</strong> {order.seekerName}</div>
-              <div><strong className="block text-muted-foreground">Provider</strong> {order.providerName}</div>
-              <div><strong className="block text-muted-foreground">Amount</strong> {order.amount} {order.currency}</div>
-              <div><strong className="block text-muted-foreground">Disputed On</strong> {formatDate(order.createdAt)}</div>
-              <div className="col-span-2"><strong className="block text-muted-foreground">Dispute Reason</strong> {order.disputeReason || 'N/A'}</div>
+              <div><strong className="block text-muted-foreground">{t.seeker}</strong> {order.seekerName}</div>
+              <div><strong className="block text-muted-foreground">{t.provider}</strong> {order.providerName}</div>
+              <div><strong className="block text-muted-foreground">{t.amount}</strong> {order.amount} {order.currency}</div>
+              <div><strong className="block text-muted-foreground">{t.disputedOn}</strong> {formatDate(order.createdAt)}</div>
+              <div className="col-span-2"><strong className="block text-muted-foreground">{t.disputeReason}</strong> {order.disputeReason || 'N/A'}</div>
             </CardContent>
           </Card>
 
@@ -214,7 +214,7 @@ export default function DisputeDetailPage() {
                     badgeVariant = "default";
                     messageBg = "bg-primary text-primary-foreground";
                  } else { // Admin message
-                    senderName = "Admin";
+                    senderName = t.admin;
                     messageAlignment = "center";
                     badgeVariant = "destructive";
                     messageBg = "bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300";
@@ -237,7 +237,7 @@ export default function DisputeDetailPage() {
             </div>
             {order.chatId && (
                 <form onSubmit={handleAdminSendMessage} className="mt-2 flex gap-2">
-                    <Textarea value={adminMessage} onChange={(e) => setAdminMessage(e.target.value)} placeholder="Send a message to both parties..." rows={1} disabled={isSendingMessage} className="flex-1"/>
+                    <Textarea value={adminMessage} onChange={(e) => setAdminMessage(e.target.value)} placeholder={t.sendMessageToParties} rows={1} disabled={isSendingMessage} className="flex-1"/>
                     <Button type="submit" size="icon" disabled={isSendingMessage || !adminMessage.trim()}>
                         {isSendingMessage ? <Loader2 className="h-4 w-4 animate-spin"/> : <Send className="h-4 w-4"/>}
                     </Button>
@@ -251,7 +251,7 @@ export default function DisputeDetailPage() {
             <h3 className="text-lg font-semibold mb-2">{t.resolution}</h3>
             <div className="space-y-2">
               <Label htmlFor="resolutionNotes">{t.adminNotes}</Label>
-              <Textarea id="resolutionNotes" value={resolutionNotes} onChange={(e) => setResolutionNotes(e.target.value)} placeholder="Explain the reasoning for your decision..." rows={4} />
+              <Textarea id="resolutionNotes" value={resolutionNotes} onChange={(e) => setResolutionNotes(e.target.value)} placeholder={t.explainDecision} rows={4} />
             </div>
           </div>
 
