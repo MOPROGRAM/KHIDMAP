@@ -686,6 +686,21 @@ export type Translations = {
   profileNameMissing: string;
   imageRequiredForAd: string;
   adImageHint: string;
+
+  // New keys for Ad creation selection
+  createNewAd: string;
+  chooseAdCreationMethod: string;
+  createWithAi: string;
+  createWithAiDescription: string;
+  createManually: string;
+  createManuallyDescription: string;
+  startNow: string;
+  createAdManually: string;
+  loginToSubmitAd: string;
+  // New validation messages
+  adTitleTooShort: string;
+  adTitleTooLong: string;
+  adBodyTooShort: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -1318,30 +1333,45 @@ export const translations: Record<'en' | 'ar', Translations> = {
     messageProvider: "Message Provider",
 
     // AI Ad Generation
-    aiAdGenerationTitle: "إنشاء إعلان بالذكاء الاصطناعي",
-    aiAdGenerationDescription: "صف خدمتك، ودع الذكاء الاصطناعي ينشئ لك الإعلان المثالي.",
-    primaryService: "الخدمة الأساسية",
-    primaryServicePlaceholder: "مثال: سباكة منزلية، كهرباء تجارية",
-    serviceAreasPlaceholderAI: "مثال: وسط المدينة، الحي الشمالي، الحي الغربي",
-    commaSeparated: "افصل بين المناطق بفاصلة.",
-    contactInfoOptional: "معلومات الاتصال (اختياري)",
-    contactInfoPlaceholder: "مثال: اتصل على 555-1234 للحصول على عرض سعر مجاني",
-    keywordsOptional: "كلمات مفتاحية / ميزات خاصة (اختياري)",
-    keywordsPlaceholder: "مثال: خدمة طوارئ 24/7، معتمد، خبرة 10 سنوات، تقديرات مجانية",
-    generateAd: "إنشاء الإعلان",
-    reviewAiAd: "راجع إعلانك الذي تم إنشاؤه",
-    reviewAiAdDescription: "يمكنك تعديل النص أدناه قبل الإرسال. الصورة مطلوبة.",
-    adBody: "نص الإعلان",
-    adImageRequired: "صورة الإعلان (مطلوبة)",
-    backToEditInfo: "العودة لتعديل المعلومات",
-    submitForApproval: "إرسال للموافقة",
-    aiGenerationFailed: "فشل إنشاء الإعلان بالذكاء الاصطناعي",
-    validationError: "خطأ في التحقق",
-    provideServiceType: "يرجى تقديم نوع الخدمة.",
-    provideServiceArea: "يرجى تقديم منطقة خدمة واحدة على الأقل.",
-    profileNameMissing: "تعذر العثور على اسمك. يرجى تحديث ملفك الشخصي.",
-    imageRequiredForAd: "الصورة مطلوبة لإنشاء إعلان.",
-    adImageHint: "اختر صورة جذابة تمثل خدمتك. الحجم الموصى به: 800x600 بكسل."
+    aiAdGenerationTitle: "AI Ad Generation",
+    aiAdGenerationDescription: "Describe your service, and let AI create the perfect ad for you.",
+    primaryService: "Primary Service",
+    primaryServicePlaceholder: "e.g., Residential Plumbing, Commercial Electrical",
+    serviceAreasPlaceholderAI: "e.g., Downtown, North End, West Suburbs",
+    commaSeparated: "Separate areas with a comma.",
+    contactInfoOptional: "Contact Info (Optional)",
+    contactInfoPlaceholder: "e.g., Call 555-1234 for a free quote",
+    keywordsOptional: "Keywords / Special Features (Optional)",
+    keywordsPlaceholder: "e.g., 24/7 emergency service, certified, 10 years experience, free estimates",
+    generateAd: "Generate Ad",
+    reviewAiAd: "Review Your AI-Generated Ad",
+    reviewAiAdDescription: "You can edit the text below before submitting. An image is required.",
+    adBody: "Ad Body",
+    adImageRequired: "Ad Image (Required)",
+    backToEditInfo: "Back to Edit Info",
+    submitForApproval: "Submit for Approval",
+    aiGenerationFailed: "AI Generation Failed",
+    validationError: "Validation Error",
+    provideServiceType: "Please provide a service type.",
+    provideServiceArea: "Please provide at least one service area.",
+    profileNameMissing: "Could not find your name. Please update your profile.",
+    imageRequiredForAd: "An image is required to create an ad.",
+    adImageHint: "Choose an attractive image that represents your service. Recommended size: 800x600px.",
+
+    // New keys for Ad creation selection
+    createNewAd: "Create a New Ad",
+    chooseAdCreationMethod: "Choose your preferred method to create your advertisement.",
+    createWithAi: "Create with AI",
+    createWithAiDescription: "Let our smart assistant write a professional and engaging ad for you in seconds.",
+    createManually: "Create Manually",
+    createManuallyDescription: "Write your own ad title and content for full control over the details.",
+    startNow: "Start Now",
+    createAdManually: "Create Ad Manually",
+    loginToSubmitAd: "You must be logged in to submit an ad.",
+    // New validation messages
+    adTitleTooShort: "Ad title must be at least 5 characters.",
+    adTitleTooLong: "Ad title must not exceed 60 characters.",
+    adBodyTooShort: "Ad body must be at least 20 characters.",
   },
   ar: {
     appName: "خدماب",
@@ -1695,7 +1725,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     disputed: "متنازع عليه",
     resolved: "تم الحل",
     paymentApprovals: "الموافقات المالية",
-    paymentApprovalsDescription: "مراجعة والموافقة على الدفعات المعلقة.",
     paymentRejectedTitle: "تم رفض إثبات الدفع",
     paymentRejectedMessage: "تم رفض إثبات الدفع الخاص بك للطلب {orderId} من قبل المسؤول. يرجى التحقق من تفاصيل طلبك ورفع إثبات جديد.",
     paymentPendingTitle: "الدفع معلق",
@@ -1976,6 +2005,21 @@ export const translations: Record<'en' | 'ar', Translations> = {
     provideServiceArea: "يرجى تقديم منطقة خدمة واحدة على الأقل.",
     profileNameMissing: "تعذر العثور على اسمك. يرجى تحديث ملفك الشخصي.",
     imageRequiredForAd: "الصورة مطلوبة لإنشاء إعلان.",
-    adImageHint: "اختر صورة جذابة تمثل خدمتك. الحجم الموصى به: 800x600 بكسل."
+    adImageHint: "اختر صورة جذابة تمثل خدمتك. الحجم الموصى به: 800x600 بكسل.",
+
+    // New keys for Ad creation selection
+    createNewAd: "إنشاء إعلان جديد",
+    chooseAdCreationMethod: "اختر الطريقة التي تفضلها لإنشاء إعلانك.",
+    createWithAi: "إنشاء باستخدام الذكاء الاصطناعي",
+    createWithAiDescription: "دع مساعدنا الذكي يكتب لك إعلانًا احترافيًا وجذابًا في ثوانٍ.",
+    createManually: "إنشاء يدويًا",
+    createManuallyDescription: "اكتب عنوان ومحتوى إعلانك بنفسك وتحكم في كل التفاصيل.",
+    startNow: "ابدأ الآن",
+    createAdManually: "إنشاء إعلان يدويًا",
+    loginToSubmitAd: "يجب تسجيل الدخول لإرسال الإعلان.",
+    // New validation messages
+    adTitleTooShort: "يجب أن يكون عنوان الإعلان 5 أحرف على الأقل.",
+    adTitleTooLong: "يجب ألا يتجاوز عنوان الإعلان 60 حرفًا.",
+    adBodyTooShort: "يجب أن يكون نص الإعلان 20 حرفًا على الأقل.",
   },
 };

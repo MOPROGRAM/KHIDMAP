@@ -105,7 +105,7 @@ export default function HomePage() {
               <h3 className="text-2xl font-bold text-foreground">{t.adPlaceholderTitle}</h3>
               <p className="text-muted-foreground">{t.adPlaceholderDescription}</p>
               <Button asChild>
-                <Link href="/dashboard/provider/ads/generate">{t.advertiseWithUs}</Link>
+                <Link href="/dashboard/provider/ads/new">{t.advertiseWithUs}</Link>
               </Button>
             </div>
             <div className="relative h-48 w-full rounded-lg overflow-hidden hidden md:block">

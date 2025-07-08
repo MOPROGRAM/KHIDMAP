@@ -20,7 +20,7 @@ export default function Footer() {
             <Link href="/services/search" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t.services}</Link>
             <Link href="/contact" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t.contactUs}</Link>
             <Link href="/faq" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t.howToUse}</Link>
-            <Link href="/dashboard/provider/ads/generate" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t.advertiseWithUs}</Link>
+            <Link href="/dashboard/provider/ads/new" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t.advertiseWithUs}</Link>
             <Link href="/terms-of-service" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t.termsOfService}</Link>
             <Link href="/privacy-policy" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t.privacyPolicy}</Link>
           </nav>
