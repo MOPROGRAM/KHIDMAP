@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
-import { auth } from '@/lib/firebase';
-import { Order, Message, getOrderById, getMessagesForChat, resolveDispute, sendMessage } from '@/lib/data';
+import { auth, db } from '@/lib/firebase';
+import { Order, Message, getOrderById, resolveDispute, sendMessage } from '@/lib/data';
 import { Loader2, ArrowLeft, ShieldAlert, User, MessageSquare, Check, CheckCheck, Phone, PhoneMissed, PhoneOff, Video as VideoIcon, Send } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -19,7 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { useSettings } from '@/contexts/SettingsContext';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 
 
 const formatCallDuration = (seconds: number) => {
@@ -68,11 +68,6 @@ export default function DisputeDetailPage() {
           return;
         }
         setOrder(fetchedOrder);
-        
-        if (fetchedOrder.chatId) {
-          const chatMessages = await getMessagesForChat(fetchedOrder.chatId);
-          setMessages(chatMessages);
-        }
       } catch (err: any) {
         setError(t.failedToFetchDisputeDetails);
       } finally {
@@ -82,6 +77,27 @@ export default function DisputeDetailPage() {
 
     fetchDisputeDetails();
   }, [orderId, t]);
+
+  useEffect(() => {
+    if (!order?.chatId || !db) {
+      setMessages([]);
+      return;
+    }
+    
+    const messagesRef = collection(db, 'messages', order.chatId, 'messages');
+    const q = query(messagesRef, orderBy('createdAt'));
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const msgs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+      setMessages(msgs);
+    }, (err) => {
+      console.error(`Error fetching messages for dispute ${order.id}:`, err);
+      toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotLoadMessages });
+    });
+
+    return () => unsubscribe();
+  }, [order, toast, t]);
+
 
   const handleResolve = async (resolution: 'seeker' | 'provider') => {
     if (!orderId || !resolutionNotes.trim()) {
@@ -116,17 +132,7 @@ export default function DisputeDetailPage() {
     try {
         await sendMessage(order.chatId, adminMessage, 'text');
         
-        // Manually add message to UI for instant feedback, as firestore listener might have a delay
-        const tempMessage: Message = {
-            id: new Date().toISOString(),
-            chatId: order.chatId,
-            senderId: auth.currentUser!.uid,
-            content: adminMessage,
-            type: 'text',
-            createdAt: Timestamp.now(),
-            readBy: {}
-        };
-        setMessages(prev => [...prev, tempMessage]);
+        // No need to manually add message, onSnapshot will handle it.
         setAdminMessage('');
     } catch(err: any) {
         toast({
@@ -185,7 +191,7 @@ export default function DisputeDetailPage() {
                  let badgeVariant: "default" | "secondary" | "destructive" = "secondary";
                  let messageBg: string = "bg-muted";
 
-                 if (msg.senderId === 'system_call_status') { // Corrected this line
+                 if (msg.type === 'system_call_status') { // Corrected this line
                     const callIcon = msg.content === 'unanswered' ? PhoneMissed : msg.content === 'declined' ? PhoneOff : Phone;
                     const callTypeIcon = msg.callMetadata?.type === 'video' ? VideoIcon : Phone;
                     const durationText = msg.callMetadata?.duration ? ` - ${formatCallDuration(msg.callMetadata.duration)}` : '';

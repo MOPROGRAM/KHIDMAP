@@ -528,7 +528,6 @@ export type Translations = {
   pending: string;
   approved: string;
   rejected: string;
-
   // Support Tickets
   loginToContactSupport: string;
   supportRequestSentTitle: string;
@@ -640,6 +639,21 @@ export type Translations = {
   disputeResolvedTitle: string;
   disputeResolvedSeekerFavorMessage: string;
   disputeResolvedProviderFavorMessage: string;
+
+  // New translations for dispute chat
+  orderId: string;
+  orderSummary: string;
+  amount: string;
+  disputedOn: string;
+  sendMessageToParties: string;
+  explainDecision: string;
+  orderCouldNotBeLoaded: string;
+  couldNotLoadMessages: string;
+  resolutionNotesRequired: string;
+  failedToFetchDisputeDetails: string;
+  orderIdMissing: string;
+  admin: string;
+  unknownUser: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -1092,6 +1106,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     markAsFinished: "Mark as Finished",
     confirmCompletion: "Confirm Completion",
     reportProblem: "Report a Problem",
+
+
+    // Notifications
     notifications: "Notifications",
     noNotifications: "No new notifications.",
     markAllAsRead: "Mark all as read",
@@ -1100,10 +1117,16 @@ export const translations: Record<'en' | 'ar', Translations> = {
     newOrderRequestMessage: "{seekerName} has requested your service.",
     paymentReceivedTitle: "Payment Received!",
     paymentReceivedMessage: "{seekerName} has paid for the order. You can now start the service.",
+    //orderCompletedTitle: string;
+    //orderCompletedMessage: string; 
+    //orderDisputedTitle: string;
+    //orderDisputedMessage: string;
     allNotifications: "All Notifications",
     allNotificationsDescription: "View and manage all your notifications.",
     noNotificationsYet: "You have no notifications yet.",
     viewAll: "View All",
+
+    // Proof deletion
     deleteProof: "Delete Proof",
     uploadNewProof: "Upload New Proof",
     confirmDeleteProofTitle: "Delete Payment Proof?",
@@ -1116,6 +1139,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paymentProof: "Payment Proof",
     continue: "Continue",
     contactSupport: "Contact Support",
+    // Ad Requests
     requestSubmittedTitle: "Request Submitted",
     requestSubmittedDescription: "Your request has been sent to the admin for review.",
     adRequestApprovedTitle: "Ad Request Approved",
@@ -1127,6 +1151,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     pending: "Pending",
     approved: "Approved",
     rejected: "Rejected",
+    // Support Tickets
     loginToContactSupport: "Please log in to contact support.",
     supportRequestSentTitle: "Support Request Sent",
     supportRequestSentDescription: "Your request (ID: {ticketId}) has been sent. We will get back to you soon.",
@@ -1178,6 +1203,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     adPaymentRejectedTitle: "Ad Payment Rejected",
     adPaymentRejectedMessage: "Your payment proof was rejected. Reason: {reason}. Please upload new proof.",
     adRequestInPaymentReviewMessage: "Your ad payment is under review by the admin and will be activated shortly.",
+
+    // Legal
     termsOfService: "Terms of Service",
     privacyPolicy: "Privacy Policy",
     termsTitle: "Terms of Service",
@@ -1186,6 +1213,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     privacyTitle: "Privacy Policy",
     privacyDescription: "Last updated: July 2024",
     privacyContent: "Your privacy is important to us. It is Khidmap's policy to respect your privacy regarding any information we may collect from you through our app.\n\n<h2>1. Information We Collect</h2>\nWe collect information you provide directly to us, such as when you create an account, update your profile, request services, or communicate with us. This may include your name, email address, phone number, and location data.\n\n<h2>2. How We Use Information</h2>\nWe use the information we collect to:\n- Provide, maintain, and improve our services;\n- Process transactions and send related information, including confirmations and invoices;\n- Send you technical notices, updates, security alerts, and support messages;\n- Communicate with you about products, services, offers, and events offered by Khidmap and others.\n\n<h2>3. Information Sharing</h2>\nWe do not share your personal information with third parties except as described in this privacy policy. We may share information with vendors, consultants, and other service providers who need access to such information to carry out work on our behalf.",
+    
+    // Verification
     identityVerification: "Identity Verification",
     identityVerificationDescription: "Verify your identity to increase customer trust.",
     verificationNotSubmitted: "You have not submitted any documents for verification yet.",
@@ -1210,6 +1239,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     confirmRejectVerificationTitle: "Confirm Reject Verification?",
     confirmRejectVerificationDescription: "The provider will be notified of the rejection and the reason. Are you sure?",
     verifiedProvider: "Verified Provider",
+
+    // Dispute Management
     disputeResolution: "Dispute Resolution",
     disputeResolutionDescription: "Review and resolve user disputes.",
     noDisputes: "No Disputes",
@@ -1231,6 +1262,21 @@ export const translations: Record<'en' | 'ar', Translations> = {
     disputeResolvedTitle: "Dispute Resolved",
     disputeResolvedSeekerFavorMessage: "The dispute for order {orderId} has been resolved in favor of the seeker. The refund will be processed.",
     disputeResolvedProviderFavorMessage: "The dispute for order {orderId} has been resolved in favor of the provider. The payout will be processed.",
+
+    // New translations for dispute chat
+    orderId: "Order ID",
+    orderSummary: "Order Summary",
+    amount: "Amount",
+    disputedOn: "Disputed On",
+    sendMessageToParties: "Send a message to both parties...",
+    explainDecision: "Explain your decision clearly. This will be visible to both users.",
+    orderCouldNotBeLoaded: "This order could not be loaded.",
+    couldNotLoadMessages: "Could not load messages for this chat.",
+    resolutionNotesRequired: "Resolution notes are required.",
+    failedToFetchDisputeDetails: "Failed to fetch dispute details.",
+    orderIdMissing: "Order ID is missing.",
+    admin: "Admin",
+    unknownUser: "Unknown User",
   },
   ar: {
     appName: "خدماب",
@@ -1817,5 +1863,18 @@ export const translations: Record<'en' | 'ar', Translations> = {
     disputeResolvedTitle: "تم حل النزاع",
     disputeResolvedSeekerFavorMessage: "تم حل النزاع على الطلب {orderId} لصالح الباحث عن الخدمة. سيتم متابعة عملية استرداد المبلغ.",
     disputeResolvedProviderFavorMessage: "تم حل النزاع على الطلب {orderId} لصالح مقدم الخدمة. سيتم متابعة عملية الدفع.",
+    orderId: "رقم الطلب",
+    orderSummary: "ملخص الطلب",
+    amount: "المبلغ",
+    disputedOn: "تاريخ النزاع",
+    sendMessageToParties: "أرسل رسالة لكلا الطرفين...",
+    explainDecision: "اشرح قرارك بوضوح. سيكون هذا مرئيًا لكلا المستخدمين.",
+    orderCouldNotBeLoaded: "تعذر تحميل هذا الطلب.",
+    couldNotLoadMessages: "تعذر تحميل رسائل هذه المحادثة.",
+    resolutionNotesRequired: "ملاحظات القرار مطلوبة.",
+    failedToFetchDisputeDetails: "فشل في جلب تفاصيل النزاع.",
+    orderIdMissing: "معرف الطلب مفقود.",
+    admin: "المسؤول",
+    unknownUser: "مستخدم غير معروف",
   },
 };

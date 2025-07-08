@@ -535,8 +535,17 @@ export const sendMessage = async (
     });
     
     const unreadUpdates: { [key: string]: any } = {};
+    const isSenderParticipant = chatData.participantIds.includes(senderId);
+
     chatData.participantIds.forEach(participantId => {
-        if (participantId !== senderId) {
+        // If the sender is a participant, only increment for the other participant.
+        // If the sender is NOT a participant (i.e., an admin), increment for EVERYONE.
+        if (isSenderParticipant) {
+            if (participantId !== senderId) {
+                unreadUpdates[`unreadCount.${participantId}`] = increment(1);
+            }
+        } else {
+            // This is an admin message, increment for all actual participants
             unreadUpdates[`unreadCount.${participantId}`] = increment(1);
         }
     });
