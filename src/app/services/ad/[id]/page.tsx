@@ -130,6 +130,18 @@ export default function ProviderDetailsPage() {
   const [commentInput, setCommentInput] = useState('');
   const [isStartingChat, setIsStartingChat] = useState(false);
 
+  const WhatsAppIcon = () => (
+    <svg
+      role="img"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-5 w-5"
+      fill="currentColor"
+    >
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.52s-.67-.816-.916-1.123c-.246-.306-.5-.337-.67-.342-.173-.005-.371-.005-.57-.005-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+    </svg>
+  );
+
 
   const fetchProviderData = useCallback(async () => {
      if (!db) {
@@ -223,7 +235,7 @@ export default function ProviderDetailsPage() {
           await addRating({
               ratedUserId: provider.uid,
               raterUserId: authUser.uid,
-              raterName: authUser.displayName || "Anonymous",
+              raterName: authUser.displayName || t.unknownUser,
               rating: ratingInput,
               comment: commentInput,
           });
@@ -274,6 +286,8 @@ export default function ProviderDetailsPage() {
   const images = useMemo(() => Array.isArray(provider?.images) ? provider.images : [], [provider]);
   const videos = useMemo(() => Array.isArray(provider?.videos) ? provider.videos : [], [provider]);
   const cleanPhoneNumber = useMemo(() => provider?.phoneNumber?.replace(/[^0-9+]/g, '') || '', [provider?.phoneNumber]);
+  const whatsappMessage = encodeURIComponent((t.whatsappMessage || "Hello, I found your profile on {appName} and I'm interested in your services.").replace('{appName}', t.appName));
+
 
   if (isLoading || isAuthLoading) {
     return (
@@ -329,9 +343,6 @@ export default function ProviderDetailsPage() {
       </div>
     );
   }
-  
-  const whatsappMessage = encodeURIComponent(`Hello, I found your profile on ${t.appName} and I'm interested in your services.`);
-
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 py-4 animate-fadeIn">
@@ -399,6 +410,13 @@ export default function ProviderDetailsPage() {
                         </a>
                     </Button>
                 )}
+                {provider.phoneNumber && (
+                    <Button asChild size="lg" className="w-full group bg-green-500 hover:bg-green-600 text-white">
+                        <a href={`https://wa.me/${cleanPhoneNumber}?text=${whatsappMessage}`} target="_blank" rel="noopener noreferrer">
+                           <WhatsAppIcon /> {t.contactOnWhatsApp}
+                        </a>
+                    </Button>
+                )}
                  {authUser && userRole === 'seeker' && authUser.uid !== providerId && (
                   <Button onClick={handleStartChat} disabled={isStartingChat} size="lg" variant="outline" className="w-full group">
                       {isStartingChat ? <Loader2 className="animate-spin h-5 w-5 ltr:mr-2 rtl:ml-2" /> : <MessageSquare className="ltr:mr-2 rtl:ml-2"/>}
@@ -414,7 +432,7 @@ export default function ProviderDetailsPage() {
               <div className="md:col-span-2 space-y-8">
                   {provider.qualifications && (
                     <div>
-                      <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-3"><Sparkles/> {t.aboutProvider?.replace('{name}', provider.name || 'الماهر')}</h2>
+                      <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-3"><Sparkles/> {t.aboutProvider?.replace('{name}', provider.name || t.provider)}</h2>
                       <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{provider.qualifications}</p>
                     </div>
                   )}
@@ -451,22 +469,22 @@ export default function ProviderDetailsPage() {
             
             {images.length > 0 && (
                 <div className="mt-8 pt-8 border-t">
-                    <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-4"><Camera/> {t.portfolioTitle} Images</h2>
+                    <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-4"><Camera/> {t.portfolioTitle} {t.images}</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {images.map((url, index) => (
                         <Dialog key={index}>
                             <DialogTrigger asChild>
                                 <div className="relative group aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer">
-                                    <Image src={url} alt={`Image portfolio ${index + 1}`} layout="fill" className="object-cover transition-transform group-hover:scale-105" />
+                                    <Image src={url} alt={`${t.portfolioImage} ${index + 1}`} layout="fill" className="object-cover transition-transform group-hover:scale-105" />
                                     <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-70 group-hover:opacity-100 group-hover:bg-black/40 transition-all duration-300">
                                         <Camera className="w-10 h-10 text-white transition-transform group-hover:scale-110" />
                                     </div>
                                 </div>
                             </DialogTrigger>
                             <DialogContent className="max-w-4xl p-2 bg-transparent border-0 shadow-none">
-                                <DialogTitle className="sr-only">{`Portfolio Image ${index + 1}`}</DialogTitle>
-                                <DialogDescription className="sr-only">{`Full screen view of portfolio image ${index + 1}`}</DialogDescription>
-                                <Image src={url} alt={`Image portfolio ${index + 1}`} width={1920} height={1080} className="rounded-lg object-contain max-h-[90vh] w-full" />
+                                <DialogTitle className="sr-only">{t.portfolioImage} {index + 1}</DialogTitle>
+                                <DialogDescription className="sr-only">{t.fullscreenViewOf} {t.portfolioImage} {index + 1}</DialogDescription>
+                                <Image src={url} alt={`${t.portfolioImage} ${index + 1}`} width={1920} height={1080} className="rounded-lg object-contain max-h-[90vh] w-full" />
                             </DialogContent>
                         </Dialog>
                         ))}
@@ -476,7 +494,7 @@ export default function ProviderDetailsPage() {
             
             {videos.length > 0 && (
                 <div className="mt-8 pt-8 border-t">
-                    <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-4"><VideoIcon/> {t.portfolioTitle} Videos</h2>
+                    <h2 className="text-xl font-bold text-primary flex items-center gap-2 mb-4"><VideoIcon/> {t.portfolioTitle} {t.videos}</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {videos.map((url, index) => (
                         <Dialog key={index}>
@@ -489,8 +507,8 @@ export default function ProviderDetailsPage() {
                                 </div>
                             </DialogTrigger>
                             <DialogContent className="max-w-4xl p-2 bg-transparent border-0 shadow-none">
-                                <DialogTitle className="sr-only">{`Portfolio Video ${index + 1}`}</DialogTitle>
-                                 <DialogDescription className="sr-only">{`Full screen view of portfolio video ${index + 1}`}</DialogDescription>
+                                <DialogTitle className="sr-only">{t.portfolioVideo} {index + 1}</DialogTitle>
+                                 <DialogDescription className="sr-only">{t.fullscreenViewOf} {t.portfolioVideo} {index + 1}</DialogDescription>
                                 <video src={url} controls autoPlay className="w-full max-h-[90vh] rounded-lg" />
                             </DialogContent>
                         </Dialog>

@@ -282,6 +282,12 @@ export type Translations = {
   analyzingImageDescription?: string;
   analyzingVideoTitle?: string;
   analyzingVideoDescription?: string;
+  images: string;
+  videos: string;
+  portfolioImage: string;
+  portfolioVideo: string;
+  fullscreenViewOf: string;
+  whatsappMessage: string;
 
   // AI Categorization
   analyzingBioTitle: string;
@@ -927,6 +933,12 @@ export const translations: Record<'en' | 'ar', Translations> = {
     analyzingImageDescription: "Please wait while we check the image for safety.",
     analyzingVideoTitle: "Analyzing Video...",
     analyzingVideoDescription: "Please wait while we check the video for safety.",
+    images: "Images",
+    videos: "Videos",
+    portfolioImage: "Portfolio Image",
+    portfolioVideo: "Portfolio Video",
+    fullscreenViewOf: "Fullscreen view of",
+    whatsappMessage: "Hello, I found your profile on {appName} and I'm interested in your services.",
     analyzingBioTitle: "Analyzing Your Bio...",
     analyzingBioDescription: "Automatically detecting your primary service category...",
     categoryAutoDetectedTitle: "Category Auto-Detected!",
@@ -1226,7 +1238,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     verificationVerifiedDescription: "Your account has been successfully verified.",
     verificationRejectedTitle: "Verification Rejected",
     verificationRejectedDescription: "Your verification request was rejected. Please review the reason and re-upload the correct documents.",
-    rejectionReason: "Rejection Reason",
+    //rejectionReason: string;
     verificationDocsUploadedTitle: "Documents Uploaded",
     verificationDocsUploadedDescription: "Your documents have been successfully uploaded and are now under review.",
     providerVerifications: "Provider Verifications",
@@ -1545,6 +1557,12 @@ export const translations: Record<'en' | 'ar', Translations> = {
     analyzingImageDescription: "يرجى الانتظار بينما نتحقق من سلامة الصورة.",
     analyzingVideoTitle: "جاري تحليل الفيديو...",
     analyzingVideoDescription: "يرجى الانتظار بينما نتحقق من سلامة الفيديو.",
+    images: "صور",
+    videos: "فيديوهات",
+    portfolioImage: "صورة من معرض الأعمال",
+    portfolioVideo: "فيديو من معرض الأعمال",
+    fullscreenViewOf: "عرض ملء الشاشة لـ",
+    whatsappMessage: "مرحباً، لقد وجدت ملفك الشخصي على تطبيق {appName} وأنا مهتم بخدماتك.",
     analyzingBioTitle: "جاري تحليل سيرتك الذاتية...",
     analyzingBioDescription: "نحدد فئة خدمتك الأساسية تلقائيًا...",
     categoryAutoDetectedTitle: "تم تحديد الفئة تلقائيًا!",
