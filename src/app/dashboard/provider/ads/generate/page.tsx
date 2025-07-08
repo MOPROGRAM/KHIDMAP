@@ -18,6 +18,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { generateAd } from '@/ai/flows/generate-ad-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useSettings } from '@/contexts/SettingsContext';
 
 const AdGenerationSchema = z.object({
   serviceType: z.string().min(3, { message: "provideServiceType" }),
@@ -31,6 +32,7 @@ export default function GenerateAdPage() {
   const { toast } = useToast();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { language } = useSettings();
 
   // --- State Management ---
   // Step 1: User Input
@@ -88,6 +90,7 @@ export default function GenerateAdPage() {
         contactInfo,
         keywords,
         providerName: authUser.displayName,
+        language,
       });
       setGeneratedTitle(result.title);
       setGeneratedBody(result.body);

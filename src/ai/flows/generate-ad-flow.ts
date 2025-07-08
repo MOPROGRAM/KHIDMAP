@@ -16,6 +16,7 @@ const GenerateAdInputSchema = z.object({
   contactInfo: z.string().optional().describe('Contact information like a phone number or website.'),
   keywords: z.string().optional().describe('Special keywords or phrases to include, e.g., "24/7 emergency service, certified, fast and reliable".'),
   providerName: z.string().describe("The name of the service provider or their company."),
+  language: z.enum(['en', 'ar']).describe("The language for the generated ad content (en for English, ar for Arabic).")
 });
 export type GenerateAdInput = z.infer<typeof GenerateAdInputSchema>;
 
@@ -37,11 +38,12 @@ const prompt = ai.definePrompt({
   prompt: `You are a professional marketing copywriter tasked with creating a compelling advertisement for a local service provider on a directory website.
 
 **Instructions:**
-1.  Use the provided information to craft a catchy title and a clear, persuasive ad body.
-2.  The tone should be professional, trustworthy, and aimed at attracting customers.
-3.  Structure the ad body with clear sections (e.g., services, service areas). Use bullet points for readability where appropriate.
-4.  If contact information is provided, seamlessly integrate it into the ad.
-5.  Generate a short, simple suggestion for a background image that visually represents the service.
+1.  **Language:** Generate all content (title, body, imageSuggestion) in the specified language code: {{language}}. For 'ar', generate the text in Arabic.
+2.  Use the provided information to craft a catchy title and a clear, persuasive ad body.
+3.  The tone should be professional, trustworthy, and aimed at attracting customers.
+4.  Structure the ad body with clear sections (e.g., services, service areas). Use bullet points for readability where appropriate.
+5.  If contact information is provided, seamlessly integrate it into the ad.
+6.  Generate a short, simple suggestion for a background image that visually represents the service.
 
 **Provider Information:**
 - **Provider Name:** {{providerName}}
