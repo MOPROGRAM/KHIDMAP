@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ShieldCheck, AlertTriangle, Loader2, DollarSign, ArrowRight, Megaphone, LifeBuoy, BadgeCheck, ShieldAlert } from 'lucide-react';
 import { auth, db } from '@/lib/firebase';
@@ -90,8 +90,8 @@ export default function AdminDashboardPage() {
                                     <DollarSign className="h-6 w-6 text-primary" />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-bold text-foreground">Payment Approvals</h3>
-                                    <p className="text-sm text-muted-foreground">Review and approve pending payments.</p>
+                                    <h3 className="text-base font-bold text-foreground">{t.paymentApprovals}</h3>
+                                    <p className="text-sm text-muted-foreground">{t.paymentApprovalsDescription}</p>
                                 </div>
                             </div>
                             <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
@@ -106,8 +106,8 @@ export default function AdminDashboardPage() {
                                     <Megaphone className="h-6 w-6 text-primary" />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-bold text-foreground">Ad Requests</h3>
-                                    <p className="text-sm text-muted-foreground">Review and approve advertisement requests.</p>
+                                    <h3 className="text-base font-bold text-foreground">{t.adRequests}</h3>
+                                    <p className="text-sm text-muted-foreground">{t.adRequestsDescription}</p>
                                 </div>
                             </div>
                             <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors duration-300" />

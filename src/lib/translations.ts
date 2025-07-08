@@ -366,6 +366,7 @@ export type Translations = {
   disputed: string;
   resolved: string;
   paymentApprovals: string;
+  paymentApprovalsDescription: string;
   paymentRejectedTitle: string;
   paymentRejectedMessage: string;
   paymentPendingTitle: string;
@@ -523,6 +524,7 @@ export type Translations = {
   adRequestRejectedTitle: string;
   adRequestRejectedMessage: string;
   adRequests: string;
+  adRequestsDescription: string;
   pending: string;
   approved: string;
   rejected: string;
@@ -602,11 +604,12 @@ export type Translations = {
   verificationVerifiedDescription: string;
   verificationRejectedTitle: string;
   verificationRejectedDescription: string;
-  rejectionReason: string;
+  //rejectionReason: string;
   verificationDocsUploadedTitle: string;
   verificationDocsUploadedDescription: string;
   providerVerifications: string;
   providerVerificationsDescription: string;
+  reviewProviderVerifications: string;
   noPendingVerifications: string;
   noPendingVerificationsDescription: string;
   approve: string;
@@ -982,6 +985,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     disputed: "Disputed",
     resolved: "Resolved",
     paymentApprovals: "Payment Approvals",
+    paymentApprovalsDescription: "Review and approve pending payments.",
     paymentRejectedTitle: "Payment Proof Rejected",
     paymentRejectedMessage: "The payment proof for your order {orderId} was rejected by the admin. Please check your order details and upload a new proof.",
     paymentPendingTitle: "Payment Pending",
@@ -1119,6 +1123,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     adRequestRejectedTitle: "Ad Request Rejected",
     adRequestRejectedMessage: "Unfortunately, your advertisement request has been rejected. Reason: {reason}",
     adRequests: "Ad Requests",
+    adRequestsDescription: "Review and approve advertisement requests.",
     pending: "Pending",
     approved: "Approved",
     rejected: "Rejected",
@@ -1181,50 +1186,51 @@ export const translations: Record<'en' | 'ar', Translations> = {
     privacyTitle: "Privacy Policy",
     privacyDescription: "Last updated: July 2024",
     privacyContent: "Your privacy is important to us. It is Khidmap's policy to respect your privacy regarding any information we may collect from you through our app.\n\n<h2>1. Information We Collect</h2>\nWe collect information you provide directly to us, such as when you create an account, update your profile, request services, or communicate with us. This may include your name, email address, phone number, and location data.\n\n<h2>2. How We Use Information</h2>\nWe use the information we collect to:\n- Provide, maintain, and improve our services;\n- Process transactions and send related information, including confirmations and invoices;\n- Send you technical notices, updates, security alerts, and support messages;\n- Communicate with you about products, services, offers, and events offered by Khidmap and others.\n\n<h2>3. Information Sharing</h2>\nWe do not share your personal information with third parties except as described in this privacy policy. We may share information with vendors, consultants, and other service providers who need access to such information to carry out work on our behalf.",
-    identityVerification: "إثبات الهوية",
-    identityVerificationDescription: "قم بإثبات هويتك لزيادة ثقة العملاء.",
-    verificationNotSubmitted: "لم تقم بتقديم مستندات لإثبات الهوية بعد.",
-    uploadDocuments: "رفع المستندات",
-    reUploadDocuments: "إعادة رفع المستندات",
-    verificationPendingTitle: "التحقق قيد المراجعة",
-    verificationPendingDescription: "يقوم فريقنا بمراجعة مستنداتك. سيتم إعلامك بالنتيجة قريبًا.",
-    verificationVerifiedTitle: "تم التحقق",
-    verificationVerifiedDescription: "تم التحقق من حسابك بنجاح.",
-    verificationRejectedTitle: "تم رفض التحقق",
-    verificationRejectedDescription: "تم رفض طلب التحقق الخاص بك. يرجى مراجعة السبب وإعادة رفع المستندات الصحيحة.",
-    rejectionReason: "سبب الرفض",
-    verificationDocsUploadedTitle: "تم رفع المستندات",
-    verificationDocsUploadedDescription: "تم رفع مستنداتك بنجاح وهي الآن قيد المراجعة.",
-    providerVerifications: "طلبات التحقق",
-    providerVerificationsDescription: "مراجعة والموافقة على طلبات التحقق من هوية مقدمي الخدمات.",
-    noPendingVerifications: "لا توجد طلبات تحقق معلقة",
-    noPendingVerificationsDescription: "لا يوجد مقدمو خدمات في انتظار التحقق حاليًا.",
-    approve: "موافقة",
-    uploadedDocuments: "المستندات المرفوعة",
-    confirmRejectVerificationTitle: "تأكيد رفض التحقق؟",
-    confirmRejectVerificationDescription: "سيتم إعلام مقدم الخدمة بالرفض والسبب. هل أنت متأكد؟",
-    verifiedProvider: "مقدم خدمة موثوق",
-    disputeResolution: "إدارة النزاعات",
-    disputeResolutionDescription: "مراجعة وحل النزاعات بين المستخدمين.",
-    noDisputes: "لا توجد نزاعات",
-    noDisputesDescription: "لا توجد حاليًا طلبات متنازع عليها.",
-    viewDispute: "عرض النزاع",
-    disputeDetails: "تفاصيل النزاع",
-    disputeTimeline: "الجدول الزمني للطلب",
-    disputeReason: "سبب النزاع",
-    disputeConversation: "المحادثة بين الطرفين",
-    resolution: "القرار",
-    adminNotes: "ملاحظات المسؤول (سيتم مشاركتها مع المستخدمين)",
-    sideWithSeeker: "الحكم لصالح الباحث عن الخدمة (استرداد)",
-    sideWithProvider: "الحكم لصالح مقدم الخدمة (دفع)",
-    submitResolution: "إرسال القرار",
-    confirmResolutionTitle: "تأكيد القرار؟",
-    confirmResolutionDescription: "سيتم إعلام كلا المستخدمين بهذا القرار. لا يمكن التراجع عن هذا الإجراء.",
-    resolutionSubmitted: "تم إرسال القرار بنجاح.",
-    failedToSubmitResolution: "فشل إرسال القرار.",
-    disputeResolvedTitle: "تم حل النزاع",
-    disputeResolvedSeekerFavorMessage: "تم حل النزاع على الطلب {orderId} لصالح الباحث عن الخدمة. سيتم متابعة عملية استرداد المبلغ.",
-    disputeResolvedProviderFavorMessage: "تم حل النزاع على الطلب {orderId} لصالح مقدم الخدمة. سيتم متابعة عملية الدفع.",
+    identityVerification: "Identity Verification",
+    identityVerificationDescription: "Verify your identity to increase customer trust.",
+    verificationNotSubmitted: "You have not submitted any documents for verification yet.",
+    uploadDocuments: "Upload Documents",
+    reUploadDocuments: "Re-upload Documents",
+    verificationPendingTitle: "Verification Pending",
+    verificationPendingDescription: "Our team is reviewing your documents. You will be notified of the result soon.",
+    verificationVerifiedTitle: "Verified",
+    verificationVerifiedDescription: "Your account has been successfully verified.",
+    verificationRejectedTitle: "Verification Rejected",
+    verificationRejectedDescription: "Your verification request was rejected. Please review the reason and re-upload the correct documents.",
+    rejectionReason: "Rejection Reason",
+    verificationDocsUploadedTitle: "Documents Uploaded",
+    verificationDocsUploadedDescription: "Your documents have been successfully uploaded and are now under review.",
+    providerVerifications: "Provider Verifications",
+    providerVerificationsDescription: "Review and approve provider verification requests.",
+    reviewProviderVerifications: "Review provider verification requests.",
+    noPendingVerifications: "No Pending Verifications",
+    noPendingVerificationsDescription: "There are currently no providers awaiting verification.",
+    approve: "Approve",
+    uploadedDocuments: "Uploaded Documents",
+    confirmRejectVerificationTitle: "Confirm Reject Verification?",
+    confirmRejectVerificationDescription: "The provider will be notified of the rejection and the reason. Are you sure?",
+    verifiedProvider: "Verified Provider",
+    disputeResolution: "Dispute Resolution",
+    disputeResolutionDescription: "Review and resolve user disputes.",
+    noDisputes: "No Disputes",
+    noDisputesDescription: "There are currently no disputed orders.",
+    viewDispute: "View Dispute",
+    disputeDetails: "Dispute Details",
+    disputeTimeline: "Order Timeline",
+    disputeReason: "Dispute Reason",
+    disputeConversation: "Conversation Between Parties",
+    resolution: "Resolution",
+    adminNotes: "Admin Notes (will be shared with users)",
+    sideWithSeeker: "Side with Seeker (Refund)",
+    sideWithProvider: "Side with Provider (Payout)",
+    submitResolution: "Submit Resolution",
+    confirmResolutionTitle: "Confirm Resolution?",
+    confirmResolutionDescription: "Both users will be notified of this decision. This action cannot be undone.",
+    resolutionSubmitted: "Resolution submitted successfully.",
+    failedToSubmitResolution: "Failed to submit resolution.",
+    disputeResolvedTitle: "Dispute Resolved",
+    disputeResolvedSeekerFavorMessage: "The dispute for order {orderId} has been resolved in favor of the seeker. The refund will be processed.",
+    disputeResolvedProviderFavorMessage: "The dispute for order {orderId} has been resolved in favor of the provider. The payout will be processed.",
   },
   ar: {
     appName: "خدماب",
@@ -1565,6 +1571,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     disputed: "متنازع عليه",
     resolved: "تم الحل",
     paymentApprovals: "الموافقات المالية",
+    paymentApprovalsDescription: "مراجعة والموافقة على الدفعات المعلقة.",
     paymentRejectedTitle: "تم رفض إثبات الدفع",
     paymentRejectedMessage: "تم رفض إثبات الدفع الخاص بك للطلب {orderId} من قبل المسؤول. يرجى التحقق من تفاصيل طلبك ورفع إثبات جديد.",
     paymentPendingTitle: "الدفع معلق",
@@ -1702,6 +1709,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     adRequestRejectedTitle: "تم رفض طلب الإعلان",
     adRequestRejectedMessage: "للأسف، تم رفض طلب إعلانك. السبب: {reason}",
     adRequests: "طلبات الإعلانات",
+    adRequestsDescription: "مراجعة والموافقة على طلبات الإعلانات.",
     pending: "قيد الانتظار",
     approved: "موافق عليه",
     rejected: "مرفوض",
@@ -1780,6 +1788,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     verificationDocsUploadedDescription: "تم رفع مستنداتك بنجاح وهي الآن قيد المراجعة.",
     providerVerifications: "طلبات التحقق",
     providerVerificationsDescription: "مراجعة والموافقة على طلبات التحقق من هوية مقدمي الخدمات.",
+    reviewProviderVerifications: "مراجعة طلبات التحقق من مقدمي الخدمات.",
     noPendingVerifications: "لا توجد طلبات تحقق معلقة",
     noPendingVerificationsDescription: "لا يوجد مقدمو خدمات في انتظار التحقق حاليًا.",
     approve: "موافقة",
