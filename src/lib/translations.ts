@@ -660,6 +660,9 @@ export type Translations = {
   orderIdMissing: string;
   admin: string;
   unknownUser: string;
+  partiesInvolved: string;
+  messageSeeker: string;
+  messageProvider: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -946,7 +949,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     aiCategorizationUnavailableTitle: "AI Assistance Unavailable",
     aiCategorizationUnavailableDescription: "Could not auto-detect category. Please select one manually.",
     messages: "Messages",
-    messageProvider: "Message {providerName}",
+    messageProvider: "Message Provider", // Changed for generic use
     startChatError: "Error starting chat",
     startConversation: "Start Conversation",
     messageSent: "Message Sent",
@@ -1274,8 +1277,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     disputeResolvedTitle: "Dispute Resolved",
     disputeResolvedSeekerFavorMessage: "The dispute for order {orderId} has been resolved in favor of the seeker. The refund will be processed.",
     disputeResolvedProviderFavorMessage: "The dispute for order {orderId} has been resolved in favor of the provider. The payout will be processed.",
-
-    // New translations for dispute chat
     orderId: "Order ID",
     orderSummary: "Order Summary",
     amount: "Amount",
@@ -1289,6 +1290,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     orderIdMissing: "Order ID is missing.",
     admin: "Admin",
     unknownUser: "Unknown User",
+    partiesInvolved: "Parties Involved",
+    messageSeeker: "Message Seeker",
+    messageProvider: "Message Provider",
   },
   ar: {
     appName: "خدماب",
@@ -1570,7 +1574,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     aiCategorizationUnavailableTitle: "مساعدة الذكاء الاصطناعي غير متاحة",
     aiCategorizationUnavailableDescription: "تعذر تحديد الفئة تلقائيًا. يرجى تحديد واحدة يدويًا.",
     messages: "الرسائل",
-    messageProvider: "مراسلة {providerName}",
+    messageProvider: "مراسلة مقدم الخدمة",
     startChatError: "خطأ في بدء المحادثة",
     startConversation: "بدء محادثة",
     messageSent: "تم إرسال الرسالة",
@@ -1894,5 +1898,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     orderIdMissing: "معرف الطلب مفقود.",
     admin: "المسؤول",
     unknownUser: "مستخدم غير معروف",
+    partiesInvolved: "الأطراف المعنية",
+    messageSeeker: "مراسلة الباحث",
+    messageProvider: "مراسلة المقدم",
   },
 };

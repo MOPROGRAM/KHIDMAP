@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { auth, db } from '@/lib/firebase';
-import { Order, Message, getOrderById, resolveDispute, sendMessage } from '@/lib/data';
+import { Order, Message, getOrderById, resolveDispute, sendMessage, startOrGetChat } from '@/lib/data';
 import { Loader2, ArrowLeft, ShieldAlert, User, MessageSquare, Check, CheckCheck, Phone, PhoneMissed, PhoneOff, Video as VideoIcon, Send } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -42,6 +42,7 @@ export default function DisputeDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [isStartingChat, setIsStartingChat] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [adminMessage, setAdminMessage] = useState('');
@@ -145,6 +146,22 @@ export default function DisputeDetailPage() {
     }
   }
 
+  const handleStartPrivateChat = async (targetUserId: string) => {
+    if (!auth.currentUser) {
+        toast({ variant: "destructive", title: t.authError, description: t.userNotAuthOrServiceUnavailable });
+        return;
+    }
+    setIsStartingChat(targetUserId);
+    try {
+        const chatId = await startOrGetChat(targetUserId);
+        router.push(`/dashboard/messages?chatId=${chatId}`);
+    } catch (error: any) {
+        toast({ variant: "destructive", title: t.startChatError, description: error.message });
+    } finally {
+        setIsStartingChat(null);
+    }
+};
+
   const formatDate = (date: Timestamp | undefined): string => {
     if (!date) return 'N/A';
     return date.toDate().toLocaleString();
@@ -171,16 +188,45 @@ export default function DisputeDetailPage() {
           <CardDescription>{t.orderId}: {order.id}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <Card className="bg-muted/30">
-            <CardHeader><CardTitle className="text-lg">{t.orderSummary}</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4 text-sm">
-              <div><strong className="block text-muted-foreground">{t.seeker}</strong> {order.seekerName}</div>
-              <div><strong className="block text-muted-foreground">{t.provider}</strong> {order.providerName}</div>
-              <div><strong className="block text-muted-foreground">{t.amount}</strong> {order.amount} {order.currency}</div>
-              <div><strong className="block text-muted-foreground">{t.disputedOn}</strong> {formatDate(order.createdAt)}</div>
-              <div className="col-span-2"><strong className="block text-muted-foreground">{t.disputeReason}</strong> {order.disputeReason || 'N/A'}</div>
-            </CardContent>
-          </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="bg-muted/30">
+                    <CardHeader>
+                        <CardTitle className="text-lg">{t.partiesInvolved}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <strong className="block text-muted-foreground">{t.seeker}</strong>
+                            <div className="flex items-center justify-between">
+                                <span>{order.seekerName}</span>
+                                <Button onClick={() => handleStartPrivateChat(order.seekerId)} size="sm" variant="outline" disabled={!!isStartingChat}>
+                                    {isStartingChat === order.seekerId ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageSquare className="h-4 w-4 mr-2" />}
+                                    {t.messageSeeker}
+                                </Button>
+                            </div>
+                        </div>
+                         <div className="space-y-2">
+                            <strong className="block text-muted-foreground">{t.provider}</strong>
+                            <div className="flex items-center justify-between">
+                                <span>{order.providerName}</span>
+                                <Button onClick={() => handleStartPrivateChat(order.providerId)} size="sm" variant="outline" disabled={!!isStartingChat}>
+                                    {isStartingChat === order.providerId ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageSquare className="h-4 w-4 mr-2" />}
+                                    {t.messageProvider}
+                                </Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="bg-muted/30">
+                    <CardHeader>
+                        <CardTitle className="text-lg">{t.orderSummary}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                        <div><strong className="block text-muted-foreground">{t.amount}</strong> {order.amount} {order.currency}</div>
+                        <div><strong className="block text-muted-foreground">{t.disputedOn}</strong> {formatDate(order.createdAt)}</div>
+                        <div className="col-span-2"><strong className="block text-muted-foreground">{t.disputeReason}</strong> {order.disputeReason || 'N/A'}</div>
+                    </CardContent>
+                </Card>
+            </div>
 
           <div>
             <h3 className="text-lg font-semibold mb-2 flex items-center gap-2"><MessageSquare className="h-5 w-5"/>{t.disputeConversation}</h3>
