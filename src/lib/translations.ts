@@ -1,5 +1,4 @@
 
-
 export type Translations = {
   appName: string;
   tagline: string;
@@ -139,6 +138,10 @@ export type Translations = {
   accessDenied?: string;
   notAuthorizedViewPage?: string;
   adminDashboardDescription?: string;
+  paymentApprovalsDescription: string;
+  reviewProviderVerifications: string;
+  disputeResolution: string;
+  disputeResolutionDescription: string;
   adminDashboardUnavailable?: string;
   logoutFailed?: string;
   goToHomepage?: string;
@@ -372,7 +375,6 @@ export type Translations = {
   disputed: string;
   resolved: string;
   paymentApprovals: string;
-  paymentApprovalsDescription: string;
   paymentRejectedTitle: string;
   paymentRejectedMessage: string;
   paymentPendingTitle: string;
@@ -546,7 +548,6 @@ export type Translations = {
   paymentIssue: string;
   messageTooShort: string;
   supportRequests: string;
-  supportRequestsDescription: string;
   reviewSupportTickets: string;
   noSupportRequests: string;
   noSupportRequestsDescription: string;
@@ -613,7 +614,6 @@ export type Translations = {
   verificationDocsUploadedTitle: string;
   verificationDocsUploadedDescription: string;
   providerVerifications: string;
-  providerVerificationsDescription: string;
   reviewProviderVerifications: string;
   noPendingVerifications: string;
   noPendingVerificationsDescription: string;
@@ -625,7 +625,6 @@ export type Translations = {
 
   // Dispute Management
   disputeResolution: string;
-  disputeResolutionDescription: string;
   noDisputes: string;
   noDisputesDescription: string;
   viewDispute: string;
@@ -645,8 +644,6 @@ export type Translations = {
   disputeResolvedTitle: string;
   disputeResolvedSeekerFavorMessage: string;
   disputeResolvedProviderFavorMessage: string;
-
-  // New translations for dispute chat
   orderId: string;
   orderSummary: string;
   amount: string;
@@ -663,6 +660,32 @@ export type Translations = {
   partiesInvolved: string;
   messageSeeker: string;
   messageProvider: string;
+
+  // AI Ad Generation
+  aiAdGenerationTitle: string;
+  aiAdGenerationDescription: string;
+  primaryService: string;
+  primaryServicePlaceholder: string;
+  serviceAreasPlaceholderAI: string;
+  commaSeparated: string;
+  contactInfoOptional: string;
+  contactInfoPlaceholder: string;
+  keywordsOptional: string;
+  keywordsPlaceholder: string;
+  generateAd: string;
+  reviewAiAd: string;
+  reviewAiAdDescription: string;
+  adBody: string;
+  adImageRequired: string;
+  backToEditInfo: string;
+  submitForApproval: string;
+  aiGenerationFailed: string;
+  validationError: string;
+  provideServiceType: string;
+  provideServiceArea: string;
+  profileNameMissing: string;
+  imageRequiredForAd: string;
+  adImageHint: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -805,6 +828,10 @@ export const translations: Record<'en' | 'ar', Translations> = {
     accessDenied: "Access Denied",
     notAuthorizedViewPage: "You are not authorized to view this page.",
     adminDashboardDescription: "Manage users, services, and application settings.",
+    paymentApprovalsDescription: "Review and approve pending payments.",
+    reviewProviderVerifications: "Review provider verification requests.",
+    disputeResolution: "Dispute Resolution",
+    disputeResolutionDescription: "Review and resolve user disputes.",
     adminDashboardUnavailable: "Admin Dashboard is currently unavailable because core services are not configured.",
     logoutFailed: "Logout Failed",
     goToHomepage: "Go to Homepage",
@@ -1014,7 +1041,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     disputed: "Disputed",
     resolved: "Resolved",
     paymentApprovals: "Payment Approvals",
-    paymentApprovalsDescription: "Review and approve pending payments.",
     paymentRejectedTitle: "Payment Proof Rejected",
     paymentRejectedMessage: "The payment proof for your order {orderId} was rejected by the admin. Please check your order details and upload a new proof.",
     paymentPendingTitle: "Payment Pending",
@@ -1178,7 +1204,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paymentIssue: "Payment Issue",
     messageTooShort: "Message must be at least 10 characters.",
     supportRequests: "Support Requests",
-    supportRequestsDescription: "Review and manage user support tickets.",
     reviewSupportTickets: "Review user support tickets.",
     noSupportRequests: "No Support Requests",
     noSupportRequestsDescription: "There are currently no open support requests.",
@@ -1245,7 +1270,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     verificationDocsUploadedTitle: "Documents Uploaded",
     verificationDocsUploadedDescription: "Your documents have been successfully uploaded and are now under review.",
     providerVerifications: "Provider Verifications",
-    providerVerificationsDescription: "Review and approve provider verification requests.",
     reviewProviderVerifications: "Review provider verification requests.",
     noPendingVerifications: "No Pending Verifications",
     noPendingVerificationsDescription: "There are currently no providers awaiting verification.",
@@ -1257,7 +1281,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
 
     // Dispute Management
     disputeResolution: "Dispute Resolution",
-    disputeResolutionDescription: "Review and resolve user disputes.",
     noDisputes: "No Disputes",
     noDisputesDescription: "There are currently no disputed orders.",
     viewDispute: "View Dispute",
@@ -1293,6 +1316,32 @@ export const translations: Record<'en' | 'ar', Translations> = {
     partiesInvolved: "Parties Involved",
     messageSeeker: "Message Seeker",
     messageProvider: "Message Provider",
+
+    // AI Ad Generation
+    aiAdGenerationTitle: "إنشاء إعلان بالذكاء الاصطناعي",
+    aiAdGenerationDescription: "صف خدمتك، ودع الذكاء الاصطناعي ينشئ لك الإعلان المثالي.",
+    primaryService: "الخدمة الأساسية",
+    primaryServicePlaceholder: "مثال: سباكة منزلية، كهرباء تجارية",
+    serviceAreasPlaceholderAI: "مثال: وسط المدينة، الحي الشمالي، الحي الغربي",
+    commaSeparated: "افصل بين المناطق بفاصلة.",
+    contactInfoOptional: "معلومات الاتصال (اختياري)",
+    contactInfoPlaceholder: "مثال: اتصل على 555-1234 للحصول على عرض سعر مجاني",
+    keywordsOptional: "كلمات مفتاحية / ميزات خاصة (اختياري)",
+    keywordsPlaceholder: "مثال: خدمة طوارئ 24/7، معتمد، خبرة 10 سنوات، تقديرات مجانية",
+    generateAd: "إنشاء الإعلان",
+    reviewAiAd: "راجع إعلانك الذي تم إنشاؤه",
+    reviewAiAdDescription: "يمكنك تعديل النص أدناه قبل الإرسال. الصورة مطلوبة.",
+    adBody: "نص الإعلان",
+    adImageRequired: "صورة الإعلان (مطلوبة)",
+    backToEditInfo: "العودة لتعديل المعلومات",
+    submitForApproval: "إرسال للموافقة",
+    aiGenerationFailed: "فشل إنشاء الإعلان بالذكاء الاصطناعي",
+    validationError: "خطأ في التحقق",
+    provideServiceType: "يرجى تقديم نوع الخدمة.",
+    provideServiceArea: "يرجى تقديم منطقة خدمة واحدة على الأقل.",
+    profileNameMissing: "تعذر العثور على اسمك. يرجى تحديث ملفك الشخصي.",
+    imageRequiredForAd: "الصورة مطلوبة لإنشاء إعلان.",
+    adImageHint: "اختر صورة جذابة تمثل خدمتك. الحجم الموصى به: 800x600 بكسل."
   },
   ar: {
     appName: "خدماب",
@@ -1433,6 +1482,10 @@ export const translations: Record<'en' | 'ar', Translations> = {
     accessDenied: "تم رفض الوصول",
     notAuthorizedViewPage: "أنت غير مصرح لك بعرض هذه الصفحة.",
     adminDashboardDescription: "إدارة المستخدمين والخدمات وإعدادات التطبيق.",
+    paymentApprovalsDescription: "مراجعة والموافقة على الدفعات المعلقة.",
+    reviewProviderVerifications: "مراجعة طلبات التحقق من مقدمي الخدمات.",
+    disputeResolution: "إدارة النزاعات",
+    disputeResolutionDescription: "مراجعة وحل النزاعات بين المستخدمين.",
     adminDashboardUnavailable: "لوحة تحكم المسؤول غير متاحة حاليًا لأن الخدمات الأساسية غير مهيأة.",
     logoutFailed: "فشل تسجيل الخروج",
     goToHomepage: "اذهب إلى الصفحة الرئيسية",
@@ -1447,6 +1500,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     welcomeToDashboardUser: "مرحباً بك في لوحة التحكم الخاصة بك، {userName}!",
     welcomeToDashboardProvider: "مرحباً بك في لوحة تحكم مقدم الخدمة!",
     welcomeToDashboardSeeker: "مرحباً بك في لوحة تحكم الباحث عن خدمة!",
+    profileDescriptionProvider: "تحديث معلوماتك الشخصية ومعلومات الخدمة.",
+    searchDescriptionSeeker: "ابحث عن حرفيين ماهرين لاحتياجاتك.",
+    searchHistoryDescriptionSeeker: "مراجعة عمليات بحثك السابقة عن الخدمات.",
     dashboardTaglineProvider: "إدارة ملفك الشخصي والتواصل مع العملاء.",
     dashboardTaglineSeeker: "ابحث عن أفضل الخدمات وقيمها لاحتياجاتك.",
     dashboardBannerAlt: "بانر لوحة التحكم مع أدوات أو صور لمساحة عمل",
@@ -1792,7 +1848,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     paymentIssue: "مشكلة في الدفع",
     messageTooShort: "يجب أن تكون الرسالة 10 أحرف على الأقل.",
     supportRequests: "طلبات الدعم",
-    supportRequestsDescription: "مراجعة وإدارة تذاكر دعم المستخدمين.",
     reviewSupportTickets: "مراجعة تذاكر دعم المستخدمين.",
     noSupportRequests: "لا توجد طلبات دعم",
     noSupportRequestsDescription: "لا توجد حاليًا طلبات دعم مفتوحة.",
@@ -1851,11 +1906,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     verificationVerifiedDescription: "تم التحقق من حسابك بنجاح.",
     verificationRejectedTitle: "تم رفض التحقق",
     verificationRejectedDescription: "تم رفض طلب التحقق الخاص بك. يرجى مراجعة السبب وإعادة رفع المستندات الصحيحة.",
-    rejectionReason: "سبب الرفض",
     verificationDocsUploadedTitle: "تم رفع المستندات",
     verificationDocsUploadedDescription: "تم رفع مستنداتك بنجاح وهي الآن قيد المراجعة.",
     providerVerifications: "طلبات التحقق",
-    providerVerificationsDescription: "مراجعة والموافقة على طلبات التحقق من هوية مقدمي الخدمات.",
     reviewProviderVerifications: "مراجعة طلبات التحقق من مقدمي الخدمات.",
     noPendingVerifications: "لا توجد طلبات تحقق معلقة",
     noPendingVerificationsDescription: "لا يوجد مقدمو خدمات في انتظار التحقق حاليًا.",
@@ -1865,7 +1918,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     confirmRejectVerificationDescription: "سيتم إعلام مقدم الخدمة بالرفض والسبب. هل أنت متأكد؟",
     verifiedProvider: "مقدم خدمة موثوق",
     disputeResolution: "إدارة النزاعات",
-    disputeResolutionDescription: "مراجعة وحل النزاعات بين المستخدمين.",
     noDisputes: "لا توجد نزاعات",
     noDisputesDescription: "لا توجد حاليًا طلبات متنازع عليها.",
     viewDispute: "عرض النزاع",
@@ -1901,5 +1953,29 @@ export const translations: Record<'en' | 'ar', Translations> = {
     partiesInvolved: "الأطراف المعنية",
     messageSeeker: "مراسلة الباحث",
     messageProvider: "مراسلة المقدم",
+    aiAdGenerationTitle: "إنشاء إعلان بالذكاء الاصطناعي",
+    aiAdGenerationDescription: "صف خدمتك، ودع الذكاء الاصطناعي ينشئ لك الإعلان المثالي.",
+    primaryService: "الخدمة الأساسية",
+    primaryServicePlaceholder: "مثال: سباكة منزلية، كهرباء تجارية",
+    serviceAreasPlaceholderAI: "مثال: وسط المدينة، الحي الشمالي، الحي الغربي",
+    commaSeparated: "افصل بين المناطق بفاصلة.",
+    contactInfoOptional: "معلومات الاتصال (اختياري)",
+    contactInfoPlaceholder: "مثال: اتصل على 555-1234 للحصول على عرض سعر مجاني",
+    keywordsOptional: "كلمات مفتاحية / ميزات خاصة (اختياري)",
+    keywordsPlaceholder: "مثال: خدمة طوارئ 24/7، معتمد، خبرة 10 سنوات، تقديرات مجانية",
+    generateAd: "إنشاء الإعلان",
+    reviewAiAd: "راجع إعلانك الذي تم إنشاؤه",
+    reviewAiAdDescription: "يمكنك تعديل النص أدناه قبل الإرسال. الصورة مطلوبة.",
+    adBody: "نص الإعلان",
+    adImageRequired: "صورة الإعلان (مطلوبة)",
+    backToEditInfo: "العودة لتعديل المعلومات",
+    submitForApproval: "إرسال للموافقة",
+    aiGenerationFailed: "فشل إنشاء الإعلان بالذكاء الاصطناعي",
+    validationError: "خطأ في التحقق",
+    provideServiceType: "يرجى تقديم نوع الخدمة.",
+    provideServiceArea: "يرجى تقديم منطقة خدمة واحدة على الأقل.",
+    profileNameMissing: "تعذر العثور على اسمك. يرجى تحديث ملفك الشخصي.",
+    imageRequiredForAd: "الصورة مطلوبة لإنشاء إعلان.",
+    adImageHint: "اختر صورة جذابة تمثل خدمتك. الحجم الموصى به: 800x600 بكسل."
   },
 };

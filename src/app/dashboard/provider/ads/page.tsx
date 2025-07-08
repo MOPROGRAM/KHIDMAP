@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -116,7 +115,7 @@ export default function MyAdsPage() {
                 <CardDescription>{t.myAdsDescription}</CardDescription>
                 </div>
             </div>
-            <Button asChild><Link href="/advertise">{t.newAdRequest}</Link></Button>
+            <Button asChild><Link href="/dashboard/provider/ads/generate">{t.newAdRequest}</Link></Button>
           </div>
         </CardHeader>
         <CardContent>

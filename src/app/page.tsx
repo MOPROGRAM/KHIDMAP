@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -106,7 +105,7 @@ export default function HomePage() {
               <h3 className="text-2xl font-bold text-foreground">{t.adPlaceholderTitle}</h3>
               <p className="text-muted-foreground">{t.adPlaceholderDescription}</p>
               <Button asChild>
-                <Link href="/advertise">{t.advertiseWithUs}</Link>
+                <Link href="/dashboard/provider/ads/generate">{t.advertiseWithUs}</Link>
               </Button>
             </div>
             <div className="relative h-48 w-full rounded-lg overflow-hidden hidden md:block">
@@ -127,7 +126,7 @@ export default function HomePage() {
                 <Button asChild size="lg">
                   <Link href="/register?role=provider">
                       {t.register}
-                      <ArrowRight className="ltr:ml-2 rtl:mr-2 h-4 w-4" />
+                      <ArrowRight className="ltr:ml-2 rtl:ml-2 h-4 w-4" />
                   </Link>
                 </Button>
               </div>
