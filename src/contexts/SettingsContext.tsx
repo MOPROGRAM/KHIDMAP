@@ -35,19 +35,13 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
     if (storedLang) {
       setLanguageState(storedLang);
-      document.documentElement.lang = storedLang;
-    } else {
-      document.documentElement.lang = 'en';
     }
 
     if (storedTheme) {
       setThemeState(storedTheme);
-      document.documentElement.classList.toggle('dark', storedTheme === 'dark');
     } else {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const initialTheme = prefersDark ? 'dark' : 'light';
-      setThemeState(initialTheme);
-      document.documentElement.classList.toggle('dark', initialTheme === 'dark');
+      setThemeState(prefersDark ? 'dark' : 'light');
     }
     
     if (storedCurrency) {
@@ -59,8 +53,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('language', lang);
-    document.documentElement.lang = lang;
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   };
 
   const toggleLanguage = () => {
@@ -71,7 +63,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
     localStorage.setItem('theme', newTheme);
-    document.documentElement.classList.toggle('dark', newTheme === 'dark');
   };
 
   const toggleTheme = () => {
@@ -83,15 +74,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     setCurrencyState(newCurrency);
     localStorage.setItem('currency', newCurrency);
   };
-  
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-  }, [language]);
-
-
-  if (!isMounted) {
-    return null; // Or a loading spinner, etc.
-  }
 
   return (
     <SettingsContext.Provider value={{ language, theme, currency, setCurrency, toggleLanguage, setLanguage, toggleTheme, setTheme, isMounted }}>
