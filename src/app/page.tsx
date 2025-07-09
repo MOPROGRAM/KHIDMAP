@@ -31,7 +31,7 @@ export default function HomePage() {
         className="flex-shrink-0 w-[280px] h-auto flex flex-col items-start text-left p-4 rounded-xl border bg-card/80 backdrop-blur-sm transition-all"
         style={{ scrollSnapAlign: 'start' }}
     >
-      <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 mb-3">
+      <div className="flex items-center justify-center h-10 w-10 rounded-lg border-2 border-primary/20 mb-3">
         {React.cloneElement(service.icon, { className: `h-6 w-6 ${service.color}` })}
       </div>
       <h3 className="text-sm font-bold text-foreground mb-1">{t[service.titleKey as keyof Translations]}</h3>
