@@ -1,5 +1,6 @@
 
 
+
 import { db, auth, storage } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch, GeoPoint, arrayUnion, arrayRemove, increment, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
@@ -1164,6 +1165,13 @@ export async function getAdRequests(): Promise<AdRequest[]> {
     );
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as AdRequest));
+}
+
+export async function getActiveAds(): Promise<AdRequest[]> {
+  if (!db) throw new Error("Database not initialized.");
+  const q = query(collection(db, 'adRequests'), where('status', '==', 'active'), orderBy('updatedAt', 'desc'));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as AdRequest));
 }
 
 export async function getAdRequestById(id: string): Promise<AdRequest | null> {

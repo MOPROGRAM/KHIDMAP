@@ -5,97 +5,48 @@
 
 @layer base {
   :root {
-    --background: 40 33% 97%; /* #fbf9f6 - Papyrus white for paper */
-    --foreground: 220 13% 10%; /* #171b23 - Darker Slate Blue for ink */
-
-    --card: 40 33% 99%; /* #fdfcfb - A slightly whiter paper for cards */
-    --card-foreground: 220 13% 10%;
-    
-    --popover: 40 33% 99%;
-    --popover-foreground: 220 13% 10%;
-
-    --primary: 30 95% 45%;
-    --primary-foreground: 30 100% 12%;
-
-    --secondary: 145 63% 42%;
-    --secondary-foreground: 145 50% 95%;
-
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217 91% 70%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 220 13% 77%; /* #b5bbc4 - A pencil-like gray for borders */
-    --input: 220 13% 77%;
-    --ring: 30 95% 45%;
-
-    --radius: 0.3rem; /* Sharper corners for a more blocky feel */
-
-    --chart-1: 30 95% 45%; 
-    --chart-2: 145 63% 42%; 
-    --chart-3: 221 83% 53%;
-    --chart-4: 280 65% 60%; 
-    --chart-5: 340 75% 55%; 
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 10% 3.9%;
-    --sidebar-primary: 30 95% 45%;
-    --sidebar-primary-foreground: 30 100% 12%;
-    --sidebar-accent: 145 63% 42%;
-    --sidebar-accent-foreground: 145 50% 95%;
-    --sidebar-border: 240 5.9% 90%;
-    --sidebar-ring: 30 95% 45%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
   }
 
   .dark {
-    --background: 220 13% 15%; /* Dark blue/black paper */
-    --foreground: 0 0% 98%; /* Lighter ink color */
-
-    --card: 220 13% 18%; /* Slightly lighter dark paper for cards */
-    --card-foreground: 0 0% 98%;
-    
-    --popover: 220 13% 18%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 30 95% 48%;
-    --primary-foreground: 30 100% 12%;
-
-    --secondary: 145 55% 48%;
-    --secondary-foreground: 145 50% 95%;
-
-    --muted: 240 3.7% 20%;
-    --muted-foreground: 240 5% 64.9%;
-
-    --accent: 240 3.7% 20%;
-    --accent-foreground: 0 0% 98%;
-
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 220 13% 30%; /* Lighter pencil-like gray for borders */
-    --input: 220 13% 30%;
-    --ring: 30 95% 48%;
-    
-    --radius: 0.3rem;
-    
-    --chart-1: 30 95% 48%;
-    --chart-2: 145 55% 48%;
-    --chart-3: 217 91% 60%;
-    --chart-4: 280 65% 70%;
-    --chart-5: 340 75% 65%;
-
-    --sidebar-background: 240 10% 3.9%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 30 95% 48%;
-    --sidebar-primary-foreground: 30 100% 12%;
-    --sidebar-accent: 145 55% 48%;
-    --sidebar-accent-foreground: 145 50% 95%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 30 95% 48%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217 91% 70%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 217 91% 60%;
   }
 }
 
@@ -105,24 +56,6 @@
   }
   body {
     @apply bg-background text-foreground antialiased font-medium;
-    line-height: 1.5rem;
-  }
-  
-  html[dir="rtl"] body {
-  }
-
-  .dark body {
-  }
-  
-  html[dir="rtl"].dark body {
-  }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .animate-fadeIn {
-    animation: fadeIn 0.5s ease-out forwards;
+    line-height: 1.6;
   }
 }

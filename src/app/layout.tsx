@@ -10,13 +10,16 @@ import AppInitializer from '@/components/AppInitializer';
 
 const tajawal = Tajawal({
   subsets: ['latin', 'arabic'],
-  weight: ['400', '500', '700'],
+  weight: ['400', '500', '700', '800'],
   variable: '--font-sans',
 });
 
 export const metadata: Metadata = {
-  title: 'Khidmap | خدماپ',
-  description: 'Find skilled artisans or post your services for plumbing and electrical work.',
+  title: 'Khidmap | Your Business Solution',
+  description: 'Better Solutions For Your Business',
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
@@ -25,14 +28,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" dir="ltr" suppressHydrationWarning>
+    <html lang="en" dir="ltr" suppressHydrationWarning className="!scroll-smooth">
       <head>
       </head>
       <body className={`flex flex-col min-h-screen ${tajawal.variable} font-sans`}>
         <SettingsProvider>
           <AppInitializer />
           <Header />
-          <main className="flex-grow container mx-auto px-4 py-4">
+          <main className="flex-grow">
             {children}
           </main>
           <Footer />
