@@ -6,25 +6,25 @@
 @layer base {
   :root {
     --background: 40 33% 97%; /* #fbf9f6 - Papyrus white for paper */
-    --foreground: 220 13% 17%; /* #252a36 - Darker Slate Blue for ink */
+    --foreground: 220 13% 10%; /* #171b23 - Darker Slate Blue for ink */
 
     --card: 40 33% 99%; /* #fdfcfb - A slightly whiter paper for cards */
-    --card-foreground: 220 13% 17%;
+    --card-foreground: 220 13% 10%;
     
     --popover: 40 33% 99%;
-    --popover-foreground: 220 13% 17%;
+    --popover-foreground: 220 13% 10%;
 
     --primary: 30 95% 58%;
     --primary-foreground: 30 100% 12%;
 
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
+    --secondary: 145 63% 42%;
+    --secondary-foreground: 145 50% 95%;
 
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
 
-    --accent: 145 63% 42%;
-    --accent-foreground: 145 50% 95%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -64,14 +64,14 @@
     --primary: 30 95% 62%;
     --primary-foreground: 30 100% 12%;
 
-    --secondary: 240 3.7% 20%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 145 55% 48%;
+    --secondary-foreground: 145 50% 95%;
 
     --muted: 240 3.7% 20%;
     --muted-foreground: 240 5% 64.9%;
 
-    --accent: 145 55% 48%;
-    --accent-foreground: 145 50% 95%;
+    --accent: 240 3.7% 20%;
+    --accent-foreground: 0 0% 98%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
@@ -104,50 +104,17 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
-    background-image: 
-      linear-gradient(90deg, transparent 2.5rem, hsl(0 84% 60% / 0.2) 2.5rem, hsl(0 84% 60% / 0.2) calc(2.5rem + 1px), transparent calc(2.5rem + 1px)),
-      repeating-linear-gradient(
-        to bottom,
-        transparent 0,
-        transparent 1.45rem,
-        hsl(var(--border) / 0.2) 1.5rem
-      );
-    background-size: 100% 1.5rem;
+    @apply bg-background text-foreground antialiased font-medium;
     line-height: 1.5rem;
   }
   
   html[dir="rtl"] body {
-    background-image: 
-      linear-gradient(-90deg, transparent 2.5rem, hsl(0 84% 60% / 0.2) 2.5rem, hsl(0 84% 60% / 0.2) calc(2.5rem + 1px), transparent calc(2.5rem + 1px)),
-      repeating-linear-gradient(
-        to bottom,
-        transparent 0,
-        transparent 1.45rem,
-        hsl(var(--border) / 0.2) 1.5rem
-      );
   }
 
   .dark body {
-      background-image: 
-        linear-gradient(90deg, transparent 2.5rem, hsl(0 84% 60% / 0.1) 2.5rem, hsl(0 84% 60% / 0.1) calc(2.5rem + 1px), transparent calc(2.5rem + 1px)),
-        repeating-linear-gradient(
-          to bottom,
-          transparent 0,
-          transparent 1.45rem,
-          hsl(var(--border) / 0.1) 1.5rem
-        );
   }
   
   html[dir="rtl"].dark body {
-     background-image: 
-        linear-gradient(-90deg, transparent 2.5rem, hsl(0 84% 60% / 0.1) 2.5rem, hsl(0 84% 60% / 0.1) calc(2.5rem + 1px), transparent calc(2.5rem + 1px)),
-        repeating-linear-gradient(
-          to bottom,
-          transparent 0,
-          transparent 1.45rem,
-          hsl(var(--border) / 0.1) 1.5rem
-        );
   }
   
   @keyframes fadeIn {

@@ -10,7 +10,7 @@ import AppInitializer from '@/components/AppInitializer';
 
 const tajawal = Tajawal({
   subsets: ['latin', 'arabic'],
-  weight: ['400', '700'],
+  weight: ['400', '500', '700'],
   variable: '--font-sans',
 });
 
