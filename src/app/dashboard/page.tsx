@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -69,7 +68,7 @@ export default function DashboardPage() {
                   </p>
               </CardContent>
             </div>
-            <div className="relative h-48 md:h-full hidden md:block">
+            <div className="relative h-48 md:h-full hidden">
                 <Image 
                     src="https://placehold.co/600x400.png"
                     alt={t.dashboardBannerAlt} 

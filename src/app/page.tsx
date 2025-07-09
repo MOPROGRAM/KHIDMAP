@@ -108,7 +108,7 @@ export default function HomePage() {
                 <Link href="/dashboard/provider/ads/new">{t.advertiseWithUs}</Link>
               </Button>
             </div>
-            <div className="relative h-48 w-full rounded-lg overflow-hidden hidden md:block">
+            <div className="relative h-48 w-full rounded-lg overflow-hidden hidden">
               <Image src="https://placehold.co/600x400.png" alt="Advertisement placeholder" layout="fill" objectFit="cover" data-ai-hint="business marketing" />
             </div>
           </Card>
