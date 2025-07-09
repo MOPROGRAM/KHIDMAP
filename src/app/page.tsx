@@ -91,7 +91,7 @@ export default function HomePage() {
               </Button>
             </div>
           </div>
-          <div className="relative h-64 md:h-96">
+          <div className="relative h-64 md:h-96" style={{display: 'none'}}>
              <Image src="https://placehold.co/600x400.png" data-ai-hint="business team collaboration" alt={t.heroAlt} layout="fill" objectFit="contain" className="drop-shadow-2xl"/>
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function HomePage() {
             {serviceCards.map((card, index) => (
               <Card key={index} className="text-center hover:shadow-lg hover:-translate-y-2 transition-transform duration-300">
                 <CardHeader className="items-center">
-                  <div className="bg-primary/10 p-4 rounded-full mb-4">
+                  <div className="border-2 border-transparent p-4 rounded-full mb-4">
                     {React.cloneElement(card.icon, { className: "h-8 w-8 text-primary" })}
                   </div>
                   <CardTitle>{t[card.titleKey as keyof Translations]}</CardTitle>
@@ -243,7 +243,7 @@ export default function HomePage() {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="w-full py-12 md:py-20 bg-muted/30">
+      <section id="contact" className="w-full py-12 md:py-20 bg-muted/30" style={{display: 'none'}}>
         <div className="container mx-auto">
             <div className="text-center mb-12">
                 <h2 className="text-3xl font-bold tracking-tight">{t.contactTitle}</h2>
