@@ -6,13 +6,13 @@
 @layer base {
   :root {
     --background: 40 33% 97%; /* #fbf9f6 - Papyrus white for paper */
-    --foreground: 220 13% 27%; /* #384055 - Dark Slate Blue for ink */
+    --foreground: 220 13% 17%; /* #252a36 - Darker Slate Blue for ink */
 
     --card: 40 33% 99%; /* #fdfcfb - A slightly whiter paper for cards */
-    --card-foreground: 220 13% 27%;
+    --card-foreground: 220 13% 17%;
     
     --popover: 40 33% 99%;
-    --popover-foreground: 220 13% 27%;
+    --popover-foreground: 220 13% 17%;
 
     --primary: 30 95% 58%;
     --primary-foreground: 30 100% 12%;
@@ -53,13 +53,13 @@
 
   .dark {
     --background: 220 13% 15%; /* Dark blue/black paper */
-    --foreground: 0 0% 88%; /* Light ink color */
+    --foreground: 0 0% 98%; /* Lighter ink color */
 
     --card: 220 13% 18%; /* Slightly lighter dark paper for cards */
-    --card-foreground: 0 0% 88%;
+    --card-foreground: 0 0% 98%;
     
     --popover: 220 13% 18%;
-    --popover-foreground: 0 0% 88%;
+    --popover-foreground: 0 0% 98%;
 
     --primary: 30 95% 62%;
     --primary-foreground: 30 100% 12%;
