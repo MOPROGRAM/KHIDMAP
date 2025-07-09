@@ -23,9 +23,9 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body flex flex-col min-h-screen animate-background-pan bg-[length:200%_200%] bg-gradient-to-br from-background via-muted to-background">
+      <body className="flex flex-col min-h-screen">
         <SettingsProvider>
           <AppInitializer />
           <Header />

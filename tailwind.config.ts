@@ -11,8 +11,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Tajawal', 'Poppins', 'sans-serif'],
-        headline: ['Tajawal', 'Poppins', 'sans-serif'],
+        body: ['Kalam', 'Amiri', 'cursive'],
+        headline: ['Kalam', 'Amiri', 'cursive'],
         code: ['monospace'],
       },
       colors: {
