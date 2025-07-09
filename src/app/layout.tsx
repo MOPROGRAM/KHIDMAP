@@ -21,9 +21,6 @@ export default function RootLayout({
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet" />
       </head>
       <body className="flex flex-col min-h-screen">
         <SettingsProvider>

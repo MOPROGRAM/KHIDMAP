@@ -11,8 +11,6 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Kalam', 'Amiri', 'cursive'],
-        headline: ['Kalam', 'Amiri', 'cursive'],
         code: ['monospace'],
       },
       colors: {
