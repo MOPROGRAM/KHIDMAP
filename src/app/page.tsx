@@ -120,7 +120,7 @@ export default function HomePage() {
 
       {/* CTA Section */}
        <div className="w-full border-t">
-        <section className="w-full container mx-auto bg-background py-20 border-x">
+        <section className="w-full container mx-auto bg-background py-20 border-x animated-gradient-background">
             <div className="max-w-4xl mx-auto px-4 text-center">
               <div className="animate-fade-in-up text-center space-y-4" style={{ animationFillMode: 'backwards' }}>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
