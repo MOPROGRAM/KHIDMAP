@@ -104,7 +104,7 @@ export default function HomePage() {
        {/* Ad Section */}
        <div className="w-full border-t">
         <section className="w-full container mx-auto bg-background py-20 border-x">
-          <Card className="max-w-4xl mx-auto p-8 grid md:grid-cols-2 items-center gap-8 bg-accent/10 border-primary/20 shadow-lg">
+          <Card className="max-w-4xl mx-auto p-8 items-center gap-8 bg-accent/10 border-primary/20 shadow-lg text-center">
             <div className="space-y-4">
               <Badge variant="outline">{t.advertisement}</Badge>
               <h3 className="text-2xl font-bold text-foreground">{t.adPlaceholderTitle}</h3>
@@ -112,9 +112,6 @@ export default function HomePage() {
               <Button asChild>
                 <Link href="/dashboard/provider/ads/new">{t.advertiseWithUs}</Link>
               </Button>
-            </div>
-            <div className="relative h-56 w-full rounded-lg overflow-hidden">
-              <Image src="https://placehold.co/600x400.png" alt="Advertisement placeholder" layout="fill" objectFit="cover" data-ai-hint="business marketing" />
             </div>
           </Card>
         </section>
