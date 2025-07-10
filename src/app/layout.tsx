@@ -7,6 +7,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Toaster } from "@/components/ui/toaster";
 import AppInitializer from '@/components/AppInitializer';
+import BackgroundShapes from '@/components/shared/BackgroundShapes';
 
 const tajawal = Tajawal({
   subsets: ['latin', 'arabic'],
@@ -34,8 +35,9 @@ export default function RootLayout({
       <body className={`flex flex-col min-h-screen ${tajawal.variable} font-sans`}>
         <SettingsProvider>
           <AppInitializer />
+          <BackgroundShapes />
           <Header />
-          <main className="flex-grow container mx-auto px-4">
+          <main className="flex-grow container mx-auto px-4 relative z-10">
             {children}
           </main>
           <Footer />

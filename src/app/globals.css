@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -107,6 +108,15 @@
     line-height: 1.5rem;
   }
   
+  html[dir="rtl"] body {
+  }
+
+  .dark body {
+  }
+  
+  html[dir="rtl"].dark body {
+  }
+  
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -118,11 +128,51 @@
 }
 
 @layer utilities {
-  .no-scrollbar::-webkit-scrollbar {
+  .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
-  .no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+  .hide-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .background-shapes {
+    @apply absolute top-0 left-0 w-full h-full overflow-hidden z-[-1];
+  }
+
+  .background-shapes span {
+    @apply absolute block list-none;
+    bottom: -150px;
+    background-color: hsla(var(--primary), 0.15);
+    animation: animate-shapes 25s linear infinite;
+  }
+
+  .background-shapes span:nth-child(5n+1) {
+    @apply rounded-full;
+  }
+  .background-shapes span:nth-child(5n+2) {
+    @apply rounded-sm;
+  }
+  .background-shapes span:nth-child(5n+3) {
+    @apply rounded-lg;
+  }
+  .background-shapes span:nth-child(5n+4) {
+    background-color: hsla(var(--secondary), 0.15);
+    @apply rounded-full;
+  }
+  .background-shapes span:nth-child(5n+5) {
+     background-color: hsla(var(--border), 0.5);
+     @apply rounded-sm;
+  }
+  
+  @keyframes animate-shapes {
+      0% {
+          transform: translateY(0) rotate(0deg);
+          opacity: 1;
+      }
+      100% {
+          transform: translateY(-120vh) rotate(720deg);
+          opacity: 0;
+      }
   }
 }
