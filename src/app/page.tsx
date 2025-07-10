@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,6 @@ import { ArrowRight, Check, Briefcase, Users, DollarSign, GaugeCircle, Layers, F
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
-import { getActiveAds, AdRequest } from '@/lib/data';
 import { cn } from '@/lib/utils';
 
 const whyUsItems = [
@@ -60,19 +59,6 @@ const pricingPlans = [
 
 export default function HomePage() {
   const t = useTranslation();
-  const [activeAds, setActiveAds] = useState<AdRequest[]>([]);
-  
-  useEffect(() => {
-    async function fetchAds() {
-      try {
-        const ads = await getActiveAds();
-        setActiveAds(ads);
-      } catch (error) {
-        console.error("Failed to fetch active ads:", error);
-      }
-    }
-    fetchAds();
-  }, []);
 
   return (
     <div className="flex flex-col items-center">
@@ -91,7 +77,7 @@ export default function HomePage() {
               </Button>
             </div>
           </div>
-          <div className="relative h-64 md:h-96" style={{display: 'none'}}>
+          <div className="relative h-64 md:h-96">
              <Image src="https://placehold.co/600x400.png" data-ai-hint="business team collaboration" alt={t.heroAlt} layout="fill" objectFit="contain" className="drop-shadow-2xl"/>
           </div>
         </div>
@@ -148,37 +134,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Partners/Ads Section */}
-      {activeAds.length > 0 && (
-        <section id="partners" className="w-full py-12 md:py-20 bg-background">
-          <div className="container mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold tracking-tight">{t.ourPartners}</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">{t.ourPartnersDescription}</p>
-            </div>
-            <div className="relative w-full overflow-hidden group">
-              <div className="flex animate-scroll group-hover:pause">
-                {[...activeAds, ...activeAds].map((ad, index) => (
-                  <div key={`${ad.id}-${index}`} className="flex-shrink-0 w-64 mx-4">
-                    <Card className="overflow-hidden">
-                      <div className="relative h-40">
-                        <Image src={ad.imageUrl || 'https://placehold.co/600x400.png'} alt={ad.title} layout="fill" objectFit="cover" />
-                      </div>
-                      <CardContent className="p-4">
-                        <p className="font-semibold text-center truncate">{ad.title}</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-
       {/* Pricing Section */}
-      <section id="pricing" className="w-full py-12 md:py-20 bg-muted/30">
+      <section id="pricing" className="w-full py-12 md:py-20 bg-background">
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold tracking-tight">{t.pricingTitle}</h2>
@@ -215,7 +172,7 @@ export default function HomePage() {
       </section>
 
        {/* FAQ Section */}
-      <section id="faq" className="w-full py-12 md:py-20 bg-background">
+      <section id="faq" className="w-full py-12 md:py-20 bg-muted/30">
         <div className="container mx-auto max-w-4xl">
            <div className="text-center mb-12">
               <h2 className="text-3xl font-bold tracking-tight">{t.faqTitle}</h2>
@@ -243,7 +200,7 @@ export default function HomePage() {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="w-full py-12 md:py-20 bg-muted/30" style={{display: 'none'}}>
+      <section id="contact" className="w-full py-12 md:py-20 bg-background">
         <div className="container mx-auto">
             <div className="text-center mb-12">
                 <h2 className="text-3xl font-bold tracking-tight">{t.contactTitle}</h2>
