@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -28,18 +29,20 @@ export default function HomePage() {
   const renderServiceCard = (service: any, index: number) => (
     <Card 
         key={index}
-        className="flex-shrink-0 w-[280px] h-full flex flex-col items-start text-left p-4 rounded-xl border bg-card/80 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5"
+        className="group flex-shrink-0 w-[280px] h-full flex flex-col items-start text-left p-4 rounded-xl border bg-card/80 backdrop-blur-sm transition-all duration-500 [transform-style:preserve-3d] hover:shadow-2xl hover:[transform:rotateY(15deg)_scale(1.05)]"
         style={{ scrollSnapAlign: 'start' }}
     >
-      <CardHeader className="p-0 mb-3">
-        <div className="flex items-center justify-center h-12 w-12 rounded-lg border-2 border-primary/20 bg-primary/10 mb-3">
-          {React.cloneElement(service.icon, { className: `h-6 w-6 ${service.color}` })}
-        </div>
-        <CardTitle className="text-base font-bold text-foreground">{t[service.titleKey as keyof Translations]}</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <p className="text-sm text-muted-foreground">{t[service.descriptionKey as keyof Translations]}</p>
-      </CardContent>
+      <div className="[transform:translateZ(40px)] w-full h-full flex flex-col">
+        <CardHeader className="p-0 mb-3">
+          <div className="flex items-center justify-center h-12 w-12 rounded-lg border-2 border-primary/20 bg-primary/10 mb-3">
+            {React.cloneElement(service.icon, { className: `h-6 w-6 ${service.color}` })}
+          </div>
+          <CardTitle className="text-base font-bold text-foreground">{t[service.titleKey as keyof Translations]}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <p className="text-sm text-muted-foreground">{t[service.descriptionKey as keyof Translations]}</p>
+        </CardContent>
+      </div>
     </Card>
   );
 
@@ -86,13 +89,13 @@ export default function HomePage() {
 
       {/* Services Section */}
        <div className="w-full border-t bg-muted/30">
-        <section className="w-full container mx-auto py-8 border-x bg-background">
+        <section className="w-full container mx-auto py-12 border-x bg-background">
           <div className="animate-fade-in-up text-center mb-12" style={{ animationFillMode: 'backwards' }}>
               <h2 className="text-3xl md:text-4xl font-bold font-headline text-foreground tracking-tighter">
                   {t.services}
               </h2>
           </div>
-          <div className="relative w-full overflow-x-auto hide-scrollbar" style={{ scrollSnapType: 'x mandatory' }}>
+          <div className="relative w-full overflow-x-auto hide-scrollbar [perspective:1000px]" style={{ scrollSnapType: 'x mandatory' }}>
             <ul className="flex flex-nowrap items-stretch justify-start gap-6 px-4 md:px-8 py-4">
                 {serviceCards.map((service, index) => renderServiceCard(service, index))}
             </ul>
