@@ -105,9 +105,11 @@
   }
   body {
     @apply text-foreground antialiased font-medium;
-    background: linear-gradient(-45deg, hsl(var(--background)), hsl(var(--primary) / 0.05), hsl(var(--secondary) / 0.05), hsl(var(--background)));
-    background-size: 400% 400%;
-    animation: background-pan 25s ease infinite;
+    background-color: hsl(var(--background));
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.2) 1px, transparent 1px),
+      linear-gradient(to right, hsl(var(--border) / 0.2) 1px, hsl(var(--background)) 1px);
+    background-size: 20px 20px;
     line-height: 1.5rem;
   }
   
@@ -115,9 +117,10 @@
   }
 
   .dark body {
-    background: linear-gradient(-45deg, hsl(var(--background)), hsl(var(--primary) / 0.1), hsl(var(--secondary) / 0.1), hsl(var(--background)));
-    background-size: 400% 400%;
-    animation: background-pan 25s ease infinite;
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.1) 1px, transparent 1px),
+      linear-gradient(to right, hsl(var(--border) / 0.1) 1px, hsl(var(--background)) 1px);
+    background-size: 20px 20px;
   }
   
   html[dir="rtl"].dark body {
