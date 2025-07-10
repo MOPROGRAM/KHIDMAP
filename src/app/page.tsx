@@ -104,7 +104,7 @@ export default function HomePage() {
        {/* Ad Section */}
        <div className="w-full border-t">
         <section className="w-full container mx-auto bg-background py-20 border-x">
-          <Card className="max-w-4xl mx-auto p-8 items-center gap-8 bg-accent/10 border-primary/20 shadow-lg text-center">
+          <Card className="max-w-4xl mx-auto p-8 items-center gap-8 bg-primary/5 border-primary/20 shadow-lg text-center">
             <div className="space-y-4">
               <Badge variant="outline">{t.advertisement}</Badge>
               <h3 className="text-2xl font-bold text-foreground">{t.adPlaceholderTitle}</h3>
