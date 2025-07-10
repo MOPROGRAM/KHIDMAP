@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -7,7 +8,7 @@ import { ArrowRight, Wrench, Zap, Hammer, Brush, SprayCan, HardHat, Layers, Grip
 import React from 'react';
 import { useSettings } from '@/contexts/SettingsContext';
 import Image from 'next/image';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 export default function HomePage() {
@@ -26,17 +27,21 @@ export default function HomePage() {
   ];
   
   const renderServiceCard = (service: any, index: number) => (
-    <li 
-        key={index} 
-        className="flex-shrink-0 w-[280px] h-auto flex flex-col items-start text-left p-4 rounded-xl border bg-card/80 backdrop-blur-sm transition-all"
+    <Card 
+        key={index}
+        className="flex-shrink-0 w-[280px] h-full flex flex-col items-start text-left p-4 rounded-xl border bg-card/80 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5"
         style={{ scrollSnapAlign: 'start' }}
     >
-      <div className="flex items-center justify-center h-10 w-10 rounded-lg border-2 border-primary/20 mb-3">
-        {React.cloneElement(service.icon, { className: `h-6 w-6 ${service.color}` })}
-      </div>
-      <h3 className="text-sm font-bold text-foreground mb-1">{t[service.titleKey as keyof Translations]}</h3>
-      <p className="text-xs text-muted-foreground">{t[service.descriptionKey as keyof Translations]}</p>
-    </li>
+      <CardHeader className="p-0 mb-3">
+        <div className="flex items-center justify-center h-12 w-12 rounded-lg border-2 border-primary/20 bg-primary/10 mb-3">
+          {React.cloneElement(service.icon, { className: `h-6 w-6 ${service.color}` })}
+        </div>
+        <CardTitle className="text-base font-bold text-foreground">{t[service.titleKey as keyof Translations]}</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <p className="text-sm text-muted-foreground">{t[service.descriptionKey as keyof Translations]}</p>
+      </CardContent>
+    </Card>
   );
 
   return (
@@ -44,17 +49,17 @@ export default function HomePage() {
       
       {/* Hero Section */}
       <section 
-        className="w-full flex flex-col items-center text-center pt-12 pb-16 space-y-6"
+        className="w-full flex flex-col items-center text-center pt-16 pb-20 space-y-6"
       >
         <div 
             className="animate-fade-in-up" 
             style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
           <div className="relative inline-flex flex-col items-center group">
-             <h1 className="relative px-2 text-6xl font-extrabold tracking-tight text-foreground z-10">
+             <h1 className="relative px-2 text-5xl md:text-6xl font-extrabold tracking-tight text-foreground z-10">
                 {t.appName}
             </h1>
-             <div className="absolute bottom-0 h-[8px] w-full bg-primary z-0"></div>
+             <div className="absolute bottom-1 h-[10px] w-[110%] bg-primary/80 z-0 transition-all duration-300 group-hover:h-[12px]"></div>
           </div>
         </div>
         <div 
@@ -65,7 +70,7 @@ export default function HomePage() {
                 {t.findSkilledArtisans} {t.orPostYourServices}
             </p>
         </div>
-        <div className="flex flex-wrap justify-center items-center gap-2 animate-fade-in-up" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
+        <div className="flex flex-wrap justify-center items-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
             <Button size="lg" asChild>
                 <Link href="/services/search">
                   {t.browseServices}
@@ -82,14 +87,14 @@ export default function HomePage() {
 
       {/* Services Section */}
        <div className="w-full border-t bg-muted/30">
-        <section className="w-full container mx-auto py-16 border-x bg-background">
-          <div className="animate-fade-in-up text-center mb-8" style={{ animationFillMode: 'backwards' }}>
+        <section className="w-full container mx-auto py-20 border-x bg-background">
+          <div className="animate-fade-in-up text-center mb-12" style={{ animationFillMode: 'backwards' }}>
               <h2 className="text-3xl md:text-4xl font-bold font-headline text-foreground tracking-tighter">
                   {t.services}
               </h2>
           </div>
           <div className="relative w-full overflow-x-auto hide-scrollbar" style={{ scrollSnapType: 'x mandatory' }}>
-            <ul className="flex flex-nowrap items-stretch justify-start gap-4 px-4 md:px-8 py-2">
+            <ul className="flex flex-nowrap items-stretch justify-start gap-6 px-4 md:px-8 py-4">
                 {serviceCards.map((service, index) => renderServiceCard(service, index))}
             </ul>
           </div>
@@ -98,9 +103,9 @@ export default function HomePage() {
 
        {/* Ad Section */}
        <div className="w-full border-t">
-        <section className="w-full container mx-auto bg-background py-16 border-x">
-          <Card className="max-w-4xl mx-auto p-6 grid md:grid-cols-2 items-center gap-6 bg-accent/5 border-primary/20 shadow-lg">
-            <div className="space-y-3">
+        <section className="w-full container mx-auto bg-background py-20 border-x">
+          <Card className="max-w-4xl mx-auto p-8 grid md:grid-cols-2 items-center gap-8 bg-accent/10 border-primary/20 shadow-lg">
+            <div className="space-y-4">
               <Badge variant="outline">{t.advertisement}</Badge>
               <h3 className="text-2xl font-bold text-foreground">{t.adPlaceholderTitle}</h3>
               <p className="text-muted-foreground">{t.adPlaceholderDescription}</p>
@@ -108,7 +113,7 @@ export default function HomePage() {
                 <Link href="/dashboard/provider/ads/new">{t.advertiseWithUs}</Link>
               </Button>
             </div>
-            <div className="relative h-48 w-full rounded-lg overflow-hidden hidden">
+            <div className="relative h-56 w-full rounded-lg overflow-hidden">
               <Image src="https://placehold.co/600x400.png" alt="Advertisement placeholder" layout="fill" objectFit="cover" data-ai-hint="business marketing" />
             </div>
           </Card>
@@ -118,9 +123,9 @@ export default function HomePage() {
 
       {/* CTA Section */}
        <div className="w-full border-t">
-        <section className="w-full container mx-auto bg-background py-16 border-x">
+        <section className="w-full container mx-auto bg-background py-20 border-x">
             <div className="max-w-4xl mx-auto px-4 text-center">
-              <div className="animate-fade-in-up text-center space-y-3" style={{ animationFillMode: 'backwards' }}>
+              <div className="animate-fade-in-up text-center space-y-4" style={{ animationFillMode: 'backwards' }}>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
                 <p className="text-base text-muted-foreground max-w-2xl mx-auto">{t.orPostYourServices}</p>
                 <Button asChild size="lg">
