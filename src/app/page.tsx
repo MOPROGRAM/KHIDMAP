@@ -51,7 +51,7 @@ export default function HomePage() {
       
       {/* Hero Section */}
       <section 
-        className="w-full flex flex-col items-center text-center pt-12 pb-16 space-y-6 animated-gradient-background"
+        className="w-full flex flex-col items-center text-center pt-8 pb-12 space-y-6 animated-gradient-background"
       >
         <div 
             className="animate-fade-in-up" 
@@ -89,8 +89,8 @@ export default function HomePage() {
 
       {/* Services Section */}
        <div className="w-full border-t bg-muted/30">
-        <section className="w-full container mx-auto py-12 border-x bg-background">
-          <div className="animate-fade-in-up text-center mb-12" style={{ animationFillMode: 'backwards' }}>
+        <section className="w-full container mx-auto py-8 border-x bg-background">
+          <div className="animate-fade-in-up text-center mb-8" style={{ animationFillMode: 'backwards' }}>
               <h2 className="text-3xl md:text-4xl font-bold font-headline text-foreground tracking-tighter">
                   {t.services}
               </h2>
@@ -105,7 +105,7 @@ export default function HomePage() {
 
        {/* Ad Section */}
        <div className="w-full border-t">
-        <section className="w-full container mx-auto bg-background py-16 border-x">
+        <section className="w-full container mx-auto bg-background py-12 border-x">
           <Card className="max-w-4xl mx-auto p-8 items-center gap-8 bg-primary/5 border-primary/20 shadow-lg text-center">
             <div className="space-y-4">
               <Badge variant="outline">{t.advertisement}</Badge>
@@ -122,7 +122,7 @@ export default function HomePage() {
 
       {/* CTA Section */}
        <div className="w-full border-t">
-        <section className="w-full container mx-auto bg-background py-16 border-x animated-gradient-background">
+        <section className="w-full container mx-auto bg-background py-12 border-x animated-gradient-background">
             <div className="max-w-4xl mx-auto px-4 text-center">
               <div className="animate-fade-in-up text-center space-y-4" style={{ animationFillMode: 'backwards' }}>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">{t.joinAsProvider}</h2>
