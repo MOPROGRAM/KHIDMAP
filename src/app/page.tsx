@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, Wrench, Zap, Hammer } from 'lucide-react';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
+import { cn } from '@/lib/utils';
 
 const serviceCards = [
     { icon: <Wrench />, titleKey: 'plumbing', descriptionKey: 'plumbingDescription' },
@@ -40,20 +41,22 @@ export default function HomePage() {
       {/* Services Section */}
       <section id="services" className="w-full max-w-5xl">
         <h2 className="text-3xl font-bold text-center mb-8">{t.services}</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {serviceCards.map((card, index) => (
-            <Card key={index} className="text-center hover:shadow-lg hover:-translate-y-1 transition-transform duration-300">
-              <CardHeader className="items-center">
-                <div className="bg-primary/10 p-4 rounded-full mb-4 text-primary">
-                  {React.cloneElement(card.icon, { className: "h-8 w-8" })}
-                </div>
-                <CardTitle>{t[card.titleKey as keyof Translations]}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm">{t[card.descriptionKey as keyof Translations]}</p>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="relative">
+          <div className="flex space-x-8 overflow-x-auto pb-4 no-scrollbar">
+            {serviceCards.map((card, index) => (
+              <Card key={index} className="flex-shrink-0 w-72 text-center hover:shadow-lg hover:-translate-y-1 transition-transform duration-300">
+                <CardHeader className="items-center">
+                  <div className="bg-primary/10 p-4 rounded-full mb-4 text-primary">
+                    {React.cloneElement(card.icon, { className: "h-8 w-8" })}
+                  </div>
+                  <CardTitle>{t[card.titleKey as keyof Translations]}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground text-sm">{t[card.descriptionKey as keyof Translations]}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </section>
       
