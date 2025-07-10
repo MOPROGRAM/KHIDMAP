@@ -1,6 +1,6 @@
 
 import type { Metadata } from 'next';
-import { Tajawal, Caveat } from 'next/font/google';
+import { Tajawal } from 'next/font/google';
 import './globals.css';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import Header from '@/components/layout/Header';
@@ -12,12 +12,6 @@ const tajawal = Tajawal({
   subsets: ['latin', 'arabic'],
   weight: ['400', '500', '700', '800'],
   variable: '--font-sans',
-});
-
-const caveat = Caveat({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-headline',
 });
 
 export const metadata: Metadata = {
@@ -37,7 +31,7 @@ export default function RootLayout({
     <html lang="en" dir="ltr" suppressHydrationWarning className="!scroll-smooth">
       <head>
       </head>
-      <body className={`flex flex-col min-h-screen ${tajawal.variable} ${caveat.variable} font-sans`}>
+      <body className={`flex flex-col min-h-screen ${tajawal.variable} font-sans`}>
         <SettingsProvider>
           <AppInitializer />
           <Header />
