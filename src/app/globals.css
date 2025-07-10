@@ -139,6 +139,16 @@
     }
   }
 
+  .animated-gradient-background {
+    background: linear-gradient(-45deg, hsl(var(--primary) / 0.1), hsl(var(--secondary) / 0.1), hsl(var(--background)), hsl(var(--background)));
+    background-size: 400% 400%;
+    animation: background-pan 15s ease infinite;
+  }
+  
+  .dark .animated-gradient-background {
+    background: linear-gradient(-45deg, hsl(var(--primary) / 0.1), hsl(var(--secondary) / 0.1), hsl(var(--background)), hsl(var(--background)));
+  }
+
   /* Styles for the animated background shapes */
   .background-shapes {
     position: fixed;

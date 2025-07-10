@@ -49,7 +49,7 @@ export default function HomePage() {
       
       {/* Hero Section */}
       <section 
-        className="w-full flex flex-col items-center text-center pt-16 pb-20 space-y-6"
+        className="w-full flex flex-col items-center text-center pt-16 pb-20 space-y-6 animated-gradient-background"
       >
         <div 
             className="animate-fade-in-up" 
