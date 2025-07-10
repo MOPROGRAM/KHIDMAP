@@ -87,7 +87,7 @@ export default function HomePage() {
 
       {/* Services Section */}
        <div className="w-full border-t bg-muted/30">
-        <section className="w-full container mx-auto py-20 border-x bg-background">
+        <section className="w-full container mx-auto py-16 border-x bg-background">
           <div className="animate-fade-in-up text-center mb-12" style={{ animationFillMode: 'backwards' }}>
               <h2 className="text-3xl md:text-4xl font-bold font-headline text-foreground tracking-tighter">
                   {t.services}
