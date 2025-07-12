@@ -1,0 +1,88 @@
+
+rules_version = '2';
+
+// Helper functions to simplify rule logic
+function isUserAuthenticated() {
+  return request.auth != null;
+}
+
+function isUser(userId) {
+  return isUserAuthenticated() && request.auth.uid == userId;
+}
+
+function isAdmin() {
+  // For production, consider using custom claims for roles instead of email.
+  return isUserAuthenticated() && request.auth.token.email == "mobusinessarena@gmail.com";
+}
+
+function isProvider() {
+  return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'provider';
+}
+
+function isSeeker() {
+  return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'seeker';
+}
+
+// Check if the currently authenticated user is a participant in a chat or call
+function isParticipant(resource) {
+  // 'in' on a list checks for value existence.
+  return request.auth.uid in resource.data.participantIds;
+}
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isUserAuthenticated() && request.resource.data.uid == request.auth.uid;
+      // Prevent users from updating their own role. Only admin can do that.
+      allow update: if (isUser(userId) && !("role" in request.resource.data)) || isAdmin();
+      allow delete: if isUser(userId) || isAdmin();
+    }
+
+    match /usernames/{username} {
+      allow read: if true;
+      allow create: if isUserAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    match /orders/{orderId} {
+      allow read, update: if (isUserAuthenticated() && (isUser(resource.data.seekerId) || isUser(resource.data.providerId))) || isAdmin();
+      // User must be authenticated and have the 'seeker' role to create an order.
+      allow create: if isUserAuthenticated() && isSeeker();
+      allow delete: if isAdmin();
+    }
+    
+    match /ratings/{ratingId} {
+      allow read: if true;
+      // User must be authenticated and have the 'seeker' role to create a rating.
+      allow create: if isUserAuthenticated() && isSeeker();
+      allow update, delete: if isAdmin();
+    }
+    
+    match /messages/{chatId} {
+      // You can get/update a chat document if you are a participant.
+      allow get, update: if isUserAuthenticated() && isParticipant(resource);
+      // You can query the list of chats if you are authenticated.
+      // The client-side query MUST enforce that the user only gets their own chats.
+      allow list: if isUserAuthenticated();
+      
+      match /messages/{messageId} {
+        // You can read/create a message if you are a participant of the parent chat.
+        allow read, create: if isUserAuthenticated() && isParticipant(get(/databases/$(database)/documents/messages/$(chatId)));
+        allow update, delete: if isAdmin();
+      }
+    }
+    
+    match /calls/{callId} {
+      // You can access call documents if you are a participant.
+      allow get, list, create, update, delete: if isUserAuthenticated() && isParticipant(resource);
+
+      match /{candidatesCollection}/{candidateId} {
+        // You can access ICE candidates if you are a participant of the parent call.
+        allow read, create: if isUserAuthenticated() && isParticipant(get(/databases/$(database)/documents/calls/$(callId)));
+        allow update, delete: if isAdmin();
+      }
+    }
+  }
+}
