@@ -97,26 +97,28 @@ export default function ProviderProfilePage() {
 
 
   useEffect(() => {
-      setIsCoreServicesAvailable(true);
-      const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          setAuthUser(user);
-          setEmail(user.email || ''); 
-          setName(user.displayName || ''); 
-          await fetchProfile(user);
-        } else {
-          toast({ variant: "destructive", title: t.authError, description: t.userNotIdentified });
-          router.push('/login');
-          setIsFetching(false);
-        }
-      });
-      return () => unsubscribe();
-    } else {
-      setIsCoreServicesAvailable(false);
-      setIsFetching(false);
-      console.warn("Firebase Auth, DB, or Storage not initialized in ProviderProfilePage.");
-    }
-  }, [router, t, toast, fetchProfile]);
+  if (auth && db && storage) {
+    setIsCoreServicesAvailable(true);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setAuthUser(user);
+        setEmail(user.email || '');
+        setName(user.displayName || '');
+        await fetchProfile(user);
+      } else {
+        toast({ variant: "destructive", title: t.authError, description: t.userNotIdentified });
+        router.push('/login');
+        setIsFetching(false);
+      }
+    });
+
+    return () => unsubscribe();
+  } else {
+    setIsCoreServicesAvailable(false);
+    setIsFetching(false);
+    console.warn("Firebase Auth, DB, or Storage not initialized in ProviderProfilePage.");
+  }
+}, [router, t, toast, fetchProfile]);
   
 
   const handleFileUpload = async (
