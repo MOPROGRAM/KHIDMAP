@@ -312,133 +312,125 @@ export const initiateCall = async (chatId: string, calleeId: string, callType: '
     const callerId = auth.currentUser.uid;
 
     if (calleeId === callerId) {
-        throw new Error("You cannot call yourself.");
-    }
+// --- Type and Interface Definitions ---
 
-    try {
-        const [callerDoc, calleeDoc] = await Promise.all([
-             getDoc(doc(db, "users", callerId)),
-             getDoc(doc(db, "users", calleeId))
-        ]);
+export type ServiceCategory = 'Plumbing' | 'Electrical' | 'Carpentry' | 'Painting' | 'HomeCleaning' | 'Construction' | 'Plastering' | 'Other';
+export type UserRole = 'provider' | 'seeker' | 'admin';
+export type OrderStatus = 'pending_approval' | 'pending_payment' | 'paid' | 'pending_completion' | 'completed' | 'disputed' | 'declined' | 'resolved';
+export type SupportRequestType = 'inquiry' | 'complaint' | 'payment_issue' | 'other';
+export type AdRequestStatus = 'pending_review' | 'pending_payment' | 'payment_review' | 'active' | 'rejected';
+export type VerificationStatus = 'not_submitted' | 'pending' | 'verified' | 'rejected';
 
-        const callerName = callerDoc.exists() ? (callerDoc.data().name || "Unknown Caller") : "Unknown Caller";
-        const callerAvatar = callerDoc.exists() ? (callerDoc.data().images?.[0] || null) : null;
-        const calleeName = calleeDoc.exists() ? (calleeDoc.data().name || "User") : "User";
-        const calleeAvatar = calleeDoc.exists() ? (calleeDoc.data().images?.[0] || null) : null;
-        
-        const newCallData: Omit<Call, 'id'> = {
-            chatId,
-            callerId,
-            callerName,
-            callerAvatar,
-            calleeId,
-            calleeName,
-            calleeAvatar,
-            status: 'ringing',
-            type: callType,
-            participantIds: [callerId, calleeId],
-            createdAt: serverTimestamp() as Timestamp,
-        };
-
-        const callDocRef = await addDoc(collection(db, "calls"), newCallData);
-        
-        // Add a timeout to automatically set the call to 'unanswered' if not picked up
-        setTimeout(async () => {
-            const currentCallDoc = await getDoc(callDocRef);
-            if (currentCallDoc.exists() && currentCallDoc.data().status === 'ringing') {
-
-    // Call AI for verification, now including the seeker's and provider's name
-    let verificationResult;
-    try {
-        const verifyPaymentInput: VerifyPaymentInput = {
-            photoDataUri,
-            expectedAmount: order.amount,
-            expectedCurrency: order.currency,
-            expectedPayerName: order.seekerName,
-            expectedPayeeName: order.providerName
-        };
-        verificationResult = await verifyPayment(verifyPaymentInput);
-    } catch (aiError: any) {
-        console.error("AI verification flow failed:", aiError);
-        verificationResult = { isVerified: false, reason: `AI analysis failed: ${aiError.message}. Please review manually.` };
-    }
-    
-    const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const filePath = `payment_proofs/${orderId}/${seekerId}/${safeFileName}`;
-    const metadata = { customMetadata: { 'userId': seekerId } };
-    await uploadBytes(fileRef, file, metadata);
-    const downloadURL = await getDownloadURL(fileRef);
-
-    const orderRef = doc(db, "orders", orderId);
-    if (verificationResult.isVerified) {
-        // AI approved, update status to paid
-        await updateDoc(orderRef, {
-            proofOfPaymentUrl: downloadURL,
-            status: 'paid',
-            paymentApprovedAt: serverTimestamp(),
-            verificationNotes: verificationResult.reason || "AI Approval: Accepted. All details match."
-        });
-        await createNotification(
-            order.providerId,
-            'paymentReceivedTitle',
-            'paymentReceivedMessage',
-            `/dashboard/orders/${order.id}`,
-            { seekerName: order.seekerName }
-        );
-    } else {
-    // AI rejected, update with proof and notes for manual review
-    await updateDoc(orderRef, {
-        proofOfPaymentUrl: downloadURL,
-        status: 'pending_payment', // Stays pending
-        verificationNotes: verificationResult.reason || "AI Approval: Rejected. The receipt could not be verified. Please review manually."
-    });
+export interface SupportRequest {
+    id: string;
+    userId: string;
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+    type: SupportRequestType;
+    status: 'open' | 'in_progress' | 'closed';
+    createdAt: any;
+    updatedAt: any;
+    adminReply?: string;
 }
 
-export async function deletePaymentProof(orderId: string): Promise<void> {
-    if (!db || !auth?.currentUser) {
-        throw new Error("Authentication or services are unavailable.");
-    }
-    const orderRef = doc(db, "orders", orderId);
-    const orderSnap = await getDoc(orderRef);
-
-    if (!orderSnap.exists()) {
-        throw new Error("Order not found.");
-    }
-
-    const orderData = orderSnap.data() as Order;
-    const proofUrl = orderData.proofOfPaymentUrl;
-
-    if (proofUrl) {
-        try {
-            await deleteObject(fileRef);
-        } catch (error: any) {
-            // يمكن إضافة معالجة للخطأ هنا إذا لزم الأمر
-        }
-    }
-
-    await updateDoc(orderRef, {
-        proofOfPaymentUrl: deleteField(),
-        verificationNotes: deleteField()
-    });
+export interface UserProfile {
+  uid: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  phoneNumber?: string;
+  qualifications?: string;
+  serviceCategories?: ServiceCategory[];
+  serviceAreas?: string[];
+  location?: any;
+  images?: string[];
+  videos?: string[];
+  createdAt?: any;
+  updatedAt?: any;
+  emailVerified?: boolean;
+  videoCallsEnabled?: boolean;
+  verificationStatus?: VerificationStatus;
+  verificationDocuments?: string[];
+  verificationRejectionReason?: string;
 }
 
+export interface Call {
+  id: string;
+  chatId: string;
+  callerId: string;
+  callerName: string;
+  callerAvatar?: string | null;
+  calleeId: string;
+  calleeName: string;
+  calleeAvatar?: string | null;
+  status: 'ringing' | 'active' | 'declined' | 'ended' | 'unanswered';
+  type: 'video' | 'audio';
+  participantIds: string[];
+  createdAt: any;
+  startedAt?: any;
+  offer?: { sdp: string; type: 'offer' };
+  answer?: { sdp: string; type: 'answer' };
+}
 
-export async function getOrdersForUser(userId: string): Promise<Order[]> {
-    if (!db) throw new Error("Database not initialized.");
-    
-    const seekerQuery = query(collection(db, "orders"), where("seekerId", "==", userId));
-    const providerQuery = query(collection(db, "orders"), where("providerId", "==", userId));
+export interface Order {
+    id: string;
+    seekerId: string;
+    providerId: string;
+    seekerName: string;
+    providerName: string;
+    serviceDescription: string;
+    amount: number;
+    currency: string;
+    commission: number;
+    payoutAmount: number;
+    status: OrderStatus;
+    proofOfPaymentUrl?: string;
+    createdAt?: any;
+    approvedByProviderAt?: any;
+    paymentApprovedAt?: any;
+    completedAt?: any;
+    declinedAt?: any;
+    serviceStartDate?: any;
+    gracePeriodInDays?: number;
+    serviceStartedAt?: any;
+    workFinishedAt?: any;
+    disputeReason?: string;
+    verificationNotes?: string;
+    chatId?: string;
+    resolutionNotes?: string;
+    disputeResolution?: 'seeker_favor' | 'provider_favor';
+}
 
-    const [seekerSnap, providerSnap] = await Promise.all([getDocs(seekerQuery), getDocs(providerQuery)]);
-    
-    const orders = [
-        ...seekerSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order)),
-        ...providerSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order))
-    ];
-    
-    // Remove duplicates and sort by date
-    const uniqueOrders = Array.from(new Map(orders.map(o => [o.id, o])).values());
-    uniqueOrders.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+export interface Notification {
+    id: string;
+    userId: string;
+    titleKey: string;
+    messageKey: string;
+    messageParams?: { [key: string]: string };
+    link: string;
+    isRead: boolean;
+    createdAt: any;
+}
+
+export interface AdRequest {
+    id: string;
+    userId: string;
+    name: string;
+    email: string;
+    title: string;
+    message: string;
+    imageUrl?: string;
+    status: AdRequestStatus;
+    price?: number;
+    currency?: string;
+    paymentProofUrl?: string;
+    rejectionReason?: string;
+    verificationNotes?: string;
+    createdAt: any;
+    updatedAt: any;
+}
     
     return uniqueOrders;
 }
