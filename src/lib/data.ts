@@ -1,7 +1,4 @@
 
-import { db, auth, storage } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, doc, setDoc, serverTimestamp, Timestamp, getDoc, updateDoc, orderBy, limit, writeBatch, GeoPoint, arrayUnion, arrayRemove, increment, deleteField } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { verifyPayment, type VerifyPaymentInput } from '@/ai/flows/verify-payment-flow';
 import type { Translations } from './translations';
 
@@ -201,10 +198,8 @@ export async function getAllNotificationsForUser(userId: string): Promise<Notifi
 }
 
 
-// --- UserProfile Firestore Functions ---
 export const getUserProfileById = async (uid: string): Promise<UserProfile | null> => {
   if (!db) {
-    console.error("Firestore (db) is not initialized in getUserProfileById.");
     throw new Error("Database service is not configured.");
   }
   if (!uid) {
@@ -232,7 +227,6 @@ export const getUserProfileById = async (uid: string): Promise<UserProfile | nul
 
 export const getAllProviders = async (): Promise<UserProfile[]> => {
     if (!db) {
-        console.error("Firestore (db) is not initialized in getAllProviders.");
         return [];
     }
     try {
@@ -246,20 +240,17 @@ export const getAllProviders = async (): Promise<UserProfile[]> => {
             } as UserProfile;
         });
     } catch (error) {
-        console.error("Error fetching all providers from Firestore: ", error);
         return [];
     }
 };
 
 export async function uploadVerificationDocuments(files: FileList): Promise<void> {
-  if (!storage || !db || !auth.currentUser) throw new Error("Services not initialized or user not logged in.");
   
   const user = auth.currentUser;
   const userDocRef = doc(db, "users", user.uid);
 
   for (const file of Array.from(files)) {
     const filePath = `verification_documents/${user.uid}/${Date.now()}_${file.name}`;
-    const fileRef = ref(storage, filePath);
     await uploadBytes(fileRef, file);
     const downloadURL = await getDownloadURL(fileRef);
     await updateDoc(userDocRef, {
@@ -303,7 +294,6 @@ export async function rejectVerification(userId: string, reason: string): Promis
   await createNotification(userId, 'verificationRejectedTitle', 'verificationRejectedMessage', '/dashboard/provider/profile', { reason });
 }
 
-// --- Rating Firestore Functions ---
 export const addRating = async (ratingData: {
     ratedUserId: string;
     raterUserId: string;
@@ -329,7 +319,6 @@ export const addRating = async (ratingData: {
         await batch.commit();
 
     } catch (error) {
-        console.error("Error adding rating to Firestore: ", error);
         throw error;
     }
 };
@@ -337,7 +326,6 @@ export const addRating = async (ratingData: {
 
 export const getRatingsForUser = async (userId: string): Promise<Rating[] | null> => {
     if (!db) {
-        console.error("Firestore (db) is not initialized in getRatingsForUser.");
         return null;
     }
     if (!userId) {
@@ -364,7 +352,6 @@ export const getRatingsForUser = async (userId: string): Promise<Rating[] | null
 };
 
 
-// --- Messaging Firestore Functions ---
 const logCallEventInChat = async (
     chatId: string,
     callType: 'audio' | 'video',
@@ -478,9 +465,6 @@ export const sendMessage = async (
     if (!db || !auth?.currentUser) {
         throw new Error("User not authenticated or database is unavailable.");
     }
-    if (!storage) {
-        throw new Error("Storage service is not configured.");
-    }
 
     const senderId = auth.currentUser.uid;
     const metadata = {
@@ -495,7 +479,6 @@ export const sendMessage = async (
         const originalName = content instanceof File ? content.name : "media";
         const safeFileName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_');
         const filePath = `chats/${chatId}/${new Date().getTime()}_${safeFileName}`;
-        const fileRef = ref(storage, filePath);
         
         await uploadBytes(fileRef, content, metadata);
         
@@ -510,7 +493,10 @@ export const sendMessage = async (
         lastMessageText = messageContent;
     }
     
-    if (!messageContent) return;
+    if (!messageContent) {
+        // لا ترسل رسالة إذا لم يوجد محتوى
+        return;
+    }
 
     const chatRef = doc(db, "messages", chatId);
     const chatSnap = await getDoc(chatRef);
@@ -754,7 +740,6 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
 }
 
 export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: File): Promise<void> {
-    if (!db || !storage || !auth.currentUser) {
         throw new Error("Authentication session is invalid or services are unavailable. Please log in again.");
     }
     const seekerId = auth.currentUser.uid;
@@ -790,15 +775,12 @@ export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: Fi
         verificationResult = { isVerified: false, reason: `AI analysis failed: ${aiError.message}. Please review manually.` };
     }
     
-    // Upload file to storage regardless of verification result
     const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const filePath = `payment_proofs/${orderId}/${seekerId}/${safeFileName}`;
-    const fileRef = ref(storage, filePath);
     const metadata = { customMetadata: { 'userId': seekerId } };
     await uploadBytes(fileRef, file, metadata);
     const downloadURL = await getDownloadURL(fileRef);
 
-    // Update Firestore based on verification
     const orderRef = doc(db, "orders", orderId);
     if (verificationResult.isVerified) {
         // AI approved, update status to paid
@@ -826,35 +808,31 @@ export async function uploadPaymentProofAndUpdateOrder(orderId: string, file: Fi
 }
 
 export async function deletePaymentProof(orderId: string): Promise<void> {
-  if (!db || !storage || !auth.currentUser) {
-    throw new Error("Authentication or services are unavailable.");
-  }
-  const orderRef = doc(db, "orders", orderId);
-  const orderSnap = await getDoc(orderRef);
-
-  if (!orderSnap.exists()) {
-    throw new Error("Order not found.");
-  }
-
-  const orderData = orderSnap.data() as Order;
-  const proofUrl = orderData.proofOfPaymentUrl;
-
-  if (proofUrl) {
-    try {
-      const fileRef = ref(storage, proofUrl);
-      await deleteObject(fileRef);
-    } catch (error: any) {
-      if (error.code !== 'storage/object-not-found') {
-        console.error("Error deleting file from storage:", error);
-        throw new Error("Failed to delete the existing proof from storage.");
-      }
+    if (!db || !auth?.currentUser) {
+        throw new Error("Authentication or services are unavailable.");
     }
-  }
+    const orderRef = doc(db, "orders", orderId);
+    const orderSnap = await getDoc(orderRef);
 
-  await updateDoc(orderRef, {
-    proofOfPaymentUrl: deleteField(),
-    verificationNotes: deleteField()
-  });
+    if (!orderSnap.exists()) {
+        throw new Error("Order not found.");
+    }
+
+    const orderData = orderSnap.data() as Order;
+    const proofUrl = orderData.proofOfPaymentUrl;
+
+    if (proofUrl) {
+        try {
+            await deleteObject(fileRef);
+        } catch (error: any) {
+            // يمكن إضافة معالجة للخطأ هنا إذا لزم الأمر
+        }
+    }
+
+    await updateDoc(orderRef, {
+        proofOfPaymentUrl: deleteField(),
+        verificationNotes: deleteField()
+    });
 }
 
 
@@ -913,7 +891,6 @@ export async function approvePayment(orderId: string): Promise<void> {
 }
 
 export async function rejectPayment(orderId: string, reason: string): Promise<void> {
-  if (!db || !storage || !auth.currentUser) {
     throw new Error("Authentication or services are unavailable.");
   }
   const orderRef = doc(db, "orders", orderId);
@@ -928,12 +905,8 @@ export async function rejectPayment(orderId: string, reason: string): Promise<vo
 
   if (proofUrl) {
     try {
-      const fileRef = ref(storage, proofUrl);
       await deleteObject(fileRef);
     } catch (error: any) {
-      if (error.code !== 'storage/object-not-found') {
-        console.error("Error deleting file from storage:", error);
-        throw new Error("Failed to delete the existing proof from storage.");
       }
     }
   }
@@ -1132,11 +1105,9 @@ export async function createAdRequest(
     data: { name: string; email: string; title: string; message: string; },
     imageFile: File
 ): Promise<string> {
-    if (!db || !storage || !auth.currentUser) throw new Error("Authentication or services are unavailable.");
 
     const userId = auth.currentUser.uid;
     const filePath = `ad_images/${userId}/${Date.now()}_${imageFile.name}`;
-    const imageRef = ref(storage, filePath);
 
     await uploadBytes(imageRef, imageFile);
     const imageUrl = await getDownloadURL(imageRef);
@@ -1246,7 +1217,6 @@ export async function rejectAdRequest(requestId: string, reason: string): Promis
 
 
 export async function uploadAdPaymentProof(requestId: string, file: File): Promise<void> {
-    if (!db || !storage || !auth.currentUser) {
         throw new Error("Authentication session is invalid or services are unavailable. Please log in again.");
     }
 
@@ -1280,10 +1250,8 @@ export async function uploadAdPaymentProof(requestId: string, file: File): Promi
         verificationResult = { isVerified: false, reason: `AI analysis failed: ${aiError.message}. Please review manually.` };
     }
     
-    // Upload file to storage regardless of verification result
     const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const filePath = `ad_payments/${requestId}/${adRequest.userId}/${safeFileName}`;
-    const fileRef = ref(storage, filePath);
     const metadata = { customMetadata: { 'userId': adRequest.userId } };
     await uploadBytes(fileRef, file, metadata);
     const downloadURL = await getDownloadURL(fileRef);
@@ -1350,7 +1318,6 @@ export async function rejectAdPayment(requestId: string, reason: string): Promis
     const adData = adSnap.data() as AdRequest;
     if(adData.paymentProofUrl) {
          try {
-            const fileRef = ref(storage, adData.paymentProofUrl);
             await deleteObject(fileRef);
          } catch(e) {
             console.error("Could not delete previous payment proof, it might not exist.", e)

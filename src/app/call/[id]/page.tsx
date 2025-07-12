@@ -3,8 +3,6 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, onSnapshot, collection, addDoc, updateDoc, Timestamp, getDoc, writeBatch } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase';
 import { Call, updateCallStatus } from '@/lib/data';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';

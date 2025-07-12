@@ -11,8 +11,6 @@ import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { LifeBuoy, Loader2, Send, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
-import { auth } from '@/lib/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
 import { createSupportRequest, SupportRequestType } from '@/lib/data';
 import Link from 'next/link';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

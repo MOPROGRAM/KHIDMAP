@@ -7,8 +7,6 @@
  * - ModerateVideoOutput - The return type for the moderateVideo function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
 
 const ModerateVideoInputSchema = z.object({
   videoDataUri: z

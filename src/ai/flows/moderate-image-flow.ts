@@ -7,8 +7,6 @@
  * - ModerateImageOutput - The return type for the moderateImage function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
 
 const ModerateImageInputSchema = z.object({
   photoDataUri: z

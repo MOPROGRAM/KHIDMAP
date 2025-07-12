@@ -7,8 +7,6 @@ import { Megaphone, Loader2, AlertTriangle, ArrowRight, CheckCircle, Clock, Circ
 import { AdRequest, AdRequestStatus, getAdRequestsForUser } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { auth } from '@/lib/firebase';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';

@@ -7,7 +7,6 @@
  * - GenerateAdOutput - The return type for the generateAd function.
  */
 
-import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 
 const GenerateAdInputSchema = z.object({

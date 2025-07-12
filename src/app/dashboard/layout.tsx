@@ -10,9 +10,6 @@ import { cn } from '@/lib/utils';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import Logo from '@/components/shared/Logo';
 import { Separator } from '@/components/ui/separator';
-import { auth, db } from '@/lib/firebase'; 
-import { onAuthStateChanged, signOut, User as FirebaseUser, sendEmailVerification } from 'firebase/auth';
-import { doc, getDoc, collection, query, where, onSnapshot, orderBy, limit, writeBatch } from 'firebase/firestore';
 import { useToast } from "@/hooks/use-toast";
 import { ADMIN_EMAIL } from '@/lib/config';
 import CallNotification from '@/components/chat/CallNotification';
@@ -99,16 +96,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             const userDocSnap = await getDoc(userDocRef);
             if (userDocSnap.exists()) {
               const userData = userDocSnap.data();
-              const roleFromFirestore = user.email === ADMIN_EMAIL ? 'admin' : (userData.role as UserRole);
-              
-              if (!['provider', 'seeker', 'admin'].includes(roleFromFirestore)) {
+              if (!userData.role) {
                 console.error("User has no valid role. Logging out.", user.uid);
                 toast({ variant: "destructive", title: t.roleMissingTitle, description: t.roleMissingDescription });
                 if(auth) await signOut(auth);
                 // No need to return, state change will trigger re-render and redirect
               } else {
-                setUserRole(roleFromFirestore); 
-                localStorage.setItem('userRole', roleFromFirestore);
                 localStorage.setItem('userName', userData.name || user.displayName || '');
                 localStorage.setItem('userEmail', userData.email || user.email || '');
               }
@@ -119,13 +112,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 setUserRole('admin');
                 localStorage.setItem('userRole', 'admin');
               } else {
-                console.warn("User profile not found in Firestore for UID:", user.uid, ". Logging you out.");
                 toast({ variant: "destructive", title: t.profileNotFoundTitle, description: t.profileNotFoundDescription });
                 if(auth) await signOut(auth); 
               }
             }
           } catch (error) {
-            console.error("Error fetching user role from Firestore:", error);
             setUserRole(null);
             toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotFetchProfile });
           } finally {

@@ -10,9 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, LogInIcon, Loader2, AlertTriangle } from 'lucide-react';
-import { auth, db } from '@/lib/firebase'; 
-import { signInWithEmailAndPassword, onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
 
 export default function LoginPage() {
   const t = useTranslation();
@@ -54,14 +51,10 @@ export default function LoginPage() {
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
 
-      const userDocRef = doc(db, "users", firebaseUser.uid);
       const userDocSnap = await getDoc(userDocRef);
 
       let userRole: 'provider' | 'seeker' | null = null;
-      let userNameFromDb: string | null = firebaseUser.displayName;
-      let userEmailFromDb: string | null = firebaseUser.email;
 
       if (userDocSnap.exists()) {
         const userData = userDocSnap.data();
@@ -69,11 +62,9 @@ export default function LoginPage() {
         userNameFromDb = userData.name || userNameFromDb;
         userEmailFromDb = userData.email || userEmailFromDb;
       } else {
-        console.warn("User document not found in Firestore. Role might be missing. User will be logged in, but dashboard might redirect or show warnings.");
       }
 
       localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userId', firebaseUser.uid);
       localStorage.setItem('userName', userNameFromDb || email.split('@')[0]);
       localStorage.setItem('userEmail', userEmailFromDb || '');
       if (userRole) {

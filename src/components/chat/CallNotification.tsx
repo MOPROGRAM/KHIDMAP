@@ -2,8 +2,6 @@
 "use client";
 
 import { useEffect, useState, useRef } from 'react';
-import { auth, db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { Call, updateCallStatus } from '@/lib/data';
 import {
   AlertDialog,
@@ -25,7 +23,6 @@ export default function CallNotification() {
   const router = useRouter();
   const [incomingCall, setIncomingCall] = useState<Call | null>(null);
 
-  // Effect to listen for incoming call documents from Firestore
   useEffect(() => {
     const currentUser = auth.currentUser;
     if (!currentUser || !db) return;

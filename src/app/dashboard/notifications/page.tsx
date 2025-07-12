@@ -7,8 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Bell, Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Notification, getAllNotificationsForUser } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import { auth } from '@/lib/firebase';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';

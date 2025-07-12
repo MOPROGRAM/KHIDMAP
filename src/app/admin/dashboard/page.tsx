@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ShieldCheck, AlertTriangle, Loader2, DollarSign, ArrowRight, Megaphone, LifeBuoy, BadgeCheck, ShieldAlert } from 'lucide-react';
-import { auth, db } from '@/lib/firebase';
 import { ADMIN_EMAIL } from '@/lib/config';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';

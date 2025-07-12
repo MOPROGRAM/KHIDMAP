@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
-import { auth, db } from '@/lib/firebase';
 import { Order, Message, getOrderById, resolveDispute, sendMessage, startOrGetChat } from '@/lib/data';
 import { Loader2, ArrowLeft, ShieldAlert, User, MessageSquare, Check, CheckCheck, Phone, PhoneMissed, PhoneOff, Video as VideoIcon, Send } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +18,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { useSettings } from '@/contexts/SettingsContext';
-import { Timestamp, collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 
 
 const formatCallDuration = (seconds: number) => {

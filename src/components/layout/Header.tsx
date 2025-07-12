@@ -11,8 +11,6 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Menu, UserCircle, LogIn, UserPlus, LogOutIcon } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
-import { auth } from '@/lib/firebase'; // auth can be undefined
-import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 

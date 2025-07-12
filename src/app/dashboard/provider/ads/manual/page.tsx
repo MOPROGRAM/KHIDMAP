@@ -11,8 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Edit, Loader2, Send, Upload, Image as ImageIcon, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import { createAdRequest } from '@/lib/data';
-import { auth } from '@/lib/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 

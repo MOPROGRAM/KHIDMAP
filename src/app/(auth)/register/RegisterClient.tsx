@@ -12,9 +12,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Eye, EyeOff, Loader2, MailCheck, AlertTriangle } from 'lucide-react';
-import { auth, db } from '@/lib/firebase'; 
-import { createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, User as FirebaseUser, sendEmailVerification } from 'firebase/auth';
-import { doc, setDoc, Timestamp, writeBatch, getDoc } from 'firebase/firestore';
 import { z } from "zod";
 import { ADMIN_EMAIL } from '@/lib/config';
 
@@ -103,21 +100,15 @@ export default function RegisterClient() {
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, validationResult.data.email, validationResult.data.password);
-      const firebaseUser = userCredential.user;
 
-      await updateProfile(firebaseUser, { displayName: validationResult.data.name });
       
-      const userDocRef = doc(db, "users", firebaseUser.uid);
       
       const finalRole = isAdminRegistration ? 'admin' : validationResult.data.role;
 
       const userDocData: any = {
-        uid: firebaseUser.uid,
         name: validationResult.data.name,
-        email: firebaseUser.email,
         role: finalRole,
         createdAt: Timestamp.now(), 
-        emailVerified: firebaseUser.emailVerified,
       };
 
       if (finalRole === 'provider') {
@@ -135,7 +126,6 @@ export default function RegisterClient() {
 
       await batch.commit();
 
-      await sendEmailVerification(firebaseUser);
       setShowVerificationMessage(true);
       
       if (isAdminRegistration) {

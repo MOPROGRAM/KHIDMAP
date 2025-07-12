@@ -19,9 +19,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AlertTriangle, Loader2, Trash2, KeyRound, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { auth, db } from '@/lib/firebase';
-import { deleteUser, sendPasswordResetEmail } from 'firebase/auth';
-import { doc, deleteDoc, getDoc, writeBatch } from 'firebase/firestore';
 
 export default function SettingsPage() {
   const t = useTranslation();
@@ -82,7 +79,6 @@ export default function SettingsPage() {
 
       const batch = writeBatch(db);
 
-      // Delete the user's document from Firestore.
       batch.delete(userDocRef);
 
       // If the user has a username, delete the username document.
@@ -92,7 +88,6 @@ export default function SettingsPage() {
         batch.delete(usernameDocRef);
       }
       
-      // Commit the batched writes to Firestore.
       await batch.commit();
 
       // Then, delete the user from Firebase Authentication.

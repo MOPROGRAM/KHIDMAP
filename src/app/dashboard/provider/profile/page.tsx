@@ -11,10 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, ServiceCategory, VerificationStatus, uploadVerificationDocuments } from '@/lib/data'; 
-import { auth, db, storage } from '@/lib/firebase';
-import { doc, getDoc, setDoc, Timestamp, serverTimestamp, GeoPoint, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'; 
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { onAuthStateChanged, User as FirebaseUser, updateProfile as updateAuthProfile } from 'firebase/auth';
 import { Loader2, UserCircle, Save, AlertTriangle, MapPin, Upload, Trash2, Image as ImageIcon, Video as VideoIcon, AtSign, BadgeCheck, Shield, Clock, ShieldAlert } from 'lucide-react';
 import { z } from 'zod';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -101,7 +97,6 @@ export default function ProviderProfilePage() {
 
 
   useEffect(() => {
-    if (auth && db && storage) {
       setIsCoreServicesAvailable(true);
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -128,7 +123,6 @@ export default function ProviderProfilePage() {
     event: React.ChangeEvent<HTMLInputElement>,
     fileType: 'image' | 'video'
   ) => {
-    if (!authUser || !db || !storage) return;
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -139,7 +133,6 @@ export default function ProviderProfilePage() {
         setState: setImages,
         setLoading: setIsUploadingImage,
         firestoreField: 'images',
-        storageFolder: 'images',
         accept: 'image/*',
         errorLimit: "Image portfolio limit reached (3 max).",
         errorType: "Please upload a valid image file.",
@@ -150,7 +143,6 @@ export default function ProviderProfilePage() {
         setState: setVideos,
         setLoading: setIsUploadingVideo,
         firestoreField: 'videos',
-        storageFolder: 'videos',
         accept: 'video/*',
         errorLimit: "Video portfolio limit reached (2 max).",
         errorType: "Please upload a valid video file.",
@@ -177,8 +169,6 @@ export default function ProviderProfilePage() {
     const fileInput = event.target;
 
     try {
-      const filePath = `serviceAds/${authUser.uid}/${config.storageFolder}/${Date.now()}_${file.name}`;
-      const fileRef = ref(storage, filePath);
       
       const metadata = { customMetadata: { 'userId': authUser.uid } };
       await uploadBytes(fileRef, file, metadata);
@@ -195,8 +185,6 @@ export default function ProviderProfilePage() {
     } catch (error: any) {
       console.error("File upload error:", error);
       let description = t.fileUploadErrorDescription;
-      if (error.code === 'storage/unauthorized') {
-        description = t.storageUnauthorizedError;
       }
       toast({ variant: "destructive", title: t.fileUploadErrorTitle, description });
     } finally {
@@ -206,7 +194,6 @@ export default function ProviderProfilePage() {
   };
   
   const handleFileDelete = async (urlToDelete: string, fileType: 'image' | 'video') => {
-    if (!authUser || !db || !storage || deletingUrl) return;
 
     setDeletingUrl(urlToDelete);
 
@@ -216,7 +203,6 @@ export default function ProviderProfilePage() {
     }[fileType];
 
     try {
-      const fileRef = ref(storage, urlToDelete);
       await deleteObject(fileRef);
 
       const userDocRef = doc(db, "users", authUser.uid);
@@ -230,7 +216,6 @@ export default function ProviderProfilePage() {
      {
       console.error("File deletion error:", error);
       let description = t.fileDeleteErrorDescription;
-      if (error.code === 'storage/object-not-found') {
         description = t.fileNotFoundInStorage || "File not found. It may have already been deleted.";
         // Clean up firestore just in case
         try {
@@ -238,10 +223,7 @@ export default function ProviderProfilePage() {
             await updateDoc(userDocRef, { [config.firestoreField]: arrayRemove(urlToDelete) });
             config.setState(prev => prev.filter(url => url !== urlToDelete));
         } catch (dbError) {
-             console.error("Secondary Firestore deletion error:", dbError);
         }
-      } else if (error.code === 'storage/unauthorized') {
-        description = t.storageUnauthorizedDeleteError;
       }
       toast({ variant: "destructive", title: t.fileDeleteErrorTitle, description });
     } finally {

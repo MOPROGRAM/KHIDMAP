@@ -6,8 +6,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { auth, db } from '@/lib/firebase'; 
-import { onAuthStateChanged } from 'firebase/auth';
 import { useToast } from "@/hooks/use-toast";
 import { ADMIN_EMAIL } from '@/lib/config';
 import { Loader2, AlertTriangle, ServerCrash, ShieldCheck, DollarSign, Megaphone, LifeBuoy, BadgeCheck, ShieldAlert } from 'lucide-react';

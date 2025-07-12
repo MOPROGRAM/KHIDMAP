@@ -12,14 +12,11 @@ import {
   GripVertical, HardHat, Layers, Star, Wrench, Zap, Briefcase, BotMessageSquare, Sparkles, Building, PhoneCall, Camera, Video as VideoIcon, MessageSquare, PlusCircle, BadgeCheck
 } from 'lucide-react';
 import Link from 'next/link';
-import { Timestamp, doc, getDoc } from 'firebase/firestore';
 import { Separator } from '@/components/ui/separator';
-import { db, auth } from '@/lib/firebase';
 import { useToast } from "@/hooks/use-toast";
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
@@ -167,7 +164,6 @@ export default function ProviderDetailsPage() {
         
         const foundRatings = await getRatingsForUser(providerId);
         if (foundRatings) {
-            // Sort client-side now that the Firestore query doesn't order them.
             foundRatings.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
             setRatings(foundRatings);
             if (foundRatings.length > 0) {
@@ -189,7 +185,6 @@ export default function ProviderDetailsPage() {
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setAuthUser(user);
-        // Fetch definitive role from Firestore to ensure button visibility is correct
         try {
           const userDocRef = doc(db, 'users', user.uid);
           const userDocSnap = await getDoc(userDocRef);

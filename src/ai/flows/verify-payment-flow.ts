@@ -7,7 +7,6 @@
  * - VerifyPaymentOutput - The return type for the verifyPayment function.
  */
 
-import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 
 const VerifyPaymentInputSchema = z.object({
