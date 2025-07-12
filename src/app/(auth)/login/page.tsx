@@ -19,87 +19,25 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isAuthServiceAvailable, setIsAuthServiceAvailable] = useState(false);
+  const [isAuthServiceAvailable] = useState(true); // Always available (no Firebase)
 
 
-  useEffect(() => {
-    if (auth && db) { // Check for db as well, as it's needed for user role fetching
-      setIsAuthServiceAvailable(true);
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        // Redirect logic handled by DashboardLayout or if login is successful
-      });
-      return () => unsubscribe();
-    } else {
-      setIsAuthServiceAvailable(false);
-      console.warn("Firebase Auth or DB is not initialized in LoginPage.");
-    }
-  }, []);
+  // No auth/db logic needed
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !db) { // Redundant check, but good for safety
-      toast({
-        variant: "destructive",
-        title: t.serviceUnavailableTitle,
-        description: t.serviceUnavailableMessage,
-      });
-      setIsLoading(false);
-      return;
-    }
     setIsLoading(true);
-
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-
-      const userDocSnap = await getDoc(userDocRef);
-
-      let userRole: 'provider' | 'seeker' | null = null;
-
-      if (userDocSnap.exists()) {
-        const userData = userDocSnap.data();
-        userRole = userData.role as 'provider' | 'seeker';
-        userNameFromDb = userData.name || userNameFromDb;
-        userEmailFromDb = userData.email || userEmailFromDb;
-      } else {
-      }
-
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userName', userNameFromDb || email.split('@')[0]);
-      localStorage.setItem('userEmail', userEmailFromDb || '');
-      if (userRole) {
-        localStorage.setItem('userRole', userRole);
-      } else {
-        localStorage.removeItem('userRole'); 
-      }
-      
+    // Simulate login success (no backend logic)
+    setTimeout(() => {
       toast({
-        title: t.loginSuccessful,
-        description: t.welcomeBackUser?.replace('{userName}', userNameFromDb || email.split('@')[0]),
+        title: t.loginSuccessful || 'Login Successful',
+        description: t.welcomeTo + ' ' + t.appName,
+        duration: 5000,
       });
-      router.push('/dashboard');
-    } catch (error: any) {
-      console.error("Firebase login error:", error);
-      let errorMessage = t.loginFailedGeneric;
-      
-      // Per Firebase docs, auth/invalid-credential is now the standard error
-      // for wrong password, non-existent user, etc. to prevent user enumeration.
-      if (error.code === 'auth/invalid-credential') {
-        errorMessage = t.invalidCredentials;
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = t.invalidEmail;
-      } else if (error.code === 'auth/network-request-failed'){
-        errorMessage = t.networkError;
-      }
-
-      toast({
-        variant: "destructive",
-        title: t.loginFailedTitle,
-        description: errorMessage,
-      });
-    } finally {
       setIsLoading(false);
-    }
+      router.push('/dashboard');
+    }, 1000);
   };
 
   return (

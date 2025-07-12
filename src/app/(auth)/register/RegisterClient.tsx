@@ -26,7 +26,6 @@ const RegisterSchema = z.object({
   path: ["confirmPassword"],
 });
 
-
 export default function RegisterClient() {
   const t = useTranslation();
   const router = useRouter();
@@ -35,54 +34,30 @@ export default function RegisterClient() {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPasswordState] = useState(''); // Renamed to avoid conflict
-  const [confirmPassword, setConfirmPassword] = useState(''); 
+  const [password, setPasswordState] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<'provider' | 'seeker' | ''>(searchParams.get('role') as 'provider' | 'seeker' || '');
-  
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isAuthServiceAvailable, setIsAuthServiceAvailable] = useState(false);
+  const [isAuthServiceAvailable] = useState(true); // Always available (no Firebase)
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
-
 
   useEffect(() => {
     const initialRole = searchParams.get('role');
     if (initialRole === 'provider' || initialRole === 'seeker') {
       setRole(initialRole);
     }
-    if (auth && db) {
-      setIsAuthServiceAvailable(true);
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        // Optional: redirect if already logged in
-        // if (user) { router.push('/dashboard'); }
-      });
-      return () => unsubscribe();
-    } else {
-      setIsAuthServiceAvailable(false);
-      console.warn("Firebase Auth or DB is not initialized in RegisterPage.");
-    }
-  }, [searchParams, router]);
-
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !db) { 
-       toast({
-        variant: "destructive",
-        title: t.serviceUnavailableTitle,
-        description: t.serviceUnavailableMessage,
-      });
-      setIsLoading(false);
-      return;
-    }
     setIsLoading(true);
     setErrors({});
     setShowVerificationMessage(false);
 
-    const validationResult = RegisterSchema.safeParse({ name, email, password: password, confirmPassword, role });
-
+    const validationResult = RegisterSchema.safeParse({ name, email, password, confirmPassword, role });
     if (!validationResult.success) {
       const fieldErrors: Record<string, string> = {};
       validationResult.error.errors.forEach(err => {
@@ -96,68 +71,33 @@ export default function RegisterClient() {
       return;
     }
 
-    const isAdminRegistration = validationResult.data.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-
+    // إرسال البيانات إلى الباكند
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, validationResult.data.email, validationResult.data.password);
-
-      
-      
-      const finalRole = isAdminRegistration ? 'admin' : validationResult.data.role;
-
-      const userDocData: any = {
-        name: validationResult.data.name,
-        role: finalRole,
-        createdAt: Timestamp.now(), 
-      };
-
-      if (finalRole === 'provider') {
-        Object.assign(userDocData, {
-            phoneNumber: '',
-            qualifications: '',
-            serviceCategories: [],
-            serviceAreas: [],
-            location: null,
-        });
-      }
-      
-      const batch = writeBatch(db);
-      batch.set(userDocRef, userDocData);
-
-      await batch.commit();
-
-      setShowVerificationMessage(true);
-      
-      if (isAdminRegistration) {
-        toast({
-          title: "Admin Account Created",
-          description: "Please verify your email, then you can log in.",
-          duration: 10000, 
-        });
-      } else {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setShowVerificationMessage(true);
         toast({
           title: t.emailVerificationSent,
           description: t.checkYourEmailForVerification,
-          duration: 10000, 
+          duration: 10000,
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: t.registrationFailedTitle || 'فشل التسجيل',
+          description: data.message || t.registrationFailedGeneric,
         });
       }
-
-    } catch (error: any) {
-      console.error("Firebase registration error:", error);
-      let errorMessage = t.registrationFailedGeneric;
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = t.emailAlreadyInUse;
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = t.invalidEmail;
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = t.passwordTooWeak;
-      } else if (error.code === 'auth/network-request-failed'){
-        errorMessage = t.networkError;
-      }
+    } catch (err) {
       toast({
-        variant: "destructive",
-        title: t.registrationFailedTitle,
-        description: errorMessage,
+        variant: 'destructive',
+        title: t.registrationFailedTitle || 'فشل التسجيل',
+        description: t.registrationFailedGeneric,
       });
     } finally {
       setIsLoading(false);

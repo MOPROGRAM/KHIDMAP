@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 
 import usersRouter from './routes/users.js';
+import authRouter from './routes/auth.js';
 import adsRouter from './routes/ads.js';
 import paymentsRouter from './routes/payments.js';
 import disputesRouter from './routes/disputes.js';
@@ -24,6 +25,7 @@ mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .catch(err => console.error('MongoDB connection error:', err));
 
 app.use('/api/users', usersRouter);
+app.use('/api/auth', authRouter);
 app.use('/api/ads', adsRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/disputes', disputesRouter);

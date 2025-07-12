@@ -10,56 +10,20 @@ import Logo from '@/components/shared/Logo';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Menu, UserCircle, LogIn, UserPlus, LogOutIcon } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 
 export default function Header() {
   const t = useTranslation();
   const router = useRouter();
-  const { toast } = useToast();
-  const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    if (!auth) {
-      console.warn("Firebase Auth is not initialized. User authentication will not work.");
-      setIsLoading(false);
-      // Optionally, show a global error to the user if auth is critical for the app
-      // toast({ variant: "destructive", title: "Configuration Error", description: "Authentication service is unavailable." });
-      return;
-    }
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setAuthUser(user);
-        localStorage.setItem('isLoggedIn', 'true'); 
-      } else {
-        setAuthUser(null);
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('userId');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userRole');
-      }
-      setIsLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
+  // NOTE: Authentication logic removed. You can add your own logic here if needed.
+  const authUser = null;
+  const isLoading = false;
+  const handleLogout = () => {
     if (isMobileMenuOpen) setIsMobileMenuOpen(false);
-    if (!auth) {
-      toast({ variant: "destructive", title: t.errorOccurred, description: t.authServiceUnavailable });
-      return;
-    }
-    try {
-      await signOut(auth);
-      router.push('/login');
-    } catch (error) {
-      console.error("Error signing out: ", error);
-      toast({ variant: "destructive", title: t.logoutFailed, description: (error as Error).message });
-    }
+    router.push('/login');
   };
 
   const navLinks = [
@@ -102,20 +66,7 @@ export default function Header() {
     </>
   );
 
-  if (isLoading && !auth) { // Show basic header if auth is not even defined
-     return (
-      <header className="sticky top-0 z-50 w-full border-b bg-card backdrop-blur supports-[backdrop-filter]:bg-card/60">
-        <div className="container flex h-16 items-center justify-between">
-          <Logo />
-          <div className="flex items-center gap-2">
-            <CurrencySwitcher />
-            <LanguageSwitcher />
-            <ThemeSwitcher />
-          </div>
-        </div>
-      </header>
-    );
-  }
+  // Always show the header (no auth logic)
 
 
   return (
