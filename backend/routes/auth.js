@@ -1,7 +1,8 @@
 import express from 'express';
-import User from '../models/User.js';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
+import logger from '../logger.js';
+import prisma from '../prismaClient.js';
 const router = express.Router();
 
 // إعداد nodemailer (يمكنك تعديل الإعدادات حسب مزود البريد)
@@ -17,26 +18,30 @@ const transporter = nodemailer.createTransport({
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
+    logger.info(`Registration attempt for email: ${email}`);
     if (!name || !email || !password || !role) {
+      logger.info('Registration failed: Missing required fields');
       return res.status(400).json({ message: 'جميع الحقول مطلوبة.' });
     }
     // تحقق من عدم وجود المستخدم مسبقاً
-    const existing = await User.findOne({ email });
+    const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
+      logger.info(`Registration failed: Email already in use - ${email}`);
       return res.status(409).json({ message: 'البريد الإلكتروني مستخدم بالفعل.' });
     }
     // إنشاء رمز تحقق
     const verificationToken = crypto.randomBytes(32).toString('hex');
     // حفظ المستخدم
-    const user = new User({
-      name,
-      email,
-      password, // يجب تشفير كلمة المرور في الإنتاج
-      role,
-      isVerified: false,
-      verificationToken,
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password, // يجب تشفير كلمة المرور في الإنتاج
+        role,
+        isVerified: false,
+        verificationToken,
+      }
     });
-    await user.save();
     // إرسال إيميل التحقق
     const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify?token=${verificationToken}`;
     await transporter.sendMail({
@@ -45,9 +50,10 @@ router.post('/register', async (req, res) => {
       subject: 'تأكيد البريد الإلكتروني',
       html: `<p>مرحباً ${name}،</p><p>يرجى تأكيد بريدك الإلكتروني عبر الضغط على الرابط التالي:</p><a href="${verifyUrl}">${verifyUrl}</a>`
     });
+    logger.info(`Registration successful for email: ${email}`);
     res.status(201).json({ message: 'تم إنشاء الحساب. يرجى التحقق من بريدك الإلكتروني.' });
   } catch (err) {
-    console.error(err);
+    logger.error(`Registration error: ${err.message}`);
     res.status(500).json({ message: 'حدث خطأ أثناء التسجيل.' });
   }
 });

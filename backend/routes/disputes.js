@@ -1,16 +1,23 @@
 import express from 'express';
-import Dispute from '../models/Dispute.js';
+import prisma from '../prismaClient.js';
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-  const disputes = await Dispute.find();
-  res.json(disputes);
+  try {
+    const disputes = await prisma.dispute.findMany();
+    res.json(disputes);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching disputes' });
+  }
 });
 
 router.post('/', async (req, res) => {
-  const dispute = new Dispute(req.body);
-  await dispute.save();
-  res.status(201).json(dispute);
+  try {
+    const dispute = await prisma.dispute.create({ data: req.body });
+    res.status(201).json(dispute);
+  } catch (err) {
+    res.status(500).json({ message: 'Error creating dispute' });
+  }
 });
 
 export default router;

@@ -1,16 +1,23 @@
 import express from 'express';
-import Payment from '../models/Payment.js';
+import prisma from '../prismaClient.js';
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-  const payments = await Payment.find();
-  res.json(payments);
+  try {
+    const payments = await prisma.payment.findMany();
+    res.json(payments);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching payments' });
+  }
 });
 
 router.post('/', async (req, res) => {
-  const payment = new Payment(req.body);
-  await payment.save();
-  res.status(201).json(payment);
+  try {
+    const payment = await prisma.payment.create({ data: req.body });
+    res.status(201).json(payment);
+  } catch (err) {
+    res.status(500).json({ message: 'Error creating payment' });
+  }
 });
 
 export default router;

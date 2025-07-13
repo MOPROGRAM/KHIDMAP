@@ -1,16 +1,23 @@
 import express from 'express';
-import User from '../models/User.js';
+import prisma from '../prismaClient.js';
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-  const users = await User.find();
-  res.json(users);
+  try {
+    const users = await prisma.user.findMany();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching users' });
+  }
 });
 
 router.post('/', async (req, res) => {
-  const user = new User(req.body);
-  await user.save();
-  res.status(201).json(user);
+  try {
+    const user = await prisma.user.create({ data: req.body });
+    res.status(201).json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Error creating user' });
+  }
 });
 
 export default router;

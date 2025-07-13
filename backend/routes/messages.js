@@ -1,16 +1,23 @@
 import express from 'express';
-import Message from '../models/Message.js';
+import prisma from '../prismaClient.js';
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-  const messages = await Message.find();
-  res.json(messages);
+  try {
+    const messages = await prisma.message.findMany();
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching messages' });
+  }
 });
 
 router.post('/', async (req, res) => {
-  const message = new Message(req.body);
-  await message.save();
-  res.status(201).json(message);
+  try {
+    const message = await prisma.message.create({ data: req.body });
+    res.status(201).json(message);
+  } catch (err) {
+    res.status(500).json({ message: 'Error creating message' });
+  }
 });
 
 export default router;

@@ -1,16 +1,23 @@
 import express from 'express';
-import Ad from '../models/Ad.js';
+import prisma from '../prismaClient.js';
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-  const ads = await Ad.find();
-  res.json(ads);
+  try {
+    const ads = await prisma.ad.findMany();
+    res.json(ads);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching ads' });
+  }
 });
 
 router.post('/', async (req, res) => {
-  const ad = new Ad(req.body);
-  await ad.save();
-  res.status(201).json(ad);
+  try {
+    const ad = await prisma.ad.create({ data: req.body });
+    res.status(201).json(ad);
+  } catch (err) {
+    res.status(500).json({ message: 'Error creating ad' });
+  }
 });
 
 export default router;
