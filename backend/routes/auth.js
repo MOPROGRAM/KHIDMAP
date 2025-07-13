@@ -31,30 +31,40 @@ router.post('/register', async (req, res) => {
     }
     // إنشاء رمز تحقق
     const verificationToken = crypto.randomBytes(32).toString('hex');
-    // حفظ المستخدم
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password, // يجب تشفير كلمة المرور في الإنتاج
-        role,
-        isVerified: false,
-        verificationToken,
-      }
-    });
-    // إرسال إيميل التحقق
-    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify?token=${verificationToken}`;
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'تأكيد البريد الإلكتروني',
-      html: `<p>مرحباً ${name}،</p><p>يرجى تأكيد بريدك الإلكتروني عبر الضغط على الرابط التالي:</p><a href="${verifyUrl}">${verifyUrl}</a>`
-    });
+    logger.info('Before creating user in database');
+    let user;
+    try {
+      user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          password, // يجب تشفير كلمة المرور في الإنتاج
+          role,
+          isVerified: false,
+          verificationToken,
+        }
+      });
+    } catch (createError) {
+      logger.error(`Error creating user in database: ${JSON.stringify(createError, Object.getOwnPropertyNames(createError))}`);
+      throw createError;
+    }
+    logger.info('User created successfully in database');
+const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify?token=${verificationToken}`;
+// Mock email sending for testing
+logger.info(`Mock send email to ${email} with verification link: ${verifyUrl}`);
+// await transporter.sendMail({
+//   from: process.env.EMAIL_USER,
+//   to: email,
+//   subject: 'تأكيد البريد الإلكتروني',
+//   html: `<p>مرحباً ${name}،</p><p>يرجى تأكيد بريدك الإلكتروني عبر الضغط على الرابط التالي:</p><a href="${verifyUrl}">${verifyUrl}</a>`
+// });
     logger.info(`Registration successful for email: ${email}`);
+    console.log('Sending registration success response');
     res.status(201).json({ message: 'تم إنشاء الحساب. يرجى التحقق من بريدك الإلكتروني.' });
   } catch (err) {
-    logger.error(`Registration error: ${err.message}`);
-    res.status(500).json({ message: 'حدث خطأ أثناء التسجيل.' });
+    logger.error(`Registration error: ${err.message}\nStack: ${err.stack}`);
+    const sanitizedMessage = err.message.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+    res.status(500).json({ message: 'حدث خطأ أثناء التسجيل.', error: sanitizedMessage });
   }
 });
 

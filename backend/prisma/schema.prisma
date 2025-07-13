@@ -16,6 +16,10 @@ model User {
   isVerified        Boolean   @default(false)
   verificationToken String?   
   messages          Message[] @relation("UserMessages")
+  verifications     Verification[]
+  disputes          Dispute[]
+  payments          Payment[]
+  ads               Ad[]
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }
