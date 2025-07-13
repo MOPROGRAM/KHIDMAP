@@ -187,7 +187,6 @@ export default function ProviderProfilePage() {
     } catch (error: any) {
       console.error("File upload error:", error);
       let description = t.fileUploadErrorDescription;
-      }
       toast({ variant: "destructive", title: t.fileUploadErrorTitle, description });
     } finally {
       config.setLoading(false);
