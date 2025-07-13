@@ -33,6 +33,8 @@ app.use('/api/payments', paymentsRouter);
 app.use('/api/disputes', disputesRouter);
 app.use('/api/verifications', verificationsRouter);
 app.use('/api/messages', messagesRouter);
+import uploadsRouter from './routes/uploads.js';
+app.use('/api/uploads', uploadsRouter);
 
 app.get('/', (req, res) => {
   res.send('KHIDMAP Backend API');
