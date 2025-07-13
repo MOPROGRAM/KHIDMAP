@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -7,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Home, User, Search, History, LogOut, Settings, MessageSquare, Loader2, ShieldCheck, AlertTriangle, ServerCrash, Briefcase, DollarSign, Menu, Mail, Megaphone, LifeBuoy, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useTranslation, Translations } from '@/hooks/useTranslation';
+import { useTranslation } from '@/hooks/useTranslation';
 import Logo from '@/components/shared/Logo';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from "@/hooks/use-toast";
@@ -21,7 +20,7 @@ type UserRole = 'provider' | 'seeker' | 'admin';
 
 interface NavItem {
   href: string;
-  labelKey: keyof Translations;
+  labelKey: string;
   icon: React.ReactElement;
   roles: UserRole[];
 }
@@ -35,12 +34,12 @@ const NavContent = ({
 }: {
   navItems: NavItem[],
   pathname: string,
-  t: Translations,
+  t: Record<string, string>,
   isMobile?: boolean,
   closeSheet?: () => void,
 }) => (
   <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-    {navItems.map((item) => (
+    {navItems.map((item: NavItem) => (
       <Link
         key={item.href}
         href={item.href}
@@ -148,39 +147,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
         setUnreadCount(0);
       } else {
-        toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotMarkNotifications });
+        toast({ variant: "destructive", title: t.errorOccurred, description: "Could not mark notifications as read." });
       }
     } catch (error) {
-      toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotMarkNotifications });
+      toast({ variant: "destructive", title: t.errorOccurred, description: "Could not mark notifications as read." });
     }
   };
 
-
-  const navItems: NavItem[] = [
-    { href: '/dashboard', labelKey: 'dashboard', icon: <Home className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
-    { href: '/dashboard/orders', labelKey: 'myOrders', icon: <Briefcase className="h-5 w-5" />, roles: ['provider', 'seeker'] },
-    { href: '/dashboard/provider/ads', labelKey: 'myAds', icon: <Megaphone className="h-5 w-5" />, roles: ['provider', 'seeker'] },
-    { href: '/dashboard/messages', labelKey: 'messages', icon: <MessageSquare className="h-5 w-5" />, roles: ['provider', 'seeker'] },
-    { href: '/dashboard/notifications', labelKey: 'notifications', icon: <Bell className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
-    { href: '/dashboard/provider/profile', labelKey: 'profile', icon: <User className="h-5 w-5" />, roles: ['provider'] },
-    { href: '/services/search', labelKey: 'search', icon: <Search className="h-5 w-5" />, roles: ['seeker', 'provider'] },
-    { href: '/dashboard/seeker/history', labelKey: 'searchHistory', icon: <History className="h-5 w-5" />, roles: ['seeker'] },
-    { href: '/dashboard/settings', labelKey: 'settings', icon: <Settings className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
-    { href: '/contact', labelKey: 'contactSupport', icon: <LifeBuoy className="h-5 w-5" />, roles: ['provider', 'seeker', 'admin'] },
-    { href: '/admin/dashboard', labelKey: 'adminDashboard', icon: <ShieldCheck className="h-5 w-5" />, roles: ['admin'] },
-    { href: '/admin/payments', labelKey: 'paymentApprovals', icon: <DollarSign className="h-5 w-5" />, roles: ['admin'] },
-    { href: '/admin/ads', labelKey: 'adRequests', icon: <Megaphone className="h-5 w-5" />, roles: ['admin'] },
-    { href: '/admin/support', labelKey: 'supportRequests', icon: <Mail className="h-5 w-5" />, roles: ['admin'] },
-  ];
-  
   const handleLogout = async () => {
     setIsMobileMenuOpen(false);
-    if (!auth) {
-      toast({ variant: "destructive", title: t.errorOccurred, description: t.authServiceUnavailable });
-      return;
-    }
     try {
-      await signOut(auth);
+      const res = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (res.ok) {
+        setAuthUser(null);
+        setUserRole(null);
+        setIsEmailVerified(false);
+        router.replace('/login');
+      } else {
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.logoutFailed });
+      }
     } catch (error) {
       console.error("Error signing out from dashboard: ", error);
       toast({ variant: "destructive", title: t.logoutFailed, description: (error as Error).message });
@@ -219,7 +207,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
-
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
         <div className="hidden border-r bg-background md:block">
@@ -249,13 +236,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             className="shrink-0 md:hidden"
                         >
                             <Menu className="h-5 w-5" />
-                            <span className="sr-only">{t.toggleNavigationMenu}</span>
+                            <span className="sr-only">{t.dashboard}</span>
                         </Button>
                     </SheetTrigger>
                     <SheetContent side="left" className="flex flex-col p-0">
                          <SheetHeader className="p-4">
-                           <SheetTitle>{t.dashboardMenu}</SheetTitle>
-                           <SheetDescription>{t.dashboardMenuDesc}</SheetDescription>
+                           <SheetTitle>{t.dashboard}</SheetTitle>
+                           <SheetDescription>{t.dashboard}</SheetDescription>
                         </SheetHeader>
                         <div className="flex h-14 shrink-0 items-center border-b px-4 lg:h-[60px] lg:px-6">
                              <Logo />
@@ -284,13 +271,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <p className="font-medium">{t.verifyEmailPromptTitle}</p>
                         <p className="text-sm">{t.verifyEmailPromptMessage?.replace('{email}', authUser.email || '')}</p>
                         <Button variant="link" size="sm" className="p-0 h-auto text-yellow-700 dark:text-yellow-300 hover:underline font-semibold" onClick={async () => {
-                            if (auth?.currentUser) {
                             try {
-                                await sendEmailVerification(auth.currentUser);
-                                toast({ title: t.verificationEmailResent, description: t.checkYourEmail});
+                                const res = await fetch('/api/auth/resend-verification', {
+                                  method: 'POST',
+                                  credentials: 'include',
+                                });
+                                if (res.ok) {
+                                  toast({ title: t.verificationEmailResent, description: t.checkYourEmail});
+                                } else {
+                                  toast({ variant: "destructive", title: t.errorOccurred, description: t.errorResendingVerificationEmail});
+                                }
                             } catch (error) {
                                 toast({ variant: "destructive", title: t.errorOccurred, description: t.errorResendingVerificationEmail});
-                            }
                             }
                         }}>
                             {t.resendVerificationEmail}
