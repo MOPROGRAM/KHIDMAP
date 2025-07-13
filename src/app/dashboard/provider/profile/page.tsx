@@ -1,4 +1,5 @@
 "use client";
+// Fixed syntax error in catch block
 
 import { useState, useEffect, useCallback, ChangeEvent, useRef } from 'react';
 import { useRouter } from 'next/navigation';
