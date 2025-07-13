@@ -89,14 +89,169 @@ export default function CallPage() {
 
   // Main effect to set up the call
   useEffect(() => {
-    if (!callId || !auth.currentUser) {
-      setError(t.errorOccurred);
-      setLoading(false);
-      return;
-    }
+    async function fetchUserAndSetupCall() {
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (!res.ok) throw new Error('User not authenticated');
+        const userData = await res.json();
+        const currentUserId = userData.uid;
+        if (!callId) {
+          setError(t.errorOccurred);
+          setLoading(false);
+          return;
+        }
+        const callDocRef = doc(db, 'calls', callId);
 
-    const currentUserId = auth.currentUser.uid;
-    const callDocRef = doc(db, 'calls', callId);
+        // 1. Initialize Peer Connection
+        const pc = new RTCPeerConnection(servers);
+        pcRef.current = pc;
+        remoteStreamRef.current = new MediaStream();
+
+        // 2. Get User Media and start signaling
+        const setupCall = async () => {
+          try {
+            const docSnap = await getDoc(callDocRef);
+            if (!docSnap.exists()) throw new Error("Call not found.");
+            const initialCallData = { id: docSnap.id, ...docSnap.data() } as Call;
+            setCallData(initialCallData);
+
+            const constraints = { audio: true, video: initialCallData.type === 'video' };
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            localStreamRef.current = stream;
+
+            // Add local tracks to peer connection
+            stream.getTracks().forEach(track => {
+              pc.addTrack(track, stream);
+            });
+
+            // Show local video
+            if (localVideoRef.current) {
+              localVideoRef.current.srcObject = stream;
+            }
+
+            // Handle remote tracks
+            pc.ontrack = (event) => {
+                console.log('Received remote track:', event.track.kind);
+                event.streams[0].getTracks().forEach(track => {
+                    remoteStreamRef.current?.addTrack(track);
+                });
+                if (remoteVideoRef.current) {
+                    remoteVideoRef.current.srcObject = remoteStreamRef.current;
+                }
+                if (remoteAudioRef.current) {
+                    remoteAudioRef.current.srcObject = remoteStreamRef.current;
+                }
+            };
+
+            // Handle ICE candidates
+            pc.onicecandidate = event => {
+              if (event.candidate) {
+                const candidatesCollection = currentUserId === initialCallData.callerId 
+                  ? collection(callDocRef, 'callerCandidates') 
+                  : collection(callDocRef, 'calleeCandidates');
+                addDoc(candidatesCollection, event.candidate.toJSON());
+              }
+            };
+            
+            pc.onconnectionstatechange = () => {
+                console.log("Connection State:", pc.connectionState);
+                if (pc.connectionState === "failed") {
+                    setError(t.callConnectionFailed);
+                }
+            };
+
+            // Listen for remote ICE candidates
+            const remoteCandidatesCollection = currentUserId === initialCallData.callerId
+              ? collection(callDocRef, 'calleeCandidates')
+              : collection(callDocRef, 'callerCandidates');
+              
+            onSnapshot(remoteCandidatesCollection, snapshot => {
+              snapshot.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                  const candidate = new RTCIceCandidate(change.doc.data());
+                  pc.addIceCandidate(candidate).catch(e => console.error("Error adding ICE candidate:", e));
+                }
+              });
+            });
+            
+            // Start offer/answer process if we are the caller
+            if (currentUserId === initialCallData.callerId) {
+              const offerDescription = await pc.createOffer();
+              await pc.setLocalDescription(offerDescription);
+              await updateDoc(callDocRef, { offer: { sdp: offerDescription.sdp, type: offerDescription.type } });
+            }
+            
+            setLoading(false);
+          } catch (err) {
+            console.error("Failed to setup call", err);
+            toast({ variant: 'destructive', title: t.mediaAccessDeniedTitle, description: t.mediaAccessDeniedDescription });
+            setError(t.mediaAccessDeniedTitle as string);
+            setLoading(false);
+          }
+        };
+        
+        await setupCall();
+        
+        // Listen for call document changes (answers, status, etc.)
+        const unsubscribeCall = onSnapshot(callDocRef, async (docSnap) => {
+          const latestCallData = docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Call : null;
+          if (!latestCallData) {
+            toast({ title: t.callEnded });
+            router.push('/dashboard/messages');
+            return;
+          }
+          
+          setCallData(latestCallData);
+          
+          if (['ended', 'declined', 'unanswered'].includes(latestCallData.status)) {
+            toast({ title: t.callEnded, description: t.callHasBeenTerminated });
+            setTimeout(() => router.push(`/dashboard/messages?chatId=${latestCallData.chatId}`), 2000);
+          }
+          
+          const pc = pcRef.current;
+          if (!pc) return;
+
+          // Callee logic: handle offer and create answer
+          if (currentUserId === latestCallData.calleeId && latestCallData.offer && !pc.currentRemoteDescription) {
+            try {
+              await pc.setRemoteDescription(new RTCSessionDescription(latestCallData.offer));
+              const answerDescription = await pc.createAnswer();
+              await pc.setLocalDescription(answerDescription);
+              const batch = writeBatch(db);
+              batch.update(callDocRef, {
+                answer: { sdp: answerDescription.sdp, type: answerDescription.type },
+                status: 'active',
+                startedAt: serverTimestamp()
+              });
+              await batch.commit();
+            } catch (e) {
+              console.error("Error setting remote description or creating answer:", e);
+            }
+          }
+
+          // Caller logic: handle answer
+          if (currentUserId === latestCallData.callerId && latestCallData.answer && !pc.currentRemoteDescription) {
+             try {
+               await pc.setRemoteDescription(new RTCSessionDescription(latestCallData.answer));
+             } catch(e) {
+               console.error("Error setting remote description on caller side:", e);
+             }
+          }
+        });
+
+        // Cleanup on unmount
+        return () => {
+          unsubscribeCall();
+          cleanupCall();
+        };
+
+      } catch (error) {
+        setError(t.errorOccurred);
+        setLoading(false);
+      }
+    }
+    fetchUserAndSetupCall();
+  }, [callId, router, t, toast, cleanupCall]);
 
     // 1. Initialize Peer Connection
     const pc = new RTCPeerConnection(servers);

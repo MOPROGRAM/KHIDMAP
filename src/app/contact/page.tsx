@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useTranslation, Translations } from '@/hooks/useTranslation';
+import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { LifeBuoy, Loader2, Send, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
@@ -37,17 +37,25 @@ export default function ContactPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [authUser, setAuthUser] = useState<{ name?: string; email?: string } | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setAuthUser(user);
-      if (user) {
-        setName(user.displayName || '');
-        setEmail(user.email || '');
+    async function fetchUser() {
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (res.ok) {
+          const userData = await res.json();
+          setAuthUser({ name: userData.name, email: userData.email });
+          setName(userData.name || '');
+          setEmail(userData.email || '');
+        } else {
+          setAuthUser(null);
+        }
+      } catch (error) {
+        setAuthUser(null);
       }
-    });
-    return () => unsubscribe();
+    }
+    fetchUser();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,7 +77,6 @@ export default function ContactPage() {
       const fieldErrors: Record<string, string> = {};
       validationResult.error.errors.forEach(err => {
         const fieldName = err.path[0] as string;
-        // @ts-ignore
         fieldErrors[fieldName] = t[err.message as keyof typeof t] || err.message;
       });
       setErrors(fieldErrors);
