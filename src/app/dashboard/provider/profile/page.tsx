@@ -214,10 +214,11 @@ export default function ProviderProfilePage() {
 
       config.setState(prev => prev.filter(url => url !== urlToDelete));
       toast({ title: t.fileDeletedSuccessTitle });
-    } catch (error: any)
-     {
+    } catch (error: any) {
       console.error("File deletion error:", error);
       let description = t.fileDeleteErrorDescription;
+      
+      if (error.code === 'storage/object-not-found') {
         description = t.fileNotFoundInStorage || "File not found. It may have already been deleted.";
         // Clean up firestore just in case
         try {
@@ -225,8 +226,10 @@ export default function ProviderProfilePage() {
             await updateDoc(userDocRef, { [config.firestoreField]: arrayRemove(urlToDelete) });
             config.setState(prev => prev.filter(url => url !== urlToDelete));
         } catch (dbError) {
+          console.error('Error deleting file from database:', dbError);
         }
       }
+      
       toast({ variant: "destructive", title: t.fileDeleteErrorTitle, description });
     } finally {
         setDeletingUrl(null);
