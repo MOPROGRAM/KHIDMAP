@@ -116,3 +116,18 @@ export interface AdRequest {
     verificationNotes?: string;
     createdAt: any;
 }
+
+// Implement getAllProviders function to fetch providers data from backend API
+export async function getAllProviders(): Promise<UserProfile[]> {
+  try {
+    const response = await fetch('/api/providers');
+    if (!response.ok) {
+      throw new Error('Failed to fetch providers');
+    }
+    const data = await response.json();
+    return data as UserProfile[];
+  } catch (error) {
+    console.error('Error fetching providers:', error);
+    return [];
+  }
+}

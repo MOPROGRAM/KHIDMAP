@@ -1,12 +1,13 @@
-
 "use client";
+
+import { } from '@/lib/firebase';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useTranslation, Translations } from '@/hooks/useTranslation';
+import { useTranslation } from '@/hooks/useTranslation';
 import { UserProfile, getAllProviders, ServiceCategory } from '@/lib/data';
 import Link from 'next/link';
 import { Search as SearchIcon, MapPin, User, Wrench, Zap, ArrowRight, Loader2, AlertTriangle, Hammer, Brush, SprayCan, GripVertical, HardHat, Layers, UserCircle, Star, Briefcase, LocateFixed, BadgeCheck } from 'lucide-react';
@@ -111,7 +112,7 @@ export default function SearchClient() {
       if (query.trim()) {
         const lowerCaseQuery = query.toLowerCase();
         results = providers.filter(provider => {
-            const categories = (provider.serviceCategories || []).map(cat => (t[cat.toLowerCase() as keyof Translations] || cat).toLowerCase());
+            const categories = (provider.serviceCategories || []).map(cat => (t[cat.toLowerCase() as keyof typeof t] || cat).toLowerCase());
             const areas = (provider.serviceAreas || []).map(area => area.toLowerCase());
             
             return (
@@ -337,9 +338,6 @@ export default function SearchClient() {
                      </div>
                    </div>
                 </CardHeader>
-                <CardContent className="flex-grow p-4 pt-0">
-                  <p className="text-sm text-muted-foreground line-clamp-2 h-10">{provider.qualifications || t.provider + " " + (t[provider.serviceCategories?.[0]?.toLowerCase() as keyof Translations] || '')}</p>
-                </CardContent>
                 <CardFooter className="p-4 pt-0 mt-auto">
                   <Button asChild className="w-full group/button" size="sm">
                     <Link href={`/services/ad/${provider.uid}`}>
@@ -351,13 +349,6 @@ export default function SearchClient() {
           ))}
         </div>
       )}
-      <style jsx global>{`
-        .animation-delay-200 { animation-delay: 0.2s; }
-        .animation-delay-400 { animation-delay: 0.4s; }
-        [style*="animation-delay"] {
-          animation-fill-mode: backwards; 
-        }
-      `}</style>
     </div>
   );
 }
