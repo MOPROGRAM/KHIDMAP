@@ -3,6 +3,7 @@ import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 import logger from '../logger.js';
 import prisma from '../prismaClient.js';
+
 const router = express.Router();
 
 // إعداد nodemailer (يمكنك تعديل الإعدادات حسب مزود البريد)
@@ -49,15 +50,15 @@ router.post('/register', async (req, res) => {
       throw createError;
     }
     logger.info('User created successfully in database');
-const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify?token=${verificationToken}`;
-// Mock email sending for testing
-logger.info(`Mock send email to ${email} with verification link: ${verifyUrl}`);
-// await transporter.sendMail({
-//   from: process.env.EMAIL_USER,
-//   to: email,
-//   subject: 'تأكيد البريد الإلكتروني',
-//   html: `<p>مرحباً ${name}،</p><p>يرجى تأكيد بريدك الإلكتروني عبر الضغط على الرابط التالي:</p><a href="${verifyUrl}">${verifyUrl}</a>`
-// });
+    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify?token=${verificationToken}`;
+    // Mock email sending for testing
+    logger.info(`Mock send email to ${email} with verification link: ${verifyUrl}`);
+    // await transporter.sendMail({
+    //   from: process.env.EMAIL_USER,
+    //   to: email,
+    //   subject: 'تأكيد البريد الإلكتروني',
+    //   html: `<p>مرحباً ${name}،</p><p>يرجى تأكيد بريدك الإلكتروني عبر الضغط على الرابط التالي:</p><a href="${verifyUrl}">${verifyUrl}</a>`
+    // });
     logger.info(`Registration successful for email: ${email}`);
     console.log('Sending registration success response');
     res.status(201).json({ message: 'تم إنشاء الحساب. يرجى التحقق من بريدك الإلكتروني.' });
@@ -68,8 +69,6 @@ logger.info(`Mock send email to ${email} with verification link: ${verifyUrl}`);
   }
 });
 
-import prisma from '../prismaClient.js';
-
 // تفعيل الحساب عبر رمز التحقق
 router.get('/verify', async (req, res) => {
   try {
@@ -78,10 +77,7 @@ router.get('/verify', async (req, res) => {
     if (!user) return res.status(400).json({ message: 'رمز التحقق غير صالح.' });
     await prisma.user.update({
       where: { id: user.id },
-      data: {
-        isVerified: true,
-        verificationToken: null,
-      },
+      data: { isVerified: true, verificationToken: null }
     });
     res.json({ message: 'تم تفعيل الحساب بنجاح. يمكنك الآن تسجيل الدخول.' });
   } catch (err) {
