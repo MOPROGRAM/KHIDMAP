@@ -1,6 +1,8 @@
+
 import express from 'express';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
+import bcrypt from 'bcrypt';
 import logger from '../logger.js';
 import prisma from '../prismaClient.js';
 
@@ -30,6 +32,8 @@ router.post('/register', async (req, res) => {
       logger.info(`Registration failed: Email already in use - ${email}`);
       return res.status(409).json({ message: 'البريد الإلكتروني مستخدم بالفعل.' });
     }
+    // تشفير كلمة المرور
+    const hashedPassword = await bcrypt.hash(password, 10);
     // إنشاء رمز تحقق
     const verificationToken = crypto.randomBytes(32).toString('hex');
     logger.info('Before creating user in database');
@@ -39,7 +43,7 @@ router.post('/register', async (req, res) => {
         data: {
           name,
           email,
-          password, // يجب تشفير كلمة المرور في الإنتاج
+          password: hashedPassword,
           role,
           isVerified: false,
           verificationToken,
@@ -82,6 +86,33 @@ router.get('/verify', async (req, res) => {
     res.json({ message: 'تم تفعيل الحساب بنجاح. يمكنك الآن تسجيل الدخول.' });
   } catch (err) {
     res.status(500).json({ message: 'حدث خطأ أثناء التحقق.' });
+  }
+});
+
+// تسجيل الدخول
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    logger.info(`Login attempt for email: ${email}`);
+    if (!email || !password) {
+      return res.status(400).json({ message: 'البريد الإلكتروني وكلمة المرور مطلوبان.' });
+    }
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(401).json({ message: 'بيانات الاعتماد غير صحيحة.' });
+    }
+    if (!user.isVerified) {
+      return res.status(403).json({ message: 'يرجى تفعيل حسابك أولاً.' });
+    }
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ message: 'بيانات الاعتماد غير صحيحة.' });
+    }
+    // تسجيل الدخول ناجح - يمكن إنشاء جلسة أو JWT هنا
+    res.json({ message: 'تم تسجيل الدخول بنجاح.' });
+  } catch (err) {
+    logger.error(`Login error: ${err.message}\nStack: ${err.stack}`);
+    res.status(500).json({ message: 'حدث خطأ أثناء تسجيل الدخول.' });
   }
 });
 

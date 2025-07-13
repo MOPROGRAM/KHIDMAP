@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -21,23 +21,40 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthServiceAvailable] = useState(true); // Always available (no Firebase)
 
-
-  // No auth/db logic needed
-
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate login success (no backend logic)
-    setTimeout(() => {
-      toast({
-        title: t.loginSuccessful || 'Login Successful',
-        description: t.welcomeTo + ' ' + t.appName,
-        duration: 5000,
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
+      const data = await res.json();
+      if (res.ok) {
+        toast({
+          title: t.loginSuccessful || 'Login Successful',
+          description: t.welcomeTo + ' ' + t.appName,
+          duration: 5000,
+        });
+        router.push('/dashboard');
+      } else {
+        toast({
+          variant: 'destructive',
+          title: t.loginFailed || 'Login Failed',
+          description: data.message || t.loginFailedGeneric,
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: t.loginFailed || 'Login Failed',
+        description: t.loginFailedGeneric,
+      });
+    } finally {
       setIsLoading(false);
-      router.push('/dashboard');
-    }, 1000);
+    }
   };
 
   return (
@@ -50,9 +67,9 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           {!isAuthServiceAvailable && (
-             <div className="p-4 mb-6 text-sm text-destructive-foreground bg-destructive rounded-md text-center flex items-center gap-2 justify-center">
-                <AlertTriangle className="h-5 w-5" />
-                <span>{t.authServiceUnavailable}</span>
+            <div className="p-4 mb-6 text-sm text-destructive-foreground bg-destructive rounded-md text-center flex items-center gap-2 justify-center">
+              <AlertTriangle className="h-5 w-5" />
+              <span>{t.authServiceUnavailable}</span>
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
