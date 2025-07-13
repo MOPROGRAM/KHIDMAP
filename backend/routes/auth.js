@@ -68,15 +68,21 @@ logger.info(`Mock send email to ${email} with verification link: ${verifyUrl}`);
   }
 });
 
+import prisma from '../prismaClient.js';
+
 // تفعيل الحساب عبر رمز التحقق
 router.get('/verify', async (req, res) => {
   try {
     const { token } = req.query;
-    const user = await User.findOne({ verificationToken: token });
+    const user = await prisma.user.findUnique({ where: { verificationToken: token } });
     if (!user) return res.status(400).json({ message: 'رمز التحقق غير صالح.' });
-    user.isVerified = true;
-    user.verificationToken = undefined;
-    await user.save();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isVerified: true,
+        verificationToken: null,
+      },
+    });
     res.json({ message: 'تم تفعيل الحساب بنجاح. يمكنك الآن تسجيل الدخول.' });
   } catch (err) {
     res.status(500).json({ message: 'حدث خطأ أثناء التحقق.' });

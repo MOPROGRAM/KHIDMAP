@@ -1,2 +1,4 @@
-// Firebase removed as per new Prisma-based system
-// This file is intentionally left blank or can be deleted
+/**
+ * Firebase has been removed from the project.
+ * This file is intentionally left empty to avoid Firebase usage.
+ */

@@ -117,6 +117,15 @@ export interface AdRequest {
     createdAt: any;
 }
 
+export async function createSupportRequest(data: any): Promise<string> {
+  // Placeholder implementation for support request creation
+  // Replace with actual API call or database logic as needed
+  console.log('Support request data received:', data);
+  // Simulate ticket ID generation
+  const ticketId = 'TICKET-' + Math.floor(Math.random() * 1000000);
+  return ticketId;
+}
+
 // Implement getAllProviders function to fetch providers data from backend API
 export async function getAllProviders(): Promise<UserProfile[]> {
   try {
