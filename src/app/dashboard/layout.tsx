@@ -64,123 +64,94 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const { toast } = useToast();
   
-  const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
+  interface AuthUser {
+    uid: string;
+    name: string;
+    email: string;
+    role: UserRole;
+    emailVerified: boolean;
+  }
+
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const [isCoreServicesAvailable, setIsCoreServicesAvailable] = useState(false);
+  const [isCoreServicesAvailable, setIsCoreServicesAvailable] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const isMessagesPage = pathname.startsWith('/dashboard/messages');
 
   useEffect(() => {
-    if (auth && db) {
-      setIsCoreServicesAvailable(true);
-      const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          setAuthUser(user);
-          setIsEmailVerified(user.emailVerified); 
-          setNotifications([]);
-          setUnreadCount(0);
-
-          const roleFromStorage = localStorage.getItem('userRole') as UserRole | null;
-          if (roleFromStorage) {
-              setUserRole(roleFromStorage);
-          }
-
-          try {
-            const userDocRef = doc(db, "users", user.uid);
-            const userDocSnap = await getDoc(userDocRef);
-            if (userDocSnap.exists()) {
-              const userData = userDocSnap.data();
-              if (!userData.role) {
-                console.error("User has no valid role. Logging out.", user.uid);
-                toast({ variant: "destructive", title: t.roleMissingTitle, description: t.roleMissingDescription });
-                if(auth) await signOut(auth);
-                // No need to return, state change will trigger re-render and redirect
-              } else {
-                localStorage.setItem('userName', userData.name || user.displayName || '');
-                localStorage.setItem('userEmail', userData.email || user.email || '');
-              }
-            } else {
-              // Handle case where user is authenticated but has no firestore doc
-              // This can happen for admin user if they don't have a regular user profile
-              if (user.email === ADMIN_EMAIL) {
-                setUserRole('admin');
-                localStorage.setItem('userRole', 'admin');
-              } else {
-                toast({ variant: "destructive", title: t.profileNotFoundTitle, description: t.profileNotFoundDescription });
-                if(auth) await signOut(auth); 
-              }
-            }
-          } catch (error) {
-            setUserRole(null);
-            toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotFetchProfile });
-          } finally {
-            setIsLoading(false);
-          }
+    async function fetchUser() {
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (res.ok) {
+          const userData: AuthUser = await res.json();
+          setAuthUser(userData);
+          setUserRole(userData.role);
+          setIsEmailVerified(userData.emailVerified);
+          setIsLoading(false);
         } else {
           setAuthUser(null);
           setUserRole(null);
           setIsEmailVerified(false);
-          localStorage.clear();
-          router.replace('/login');
           setIsLoading(false);
+          router.replace('/login');
         }
-      });
-      return () => unsubscribe();
-    } else {
-      console.warn("Firebase Auth or DB is not initialized. Dashboard layout cannot function.");
-      setIsCoreServicesAvailable(false);
-      setIsLoading(false);
+      } catch (error) {
+        setIsCoreServicesAvailable(false);
+        setIsLoading(false);
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotFetchProfile });
+      }
     }
+    fetchUser();
   }, [router, toast, t]);
 
   useEffect(() => {
-    if (!authUser || !db) {
+    async function fetchNotifications() {
+      if (!authUser) {
         setNotifications([]);
         setUnreadCount(0);
         return;
+      }
+      try {
+        const res = await fetch('/api/notifications?limit=10', { credentials: 'include' });
+        if (res.ok) {
+          const notificationsData: Notification[] = await res.json();
+          setNotifications(notificationsData);
+          const newUnreadCount = notificationsData.filter(n => !n.isRead).length;
+          setUnreadCount(newUnreadCount);
+        } else {
+          setNotifications([]);
+          setUnreadCount(0);
+        }
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+        setNotifications([]);
+        setUnreadCount(0);
+      }
     }
-
-    const notificationsRef = collection(db, "notifications");
-    const q = query(
-        notificationsRef,
-        where("userId", "==", authUser.uid),
-        orderBy("createdAt", "desc"),
-        limit(10)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        const fetchedNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
-        setNotifications(fetchedNotifications);
-        const newUnreadCount = fetchedNotifications.filter(n => !n.isRead).length;
-        setUnreadCount(newUnreadCount);
-    }, (error) => {
-        console.error("Error fetching notifications in layout:", error);
-    });
-
-    return () => unsubscribe();
+    fetchNotifications();
   }, [authUser]);
 
   const handleMarkAllAsRead = async () => {
-    if (!db || !authUser || unreadCount === 0) return;
-
-    const batch = writeBatch(db);
-    notifications.forEach(notification => {
-        if (!notification.isRead) {
-            const docRef = doc(db, 'notifications', notification.id);
-            batch.update(docRef, { isRead: true });
-        }
-    });
-
+    if (unreadCount === 0) return;
     try {
-        await batch.commit();
+      const res = await fetch('/api/notifications/markAllRead', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (res.ok) {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        setUnreadCount(0);
+      } else {
+        toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotMarkNotifications });
+      }
     } catch (error) {
-        console.error("Error marking notifications as read in layout:", error);
+      toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotMarkNotifications });
     }
   };
 
