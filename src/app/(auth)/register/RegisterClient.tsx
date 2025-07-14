@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -73,7 +72,8 @@ export default function RegisterClient() {
 
     // إرسال البيانات إلى الباكند
     try {
-      const res = await fetch('/api/auth/register', {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+      const res = await fetch(apiBaseUrl + '/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role })

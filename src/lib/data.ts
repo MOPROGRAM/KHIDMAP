@@ -126,17 +126,61 @@ export async function createSupportRequest(data: any): Promise<string> {
   return ticketId;
 }
 
-// Implement getAllProviders function to fetch providers data from backend API
-export async function getAllProviders(): Promise<UserProfile[]> {
+export async function getUserProfileById(userId: string): Promise<UserProfile | null> {
   try {
-    const response = await fetch('/api/providers');
+    const response = await fetch(`/api/users/${userId}`);
     if (!response.ok) {
-      throw new Error('Failed to fetch providers');
+      throw new Error('Failed to fetch user profile');
     }
     const data = await response.json();
-    return data as UserProfile[];
+    return data as UserProfile;
   } catch (error) {
-    console.error('Error fetching providers:', error);
+    console.error('Error fetching user profile:', error);
+    return null;
+  }
+}
+
+export interface Rating {
+  id: string;
+  ratedUserId: string;
+  raterUserId: string;
+  raterName: string;
+  rating: number;
+  comment?: string;
+  createdAt?: any;
+}
+
+export async function getRatingsForUser(userId: string): Promise<Rating[]> {
+  try {
+    const response = await fetch(`/api/ratings/${userId}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch ratings');
+    }
+    const data = await response.json();
+    return data as Rating[];
+  } catch (error) {
+    console.error('Error fetching ratings:', error);
     return [];
   }
+}
+
+export async function addRating(rating: Omit<Rating, 'id' | 'createdAt'>): Promise<void> {
+  try {
+    const response = await fetch('/api/ratings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rating),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to add rating');
+    }
+  } catch (error) {
+    console.error('Error adding rating:', error);
+    throw error;
+  }
+}
+
+export async function startOrGetChat(providerId: string): Promise<string> {
+  // Placeholder implementation, replace with actual API call
+  return 'chatId-placeholder';
 }
