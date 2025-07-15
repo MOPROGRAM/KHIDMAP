@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation, Translations } from '@/hooks/useTranslation';
-// Remove the problematic import - we'll implement search functionality later
+// Removed invalid import - searchServices function will be implemented via API
 import { UserProfile, ServiceCategory } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
