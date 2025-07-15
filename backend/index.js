@@ -36,6 +36,11 @@ app.use('/api/messages', messagesRouter);
 import uploadsRouter from './routes/uploads.js';
 app.use('/api/uploads', uploadsRouter);
 
+// Health check endpoint for Render
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 app.get('/', (req, res) => {
   res.send('KHIDMAP Backend API');
 });
