@@ -30,7 +30,7 @@ args = "npm run dev"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd backend && npm start"
+args = "cd backend && npm install && npx prisma generate && node index.js"
 
 [[ports]]
 localPort = 3000
