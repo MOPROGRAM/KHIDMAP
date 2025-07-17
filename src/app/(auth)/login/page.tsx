@@ -9,30 +9,34 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, LogInIcon, Loader2, AlertTriangle } from 'lucide-react';
 
 export default function LoginPage() {
   const t = useTranslation();
   const router = useRouter();
   const { toast } = useToast();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isAuthServiceAvailable] = useState(true); // Always available (no Firebase)
+  const [isAuthServiceAvailable] = useState(true);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(`/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.token) {
+        login(data.user, data.token);
+
         toast({
           title: t.loginSuccessful || 'Login Successful',
           description: t.welcomeTo + ' ' + t.appName,
@@ -42,14 +46,14 @@ export default function LoginPage() {
       } else {
         toast({
           variant: 'destructive',
-          title: t.loginFailed || 'Login Failed',
+          title: t.loginFailedGeneric || 'Login Failed',
           description: data.message || t.loginFailedGeneric,
         });
       }
     } catch (error) {
       toast({
         variant: 'destructive',
-        title: t.loginFailed || 'Login Failed',
+        title: t.loginFailedGeneric || 'Login Failed',
         description: t.loginFailedGeneric,
       });
     } finally {

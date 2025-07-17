@@ -2,20 +2,22 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useTranslation, Translations } from '@/hooks/useTranslation';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Bell, Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
-import { Notification, getAllNotificationsForUser } from '@/lib/data';
+import { Notification } from '@/lib/data'; // Keep Notification type if it's a shared type
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
 
-const NotificationItem = ({ notification, t, language }: { notification: Notification, t: Translations, language: string }) => {
-    const formatRelativeTime = (timestamp: any) => {
-        if (!timestamp?.toDate) return '';
-        return formatDistanceToNow(timestamp.toDate(), { addSuffix: true, locale: language === 'ar' ? ar : enUS });
+const NotificationItem = ({ notification, t, language }: { notification: Notification, t: Record<string, string>, language: string }) => {
+    const formatRelativeTime = (dateString: string) => {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '';
+        return formatDistanceToNow(date, { addSuffix: true, locale: language === 'ar' ? ar : enUS });
     }
 
     const renderMessage = (notification: Notification) => {
@@ -49,44 +51,47 @@ export default function NotificationsPage() {
   const t = useTranslation();
   const { toast } = useToast();
   const { language } = useSettings();
-  const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
+  const { user: authUser, isLoading: isAuthLoading } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setAuthUser(user);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!authUser) {
-        setIsLoading(false);
-        return;
-    };
-
-    const fetchNotifications = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const userNotifications = await getAllNotificationsForUser(authUser.uid);
-        setNotifications(userNotifications);
-      } catch (err: any) {
-        setError(t.errorOccurred + ": " + err.message);
-        toast({
-          variant: 'destructive',
-          title: t.errorOccurred,
-          description: err.message,
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchNotifications();
-  }, [authUser, t, toast]);
+    if (!isAuthLoading && authUser) {
+      const fetchNotifications = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+          const res = await fetch(`/api/notifications`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || 'Failed to fetch notifications.');
+          }
+          const userNotifications: Notification[] = await res.json();
+          setNotifications(userNotifications);
+        } catch (err: any) {
+          setError((t.errorOccurred || 'Error') + ": " + err.message);
+          toast({
+            variant: 'destructive',
+            title: t.errorOccurred || 'Error',
+            description: err.message,
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      fetchNotifications();
+    } else if (!isAuthLoading && !authUser) {
+      setIsLoading(false);
+      // Optionally redirect to login if not authenticated
+      // router.push('/login');
+    }
+  }, [authUser, t, toast, isAuthLoading]);
 
   if (isLoading) {
     return (

@@ -44,7 +44,7 @@ export default function RegisterClient() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isAuthServiceAvailable] = useState(true); // Always available (no Firebase)
+  const [isAuthServiceAvailable] = useState(true);
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
 
   useEffect(() => {
@@ -76,8 +76,7 @@ export default function RegisterClient() {
 
     // إرسال البيانات إلى الباكند
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
-      const res = await fetch(apiBaseUrl + '/api/auth/register', {
+      const res = await fetch(`/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role })

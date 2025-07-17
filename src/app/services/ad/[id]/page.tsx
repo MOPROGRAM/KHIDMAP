@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState, useCallback, FormEvent, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useTranslation, Translations } from '@/hooks/useTranslation';
-import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, startOrGetChat } from '@/lib/data';
+import { useTranslation } from '@/hooks/useTranslation';
+import { Translations } from '@/lib/translations';
+import { UserProfile, getRatingsForUser, getUserProfileById, ServiceCategory, addRating, startOrGetChat, Rating } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -135,7 +136,7 @@ export default function ProviderDetailsPage() {
 
   const fetchProviderData = useCallback(async () => {
     if (!providerId) {
-      setError(t.providerIdMissing);
+      setError(t.providerIdMissing || 'Provider ID is missing.');
       setIsLoading(false);
       return;
     }
@@ -147,7 +148,7 @@ export default function ProviderDetailsPage() {
       if (foundProvider) {
         setProvider(foundProvider);
       } else {
-        setError(t.providerNotFound);
+        setError(t.providerNotFound || 'Provider not found.');
       }
 
       const foundRatings = await getRatingsForUser(providerId);
@@ -163,7 +164,7 @@ export default function ProviderDetailsPage() {
       }
     } catch (err: any) {
       console.error("Error fetching provider details:", err);
-      setError(t.failedLoadProviderDetails);
+      setError(t.failedLoadProviderDetails || 'Failed to load provider details.');
     } finally {
       setIsLoading(false);
     }
@@ -237,3 +238,5 @@ export default function ProviderDetailsPage() {
       </div>
     );
   }
+
+}

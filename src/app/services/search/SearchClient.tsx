@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useTranslation, Translations } from '@/hooks/useTranslation';
+import { useTranslation } from '@/hooks/useTranslation';
 // Removed invalid import - searchServices function will be implemented via API
 import { UserProfile, ServiceCategory } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,15 +44,20 @@ const defaultFilters: SearchFilters = {
   availability: 'all'
 };
 
-interface SearchClientProps {
-  initialQuery: string;
-  initialCategory: ServiceCategory | 'all';
+const serviceCategoriesList: ServiceCategory[] = ['Plumbing', 'Electrical', 'Carpentry', 'Painting', 'HomeCleaning', 'Construction', 'Plastering', 'Other'];
+function isValidServiceCategory(category: any): category is ServiceCategory {
+  return (serviceCategoriesList as string[]).includes(category);
 }
 
-export default function SearchClient({ initialQuery, initialCategory }: SearchClientProps) {
+export default function SearchClient() {
   const t = useTranslation();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+
+  const initialQuery = searchParams.get('q') || '';
+  const rawCategory = searchParams.get('category') || 'all';
+  const initialCategory = rawCategory === 'all' || isValidServiceCategory(rawCategory) ? rawCategory : 'all';
 
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<UserProfile[]>([]);
@@ -85,8 +90,8 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
     if (!searchQuery.trim()) {
       toast({
         variant: "destructive",
-        title: t.searchValidationFailed,
-        description: t.enterSearchQuery
+        title: "Search Error",
+        description: "Please enter a search query."
       });
       return;
     }
@@ -96,19 +101,21 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
 
     try {
       // Mock search results for now - replace with actual API call later
-      const mockResults = [
+      const mockResults: UserProfile[] = [
         {
-          id: 1,
-          name: `${searchQuery} service in ${searchFilters.location}`,
-          description: `Professional ${searchQuery} service provider`,
-          location: searchFilters.location,
-          hourlyRate: '$50-100',
-          rating: 4.5,
-		  reviewCount: 20,
-		  availability: 'available',
-		  category: 'other',
-		  isVerified: true,
-		  profileImage: ""
+          uid: 'mock-user-1',
+          name: `${searchQuery} Provider`,
+          email: 'provider@example.com',
+          role: 'provider',
+          phoneNumber: '123-456-7890',
+          qualifications: 'Certified in various skills.',
+          serviceCategories: searchFilters.category === 'all' ? ['Plumbing', 'Electrical'] : [searchFilters.category],
+          serviceAreas: [searchFilters.location || 'Citywide'],
+          location: { lat: 0, lng: 0 },
+          images: [],
+          videos: [],
+          emailVerified: true,
+          verificationStatus: 'verified',
         }
       ];
       setResults(mockResults);
@@ -124,16 +131,16 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
 
       if (mockResults.length === 0) {
         toast({
-          title: t.noResultsFound,
-          description: t.tryDifferentSearch
+          title: "No Results",
+          description: "No results found. Try a different search."
         });
       }
     } catch (error: any) {
       console.error('Search error:', error);
       toast({
         variant: "destructive",
-        title: t.searchFailed,
-        description: error.message || t.errorOccurred
+        title: "Search Failed",
+        description: error.message || "An unexpected error occurred."
       });
     } finally {
       setIsLoading(false);
@@ -175,8 +182,8 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
     <div className="container mx-auto px-4 py-8 space-y-6">
       {/* Search Header */}
       <div className="text-center space-y-4">
-        <h1 className="text-3xl font-bold text-primary">{t.searchServices}</h1>
-        <p className="text-muted-foreground">{t.searchServicesDescription}</p>
+        <h1 className="text-3xl font-bold text-primary">Search Services</h1>
+        <p className="text-muted-foreground">Find the best service providers for your needs.</p>
       </div>
 
       {/* Search Form */}
@@ -185,7 +192,7 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             type="text"
-            placeholder={t.searchPlaceholder}
+            placeholder={"Search for services like 'plumbing', 'electrical'..."}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="pl-10"
@@ -198,7 +205,7 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
             <SheetTrigger asChild>
               <Button type="button" variant="outline" className="relative">
                 <SlidersHorizontal className="h-4 w-4 mr-2" />
-                {t.filters}
+                Filters
                 {getActiveFiltersCount() > 0 && (
                   <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
                     {getActiveFiltersCount()}
@@ -208,14 +215,14 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
             </SheetTrigger>
             <SheetContent>
               <SheetHeader>
-                <SheetTitle>{t.searchFilters}</SheetTitle>
-                <SheetDescription>{t.refineYourSearch}</SheetDescription>
+                <SheetTitle>Search Filters</SheetTitle>
+                <SheetDescription>Refine your search to find the perfect provider.</SheetDescription>
               </SheetHeader>
 
               <div className="mt-6 space-y-6">
                 {/* Category Filter */}
                 <div className="space-y-2">
-                  <Label>{t.category}</Label>
+                  <Label>Category</Label>
                   <Select 
                     value={filters.category} 
                     onValueChange={(value: ServiceCategory | 'all') => 
@@ -226,25 +233,24 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">{t.allCategories}</SelectItem>
-                      <SelectItem value="plumbing">{t.plumbing}</SelectItem>
-                      <SelectItem value="electrical">{t.electrical}</SelectItem>
-                      <SelectItem value="painting">{t.painting}</SelectItem>
-                      <SelectItem value="cleaning">{t.cleaning}</SelectItem>
-                      <SelectItem value="carpentry">{t.carpentry}</SelectItem>
-                      <SelectItem value="gardening">{t.gardening}</SelectItem>
-                      <SelectItem value="appliance_repair">{t.applianceRepair}</SelectItem>
-                      <SelectItem value="construction">{t.construction}</SelectItem>
-                      <SelectItem value="other">{t.other}</SelectItem>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="Plumbing">Plumbing</SelectItem>
+                      <SelectItem value="Electrical">Electrical</SelectItem>
+                      <SelectItem value="Painting">Painting</SelectItem>
+                      <SelectItem value="HomeCleaning">Cleaning</SelectItem>
+                      <SelectItem value="Carpentry">Carpentry</SelectItem>
+                      <SelectItem value="Construction">Construction</SelectItem>
+                      <SelectItem value="Plastering">Plastering</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 {/* Location Filter */}
                 <div className="space-y-2">
-                  <Label>{t.location}</Label>
+                  <Label>Location</Label>
                   <Input
-                    placeholder={t.enterLocation}
+                    placeholder={"Enter a city or neighborhood"}
                     value={filters.location}
                     onChange={(e) => handleFilterChange({ ...filters, location: e.target.value })}
                   />
@@ -252,7 +258,7 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
 
                 {/* Rating Filter */}
                 <div className="space-y-2">
-                  <Label>{t.minimumRating}</Label>
+                  <Label>Minimum Rating</Label>
                   <Select
                     value={filters.minRating.toString()}
                     onValueChange={(value) => 
@@ -263,7 +269,7 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0">{t.anyRating}</SelectItem>
+                      <SelectItem value="0">Any Rating</SelectItem>
                       <SelectItem value="1">1+ ⭐</SelectItem>
                       <SelectItem value="2">2+ ⭐</SelectItem>
                       <SelectItem value="3">3+ ⭐</SelectItem>
@@ -282,7 +288,7 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
                       handleFilterChange({ ...filters, isVerified: !!checked })
                     }
                   />
-                  <Label htmlFor="verified">{t.verifiedProvidersOnly}</Label>
+                  <Label htmlFor="verified">Verified Providers Only</Label>
                 </div>
 
                 {/* Reset Filters */}
@@ -292,7 +298,7 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
                   onClick={resetFilters}
                   className="w-full"
                 >
-                  {t.resetFilters}
+                  Reset Filters
                 </Button>
               </div>
             </SheetContent>
@@ -304,7 +310,7 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
             ) : (
               <Search className="h-4 w-4" />
             )}
-            <span className="ml-2">{t.search}</span>
+            <span className="ml-2">Search</span>
           </Button>
         </div>
       </form>
@@ -312,9 +318,9 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
       {/* Active Filters Display */}
       {getActiveFiltersCount() > 0 && (
         <div className="flex flex-wrap gap-2">
-          <span className="text-sm text-muted-foreground">{t.activeFilters}:</span>
+          <span className="text-sm text-muted-foreground">Active Filters:</span>
           {filters.category !== 'all' && (
-            <Badge variant="secondary">{t[filters.category as keyof Translations]}</Badge>
+            <Badge variant="secondary">{filters.category}</Badge>
           )}
           {filters.location && (
             <Badge variant="secondary">{filters.location}</Badge>
@@ -323,7 +329,7 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
             <Badge variant="secondary">{filters.minRating}+ ⭐</Badge>
           )}
           {filters.isVerified && (
-            <Badge variant="secondary">{t.verified}</Badge>
+            <Badge variant="secondary">Verified</Badge>
           )}
         </div>
       )}
@@ -332,7 +338,7 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2">{t.searching}</span>
+          <span className="ml-2">Searching...</span>
         </div>
       )}
 
@@ -341,8 +347,8 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">
               {results.length > 0 
-                ? `${results.length} ${t.resultsFound}`
-                : t.noResultsFound
+                ? `${results.length} Results Found`
+                : "No Results Found"
               }
             </h2>
           </div>
@@ -350,11 +356,11 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
           {results.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {results.map((provider) => (
-                <Card key={provider.id} className="hover:shadow-lg transition-shadow">
+                <Card key={provider.uid} className="hover:shadow-lg transition-shadow">
                   <CardHeader className="pb-4">
                     <div className="flex items-start gap-4">
                       <Avatar className="h-16 w-16">
-                        <AvatarImage src={provider.profileImage} alt={provider.name} />
+                        <AvatarImage src={provider.images?.[0]} alt={provider.name} />
                         <AvatarFallback>
                           <User className="h-8 w-8" />
                         </AvatarFallback>
@@ -362,16 +368,16 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <CardTitle className="text-lg truncate">{provider.name}</CardTitle>
-                          {provider.isVerified && (
+                          {provider.verificationStatus === 'verified' && (
                             <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground">{t[provider.category as keyof Translations]}</p>
+                        <p className="text-sm text-muted-foreground">{provider.serviceCategories?.join(', ')}</p>
                         <div className="flex items-center gap-1 mt-1">
                           <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm font-medium">{provider.rating.toFixed(1)}</span>
+                          <span className="text-sm font-medium">N/A</span>
                           <span className="text-sm text-muted-foreground">
-                            ({provider.reviewCount} {t.reviews})
+                             (0 Reviews)
                           </span>
                         </div>
                       </div>
@@ -380,26 +386,26 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
 
                   <CardContent className="space-y-3">
                     <p className="text-sm text-muted-foreground line-clamp-2">
-                      {provider.description}
+                      {provider.qualifications}
                     </p>
 
                     <div className="flex items-center gap-2 text-sm">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{provider.location}</span>
+                      <span>{provider.serviceAreas?.join(', ')}</span>
                     </div>
 
                     <div className="flex items-center gap-2 text-sm">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>{provider.hourlyRate}/{t.hour}</span>
+                      <span>N/A</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <div className={cn(
+                       <div className={cn(
                         "h-2 w-2 rounded-full",
-                        provider.availability === 'available' ? 'bg-green-500' : 'bg-red-500'
+                        provider.verificationStatus === 'verified' ? 'bg-green-500' : 'bg-gray-400'
                       )} />
-                      <span className="text-sm">
-                        {provider.availability === 'available' ? t.available : t.busy}
+                      <span className="text-sm capitalize">
+                        {provider.verificationStatus}
                       </span>
                     </div>
 
@@ -407,9 +413,9 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
 
                     <div className="flex gap-2">
                       <Button asChild className="flex-1">
-                        <Link href={`/services/ad/${provider.id}`}>
+                        <Link href={`/services/ad/${provider.uid}`}>
                           <ExternalLink className="h-4 w-4 mr-2" />
-                          {t.viewProfile}
+                          View Profile
                         </Link>
                       </Button>
                     </div>
@@ -421,10 +427,10 @@ export default function SearchClient({ initialQuery, initialCategory }: SearchCl
             <Card className="text-center py-12">
               <CardContent>
                 <AlertCircle className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">{t.noResultsFound}</h3>
-                <p className="text-muted-foreground mb-4">{t.tryDifferentSearch}</p>
+                <h3 className="text-lg font-semibold mb-2">No Results Found</h3>
+                <p className="text-muted-foreground mb-4">Try adjusting your search or filters.</p>
                 <Button onClick={resetFilters} variant="outline">
-                  {t.clearFilters}
+                  Clear Filters
                 </Button>
               </CardContent>
             </Card>

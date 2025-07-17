@@ -10,13 +10,10 @@ function LoadingFallback() {
   );
 }
 
-export default function ServiceSearchPage({ searchParams }: { searchParams?: { q?: string; category?: string } }) {
-  const q = searchParams?.q || '';
-  const category = searchParams?.category || 'all';
-
+export default function ServiceSearchPage() {
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <SearchClient initialQuery={q} initialCategory={category} />
+      <SearchClient />
     </Suspense>
   );
 }
