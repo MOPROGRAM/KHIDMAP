@@ -80,6 +80,8 @@ export type Translations = {
   selectService: string;
   hidePassword?: string;
   showPassword?: string;
+  filters?: string;
+  refineYourSearch?: string;
   authServiceUnavailable?: string;
   serviceUnavailableTitle?: string;
   serviceUnavailableMessage?: string;
@@ -139,8 +141,6 @@ export type Translations = {
   notAuthorizedViewPage?: string;
   adminDashboardDescription?: string;
   paymentApprovalsDescription: string;
-  reviewProviderVerifications: string;
-  disputeResolution: string;
   disputeResolutionDescription: string;
   adminDashboardUnavailable?: string;
   logoutFailed?: string;
@@ -300,7 +300,6 @@ export type Translations = {
 
   // Messaging
   messages: string;
-  messageProvider: string; // "Message {providerName}"
   startChatError: string;
   startConversation: string;
   messageSent: string;
@@ -780,9 +779,11 @@ export const translations: Record<'en' | 'ar', Translations> = {
     adminDashboard: "Admin Dashboard",
     welcomeAdmin: "Welcome, Admin!",
     adminPlaceholder: "This is the admin dashboard. More features coming soon.",
-    selectService: "Select Service",
-    hidePassword: "Hide password",
-    showPassword: "Show password",
+  selectService: "Select Service",
+  hidePassword: "Hide password",
+  showPassword: "Show password",
+  filters: "Filters",
+  refineYourSearch: "Refine your search",
     authServiceUnavailable: "Authentication service is currently unavailable. Please try again later or contact support.",
     serviceUnavailableTitle: "Service Unavailable",
     serviceUnavailableMessage: "A core service (like authentication or database) is currently not configured or unavailable. Please try again later or contact support.",
@@ -842,9 +843,8 @@ export const translations: Record<'en' | 'ar', Translations> = {
     notAuthorizedViewPage: "You are not authorized to view this page.",
     adminDashboardDescription: "Manage users, services, and application settings.",
     paymentApprovalsDescription: "Review and approve pending payments.",
-    reviewProviderVerifications: "Review provider verification requests.",
-    disputeResolution: "Dispute Resolution",
-    disputeResolutionDescription: "Review and resolve user disputes.",
+  reviewProviderVerifications: "Review provider verification requests.",
+  disputeResolutionDescription: "Review and resolve user disputes.",
     adminDashboardUnavailable: "Admin Dashboard is currently unavailable because core services are not configured.",
     logoutFailed: "Logout Failed",
     goToHomepage: "Go to Homepage",
@@ -987,8 +987,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     aiCategorizationUnavailableTitle: "AI Assistance Unavailable",
     aiCategorizationUnavailableDescription: "Could not auto-detect category. Please select one manually.",
     messages: "Messages",
-    messageProvider: "Message Provider", // Changed for generic use
-    startChatError: "Error starting chat",
+  startChatError: "Error starting chat",
     startConversation: "Start Conversation",
     messageSent: "Message Sent",
     conversations: "Conversations",
@@ -1447,9 +1446,11 @@ export const translations: Record<'en' | 'ar', Translations> = {
     adminDashboard: "لوحة تحكم المسؤول",
     welcomeAdmin: "مرحباً أيها المسؤول!",
     adminPlaceholder: "هذه هي لوحة تحكم المسؤول. المزيد من الميزات قريباً.",
-    selectService: "اختر خدمة",
-    hidePassword: "إخفاء كلمة المرور",
-    showPassword: "إظهار كلمة المرور",
+  selectService: "اختر خدمة",
+  hidePassword: "إخفاء كلمة المرور",
+  showPassword: "إظهار كلمة المرور",
+  filters: "الفلاتر",
+  refineYourSearch: "صقل بحثك",
     authServiceUnavailable: "خدمة المصادقة غير متاحة حاليًا. يرجى المحاولة مرة أخرى لاحقًا أو الاتصال بالدعم.",
     serviceUnavailableTitle: "الخدمة غير متوفرة",
     serviceUnavailableMessage: "إحدى الخدمات الأساسية (مثل المصادقة أو قاعدة البيانات) غير مهيأة حاليًا أو غير متاحة. يرجى المحاولة مرة أخرى لاحقًا أو الاتصال بالدعم.",
@@ -1509,9 +1510,9 @@ export const translations: Record<'en' | 'ar', Translations> = {
     notAuthorizedViewPage: "أنت غير مصرح لك بعرض هذه الصفحة.",
     adminDashboardDescription: "إدارة المستخدمين والخدمات وإعدادات التطبيق.",
     paymentApprovalsDescription: "مراجعة والموافقة على الدفعات المعلقة.",
-    reviewProviderVerifications: "مراجعة طلبات التحقق من مقدمي الخدمات.",
-    disputeResolution: "إدارة النزاعات",
-    disputeResolutionDescription: "مراجعة وحل النزاعات بين المستخدمين.",
+  reviewProviderVerifications: "مراجعة طلبات التحقق من مقدمي الخدمات.",
+  disputeResolutionDescription: "مراجعة وحل النزاعات بين المستخدمين.",
+  disputeResolution: "إدارة النزاعات",
     adminDashboardUnavailable: "لوحة تحكم المسؤول غير متاحة حاليًا لأن الخدمات الأساسية غير مهيأة.",
     logoutFailed: "فشل تسجيل الخروج",
     goToHomepage: "اذهب إلى الصفحة الرئيسية",
@@ -1654,8 +1655,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     aiCategorizationUnavailableTitle: "مساعدة الذكاء الاصطناعي غير متاحة",
     aiCategorizationUnavailableDescription: "تعذر تحديد الفئة تلقائيًا. يرجى تحديد واحدة يدويًا.",
     messages: "الرسائل",
-    messageProvider: "مراسلة مقدم الخدمة",
-    startChatError: "خطأ في بدء المحادثة",
+  startChatError: "خطأ في بدء المحادثة",
     startConversation: "بدء محادثة",
     messageSent: "تم إرسال الرسالة",
     conversations: "المحادثات",
