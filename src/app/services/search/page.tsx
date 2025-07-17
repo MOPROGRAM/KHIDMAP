@@ -1,4 +1,3 @@
-
 import { Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import SearchClient from './SearchClient';
@@ -11,10 +10,13 @@ function LoadingFallback() {
   );
 }
 
-export default function ServiceSearchPage() {
+export default function ServiceSearchPage({ searchParams }: { searchParams?: { q?: string; category?: string } }) {
+  const q = searchParams?.q || '';
+  const category = searchParams?.category || 'all';
+
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <SearchClient />
+      <SearchClient initialQuery={q} initialCategory={category} />
     </Suspense>
   );
 }

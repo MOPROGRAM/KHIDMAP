@@ -4,10 +4,7 @@
 import { useSettings } from '@/contexts/SettingsContext';
 import { translations, Translations } from '@/lib/translations';
 
-export { type Translations } from '@/lib/translations';
-
-export const useTranslation = () => {
+export const useTranslation = (): Translations => {
   const { language } = useSettings();
-  const t = (key: keyof Translations) => translations[language][key] || key;
-  return t;
+  return translations[language];
 };

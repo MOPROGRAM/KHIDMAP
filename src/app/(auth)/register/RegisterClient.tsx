@@ -25,6 +25,10 @@ const RegisterSchema = z.object({
   path: ["confirmPassword"],
 });
 
+function safeT(t: any, key: string): string {
+  return (t && typeof t[key] === 'string') ? t[key] : key;
+}
+
 export default function RegisterClient() {
   const t = useTranslation();
   const router = useRouter();
@@ -62,7 +66,7 @@ export default function RegisterClient() {
       validationResult.error.errors.forEach(err => {
         if (err.path[0]) {
           // @ts-ignore
-          fieldErrors[err.path[0] as string] = t[err.message as keyof typeof t] || err.message;
+          fieldErrors[err.path[0] as string] = safeT(t, err.message) || err.message;
         }
       });
       setErrors(fieldErrors);
