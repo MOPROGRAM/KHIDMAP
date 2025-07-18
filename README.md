@@ -38,3 +38,8 @@ This project uses Prisma ORM for database management.
 ---
 
 For more information on Prisma and Render deployment, refer to their official documentation.
+
+---
+
+**Dependency Fix:**
+Resolved `@genkit-ai/next` and `genkit` dependency conflict by upgrading both to `^1.15.0`.
