@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import { SignJWT } from 'jose';
 import logger from '@/lib/logger';
 import prisma from '@/lib/prismaClient';
 
@@ -28,11 +28,11 @@ export async function POST(req: Request) {
     }
 
     // إنشاء توكن JWT
-    const token = jwt.sign(
-      { userId: user.id, role: user.role },
-      process.env.JWT_SECRET!,
-      { expiresIn: '1d' } // صلاحية التوكن: يوم واحد
-    );
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+    const token = await new SignJWT({ userId: user.id, role: user.role })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('1d')
+      .sign(secret);
 
     return NextResponse.json({
       message: 'تم تسجيل الدخول بنجاح.',

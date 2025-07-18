@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { jwtVerify } from 'jose';
 import logger from '@/lib/logger';
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
   const publicPaths = ['/api/auth/login', '/api/auth/register', '/api/auth/verify', '/api/auth/forgot-password', '/api/auth/reset-password'];
 
@@ -20,12 +20,13 @@ export function middleware(req: NextRequest) {
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+    const { payload } = await jwtVerify(token, secret);
     // Attach decoded user info to the request headers for API routes to access
     const requestHeaders = new Headers(req.headers);
-    requestHeaders.set('x-user-id', (decoded as any).userId);
-    requestHeaders.set('x-user-role', (decoded as any).role);
-    logger.info(`User ${(decoded as any).userId} authenticated successfully.`);
+    requestHeaders.set('x-user-id', payload.userId as string);
+    requestHeaders.set('x-user-role', payload.role as string);
+    logger.info(`User ${payload.userId} authenticated successfully.`);
     return NextResponse.next({
       request: {
         headers: requestHeaders,
