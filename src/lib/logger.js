@@ -1,14 +1,8 @@
-import { createLogger, format, transports } from 'winston';
-
-const logger = createLogger({
-  level: 'info',
-  format: format.combine(
-    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    format.printf(({ timestamp, level, message }) => `${timestamp} [${level.toUpperCase()}]: ${message}`)
-  ),
-  transports: [
-    new transports.Console(),
-  ],
-});
+const logger = {
+  info: (message) => console.log(`[INFO]: ${message}`),
+  error: (message) => console.error(`[ERROR]: ${message}`),
+  warn: (message) => console.warn(`[WARN]: ${message}`),
+  debug: (message) => console.debug(`[DEBUG]: ${message}`),
+};
 
 export default logger;
