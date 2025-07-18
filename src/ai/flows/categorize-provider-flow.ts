@@ -7,7 +7,6 @@
  * - CategorizeProviderOutput - The return type for the categorizeProvider function.
  */
 
-import { experimental_ai as ai } from 'ai';
 import {z} from 'zod';
 import type { ServiceCategory } from '@/lib/data';
 // import genkit from 'genkit'; // Temporarily commented out due to import issues
