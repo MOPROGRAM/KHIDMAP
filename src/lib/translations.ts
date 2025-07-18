@@ -139,8 +139,6 @@ export type Translations = {
   notAuthorizedViewPage?: string;
   adminDashboardDescription?: string;
   paymentApprovalsDescription: string;
-  reviewProviderVerifications: string;
-  disputeResolution: string;
   disputeResolutionDescription: string;
   adminDashboardUnavailable?: string;
   logoutFailed?: string;
@@ -300,7 +298,6 @@ export type Translations = {
 
   // Messaging
   messages: string;
-  messageProvider: string; // "Message {providerName}"
   startChatError: string;
   startConversation: string;
   messageSent: string;
@@ -385,15 +382,15 @@ export type Translations = {
   orderDisputedMessage: string; // "A dispute has been raised for your order with {userName}."
   orderDisputedDescription: string;
   approveManually: string;
-  rejectManually: 'Reject Manually';
-  confirmRejectPaymentTitle: 'Are you sure you want to reject this payment?';
+  rejectManually: string;
+  confirmRejectPaymentTitle: string;
   confirmRejectPaymentDescription: string;
-  reject: 'Reject';
-  rejectionReason: 'Reason for Rejection (optional)';
-  rejectionReasonPlaceholder: 'e.g., Unclear image, wrong amount...';
-  rejectionFailedTitle: 'Rejection Failed';
-  rejectionSuccessTitle: 'Payment Rejected';
-  rejectionSuccessDescription: 'The seeker has been notified to upload a new proof.';
+  reject: string;
+  rejectionReason: string;
+  rejectionReasonPlaceholder: string;
+  rejectionFailedTitle: string;
+  rejectionSuccessTitle: string;
+  rejectionSuccessDescription: string;
   
   // Request Service Page
   requestService: string;
@@ -699,6 +696,18 @@ export type Translations = {
   adTitleTooShort: string;
   adTitleTooLong: string;
   adBodyTooShort: string;
+  goBack: string;
+  contactInformation: string;
+  chat: string;
+  call: string;
+  portfolio: string;
+  ratingsAndReviews: string;
+  basedOn: string;
+  leaveAReview: string;
+  yourRating: string;
+  shareYourExperience: string;
+  submitReview: string;
+  anonymous: string;
 };
 
 export const translations: Record<'en' | 'ar', Translations> = {
@@ -987,7 +996,7 @@ export const translations: Record<'en' | 'ar', Translations> = {
     aiCategorizationUnavailableTitle: "AI Assistance Unavailable",
     aiCategorizationUnavailableDescription: "Could not auto-detect category. Please select one manually.",
     messages: "Messages",
-    messageProvider: "Message Provider", // Changed for generic use
+    messageProvider: "Message Provider",
     startChatError: "Error starting chat",
     startConversation: "Start Conversation",
     messageSent: "Message Sent",
@@ -1064,15 +1073,15 @@ export const translations: Record<'en' | 'ar', Translations> = {
     orderDisputedMessage: "A dispute has been raised for your order with {userName}.",
     orderDisputedDescription: "There is an issue with this order. Admin will investigate.",
     approveManually: "Approve Manually",
-    rejectManually: 'Reject Manually',
-    confirmRejectPaymentTitle: 'Are you sure you want to reject this payment?',
+    rejectManually: "Reject Manually",
+    confirmRejectPaymentTitle: "Are you sure you want to reject this payment?",
     confirmRejectPaymentDescription: "This action cannot be undone. The provider's proof will be deleted, and they will be notified to upload a new one.",
-    reject: 'Reject',
-    rejectionReason: 'Reason for Rejection (optional)',
-    rejectionReasonPlaceholder: 'e.g., Unclear image, wrong amount...',
-    rejectionFailedTitle: 'Rejection Failed',
-    rejectionSuccessTitle: 'Payment Rejected',
-    rejectionSuccessDescription: 'The seeker has been notified to upload a new proof.',
+    reject: "Reject",
+    rejectionReason: "Reason for Rejection (optional)",
+    rejectionReasonPlaceholder: "e.g., Unclear image, wrong amount...",
+    rejectionFailedTitle: "Rejection Failed",
+    rejectionSuccessTitle: "Payment Rejected",
+    rejectionSuccessDescription: "The seeker has been notified to upload a new proof.",
     requestService: "Request Service",
     requestingServiceFrom: "Requesting Service from",
     serviceDescription: "Service Description",
@@ -1281,7 +1290,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     verificationDocsUploadedTitle: "Documents Uploaded",
     verificationDocsUploadedDescription: "Your documents have been successfully uploaded and are now under review.",
     providerVerifications: "Provider Verifications",
-    reviewProviderVerifications: "Review provider verification requests.",
     noPendingVerifications: "No Pending Verifications",
     noPendingVerificationsDescription: "There are currently no providers awaiting verification.",
     approve: "Approve",
@@ -1291,7 +1299,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     verifiedProvider: "Verified Provider",
 
     // Dispute Management
-    disputeResolution: "Dispute Resolution",
     noDisputes: "No Disputes",
     noDisputesDescription: "There are currently no disputed orders.",
     viewDispute: "View Dispute",
@@ -1326,7 +1333,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     unknownUser: "Unknown User",
     partiesInvolved: "Parties Involved",
     messageSeeker: "Message Seeker",
-    messageProvider: "Message Provider",
 
     // AI Ad Generation
     aiAdGenerationTitle: "AI Ad Generation",
@@ -1368,8 +1374,21 @@ export const translations: Record<'en' | 'ar', Translations> = {
     adTitleTooShort: "Ad title must be at least 5 characters.",
     adTitleTooLong: "Ad title must not exceed 60 characters.",
     adBodyTooShort: "Ad body must be at least 20 characters.",
+    goBack: "Go Back",
+    contactInformation: "Contact Information",
+    chat: "Chat",
+    call: "Call",
+    portfolio: "Portfolio",
+    ratingsAndReviews: "Ratings & Reviews",
+    basedOn: "Based on {count} reviews",
+    leaveAReview: "Leave a Review",
+    yourRating: "Your Rating",
+    shareYourExperience: "Share your experience...",
+    submitReview: "Submit Review",
+    anonymous: "Anonymous",
   },
   ar: {
+    messageProvider: "مراسلة مقدم الخدمة",
     appName: "خدماب",
     tagline: "ابحث عن أفضل مقدمي الخدمات المحليين",
     home: "الرئيسية",
@@ -1654,7 +1673,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     aiCategorizationUnavailableTitle: "مساعدة الذكاء الاصطناعي غير متاحة",
     aiCategorizationUnavailableDescription: "تعذر تحديد الفئة تلقائيًا. يرجى تحديد واحدة يدويًا.",
     messages: "الرسائل",
-    messageProvider: "مراسلة مقدم الخدمة",
     startChatError: "خطأ في بدء المحادثة",
     startConversation: "بدء محادثة",
     messageSent: "تم إرسال الرسالة",
@@ -1731,15 +1749,15 @@ export const translations: Record<'en' | 'ar', Translations> = {
     orderDisputedMessage: "تم رفع نزاع على طلبك مع {userName}.",
     orderDisputedDescription: "هناك مشكلة في هذا الطلب. سيقوم المسؤول بالتحقيق.",
     approveManually: "موافقة يدوية",
-    rejectManually: 'رفض يدوي',
-    confirmRejectPaymentTitle: 'هل أنت متأكد من رفض هذا الدفع؟',
+    rejectManually: "رفض يدوي",
+    confirmRejectPaymentTitle: "هل أنت متأكد من رفض هذا الدفع؟",
     confirmRejectPaymentDescription: "لا يمكن التراجع عن هذا الإجراء. سيتم حذف إثبات الدفع الذي قدمه الباحث عن الخدمة، وسيتم إعلامه برفع إثبات جديد.",
-    reject: 'رفض',
-    rejectionReason: 'سبب الرفض (اختياري)',
-    rejectionReasonPlaceholder: 'مثال: صورة غير واضحة، مبلغ خاطئ...',
-    rejectionFailedTitle: 'فشل الرفض',
-    rejectionSuccessTitle: 'تم رفض الدفع',
-    rejectionSuccessDescription: 'تم إعلام الباحث عن الخدمة برفع إثبات جديد.',
+    reject: "رفض",
+    rejectionReason: "سبب الرفض (اختياري)",
+    rejectionReasonPlaceholder: "مثال: صورة غير واضحة، مبلغ خاطئ...",
+    rejectionFailedTitle: "فشل الرفض",
+    rejectionSuccessTitle: "تم رفض الدفع",
+    rejectionSuccessDescription: "تم إعلام الباحث عن الخدمة برفع إثبات جديد.",
     requestService: "اطلب خدمة",
     requestingServiceFrom: "طلب خدمة من",
     serviceDescription: "وصف الخدمة",
@@ -1932,7 +1950,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     verificationDocsUploadedTitle: "تم رفع المستندات",
     verificationDocsUploadedDescription: "تم رفع مستنداتك بنجاح وهي الآن قيد المراجعة.",
     providerVerifications: "طلبات التحقق",
-    reviewProviderVerifications: "مراجعة طلبات التحقق من مقدمي الخدمات.",
     noPendingVerifications: "لا توجد طلبات تحقق معلقة",
     noPendingVerificationsDescription: "لا يوجد مقدمو خدمات في انتظار التحقق حاليًا.",
     approve: "موافقة",
@@ -1940,7 +1957,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     confirmRejectVerificationTitle: "تأكيد رفض التحقق؟",
     confirmRejectVerificationDescription: "سيتم إعلام مقدم الخدمة بالرفض والسبب. هل أنت متأكد؟",
     verifiedProvider: "مقدم خدمة موثوق",
-    disputeResolution: "إدارة النزاعات",
     noDisputes: "لا توجد نزاعات",
     noDisputesDescription: "لا توجد حاليًا طلبات متنازع عليها.",
     viewDispute: "عرض النزاع",
@@ -1975,7 +1991,6 @@ export const translations: Record<'en' | 'ar', Translations> = {
     unknownUser: "مستخدم غير معروف",
     partiesInvolved: "الأطراف المعنية",
     messageSeeker: "مراسلة الباحث",
-    messageProvider: "مراسلة المقدم",
     aiAdGenerationTitle: "إنشاء إعلان بالذكاء الاصطناعي",
     aiAdGenerationDescription: "صف خدمتك، ودع الذكاء الاصطناعي ينشئ لك الإعلان المثالي.",
     primaryService: "الخدمة الأساسية",
@@ -2015,5 +2030,17 @@ export const translations: Record<'en' | 'ar', Translations> = {
     adTitleTooShort: "يجب أن يكون عنوان الإعلان 5 أحرف على الأقل.",
     adTitleTooLong: "يجب ألا يتجاوز عنوان الإعلان 60 حرفًا.",
     adBodyTooShort: "يجب أن يكون نص الإعلان 20 حرفًا على الأقل.",
+    goBack: "ارجع",
+    contactInformation: "معلومات الاتصال",
+    chat: "محادثة",
+    call: "اتصال",
+    portfolio: "ملف الأعمال",
+    ratingsAndReviews: "التقييمات والمراجعات",
+    basedOn: "بناءً على {count} تقييمات",
+    leaveAReview: "اترك تقييمًا",
+    yourRating: "تقييمك",
+    shareYourExperience: "شارك تجربتك...",
+    submitReview: "إرسال التقييم",
+    anonymous: "مجهول",
   },
 };

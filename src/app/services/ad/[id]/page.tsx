@@ -239,9 +239,217 @@ export default function ProviderDetailsPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-[calc(100vh-15rem)]">
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        <p className="text-lg text-destructive">{error}</p>
+        <Button onClick={() => router.back()} className="mt-4">
+          {t.goBack || 'Go Back'}
+        </Button>
+      </div>
+    );
+  }
+
+  if (!provider) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-[calc(100vh-15rem)]">
+        <p className="text-lg text-muted-foreground">{t.providerNotFound || 'Provider not found'}</p>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <p className="text-lg text-muted-foreground">{t.loading}</p>
+    <div className="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
+      <Button variant="ghost" onClick={() => router.back()} className="mb-4">
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        {t.backToSearch || 'Back to Search'}
+      </Button>
+
+      <Card>
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <Avatar className="h-24 w-24 border-2 border-primary">
+            <AvatarImage src={provider.photoURL || undefined} alt={provider.displayName || 'Provider'} />
+            <AvatarFallback>
+              <UserCircle className="h-12 w-12" />
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-3xl font-bold">{provider.displayName}</CardTitle>
+              {provider.isVerified && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <BadgeCheck className="h-6 w-6 text-blue-500" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{t.verifiedProvider || 'Verified Provider'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <StarRating rating={averageRating} size={5} />
+              <span className="text-muted-foreground">({ratings.length} {t.reviews || 'reviews'})</span>
+            </div>
+            {provider.bio && <p className="text-muted-foreground mt-2">{provider.bio}</p>}
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-semibold text-lg mb-2">{t.contactInformation || 'Contact Information'}</h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-muted-foreground" />
+                  <span>{provider.email}</span>
+                </div>
+                {provider.phoneNumber && (
+                  <div className="flex items-center gap-2">
+                    <PhoneCall className="h-5 w-5 text-muted-foreground" />
+                    <span>{provider.phoneNumber}</span>
+                  </div>
+                )}
+                {provider.location && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-muted-foreground" />
+                    <span>{provider.location}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2 mt-4">
+                {cleanPhoneNumber && (
+                  <Button asChild>
+                    <a href={`https://wa.me/${cleanPhoneNumber}?text=${whatsappMessage}`} target="_blank" rel="noopener noreferrer">
+                      <WhatsAppIcon />
+                      <span className="ml-2">WhatsApp</span>
+                    </a>
+                  </Button>
+                )}
+                <Button onClick={handleStartChat} disabled={isStartingChat}>
+                  {isStartingChat ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageSquare className="mr-2 h-4 w-4" />}
+                  {t.chat || 'Chat'}
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href={`/call/${provider.uid}`}>
+                    <PhoneCall className="mr-2 h-4 w-4" />
+                    {t.call || 'Call'}
+                  </Link>
+                </Button>
+              </div>
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg mb-2">{t.services || 'Services'}</h3>
+              <div className="flex flex-wrap gap-2">
+                {serviceCategories.map((category) => {
+                  const Icon = categoryIcons[category] || GripVertical;
+                  return (
+                    <Badge key={category} variant="secondary" className="flex items-center gap-1.5 py-1 px-2">
+                      <Icon className="h-4 w-4" />
+                      {t[category.toLowerCase() as keyof Translations] || category}
+                    </Badge>
+                  );
+                })}
+              </div>
+              <h3 className="font-semibold text-lg mt-4 mb-2">{t.serviceAreas || 'Service Areas'}</h3>
+              <div className="flex flex-wrap gap-2">
+                {serviceAreas.map((area) => (
+                  <Badge key={area} variant="outline">{area}</Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <Separator className="my-6" />
+
+          <div>
+            <h3 className="font-semibold text-lg mb-2">{t.portfolio || 'Portfolio'}</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {images.map((image, index) => (
+                <Dialog key={index}>
+                  <DialogTrigger asChild>
+                    <Image src={image} alt={`Portfolio image ${index + 1}`} width={200} height={200} className="rounded-lg object-cover aspect-square cursor-pointer" />
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl">
+                    <Image src={image} alt={`Portfolio image ${index + 1}`} width={800} height={600} className="rounded-lg object-contain" />
+                  </DialogContent>
+                </Dialog>
+              ))}
+              {videos.map((video, index) => (
+                <Dialog key={index}>
+                  <DialogTrigger asChild>
+                    <div className="relative rounded-lg overflow-hidden cursor-pointer group">
+                      <video src={video} className="object-cover aspect-square" />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <VideoIcon className="h-10 w-10 text-white" />
+                      </div>
+                    </div>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl">
+                    <video src={video} controls autoPlay className="w-full rounded-lg" />
+                  </DialogContent>
+                </Dialog>
+              ))}
+            </div>
+          </div>
+
+          <Separator className="my-6" />
+
+          <div>
+            <h3 className="font-semibold text-lg mb-4">{t.ratingsAndReviews || 'Ratings & Reviews'}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex flex-col items-center justify-center bg-muted/50 rounded-lg p-6">
+                <span className="text-5xl font-bold">{averageRating.toFixed(1)}</span>
+                <StarRating rating={averageRating} size={6} />
+                <p className="text-muted-foreground mt-2">{t.basedOn.replace('{count}', String(ratings.length))}</p>
+              </div>
+              <div className="md:col-span-2">
+                <form onSubmit={handleRatingSubmit} className="space-y-4">
+                  <h4 className="font-semibold">{t.leaveAReview || 'Leave a Review'}</h4>
+                  <div>
+                    <Label htmlFor="rating">{t.yourRating || 'Your Rating'}</Label>
+                    <StarRating rating={ratingInput} setRating={setRatingInput} interactive={true} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label htmlFor="comment">{t.comment || 'Comment'}</Label>
+                    <Textarea
+                      id="comment"
+                      value={commentInput}
+                      onChange={(e) => setCommentInput(e.target.value)}
+                      placeholder={t.shareYourExperience || 'Share your experience...'}
+                      rows={4}
+                    />
+                  </div>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {t.submitReview || 'Submit Review'}
+                  </Button>
+                </form>
+              </div>
+            </div>
+            <div className="mt-6 space-y-4">
+              {ratings.map((r) => (
+                <div key={r.id} className="border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback>{r.raterName?.[0] || 'U'}</AvatarFallback>
+                      </Avatar>
+                      <span className="font-semibold">{r.raterName || t.anonymous}</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">{formatDate(r.createdAt)}</span>
+                  </div>
+                  <StarRating rating={r.rating || 0} className="my-1" />
+                  <p className="text-muted-foreground">{r.comment}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

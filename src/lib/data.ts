@@ -24,6 +24,10 @@ export interface SupportRequest {
 export interface UserProfile {
   uid: string;
   name: string;
+  displayName?: string;
+  photoURL?: string;
+  bio?: string;
+  isVerified?: boolean;
   email: string;
   role: UserRole;
   phoneNumber?: string;
