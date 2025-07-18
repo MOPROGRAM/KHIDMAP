@@ -1,5 +1,7 @@
 {
+  // Force new commit
   "name": "nextn",
+  "description": "Forcing a new commit to clear Vercel cache.",
   "version": "0.1.0",
   "private": true,
   "scripts": {
