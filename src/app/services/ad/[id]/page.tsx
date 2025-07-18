@@ -239,4 +239,9 @@ export default function ProviderDetailsPage() {
     );
   }
 
+  return (
+    <div>
+      <p className="text-lg text-muted-foreground">{t.loading}</p>
+    </div>
+  );
 }
