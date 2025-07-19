@@ -1,4 +1,8 @@
 'use server';
+
+import { z } from "zod";
+import * as ai from "ai";
+
 /**
  * @fileOverview An AI flow to moderate videos for safety using built-in safety filters.
  *
@@ -6,7 +10,6 @@
  * - ModerateVideoInput - The input type for the moderateVideo function.
  * - ModerateVideoOutput - The return type for the moderateVideo function.
  */
-
 
 const ModerateVideoInputSchema = z.object({
   videoDataUri: z
@@ -40,8 +43,8 @@ const moderateVideoFlow = ai.defineFlow(
       // We generate text with the video as input. The key is to check the safety feedback.
       const response = await ai.generate({
         prompt: [
-          {text: 'Analyze this video for safety.'},
-          {media: {url: input.videoDataUri}},
+          { text: 'Analyze this video for safety.' },
+          { media: { url: input.videoDataUri } },
         ],
         config: {
           // Strictest safety settings
