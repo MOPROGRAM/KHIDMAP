@@ -25,6 +25,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    serverComponentsExternalPackages: ['@react-email/components', '@react-email/render'],
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.externals.push('node:async_hooks');
+    }
+    return config;
+  },
 };
 
 export default nextConfig;
