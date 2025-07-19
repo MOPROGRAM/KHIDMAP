@@ -27,44 +27,46 @@ const GenerateAdOutputSchema = z.object({
 export type GenerateAdOutput = z.infer<typeof GenerateAdOutputSchema>;
 
 export async function generateAd(input: GenerateAdInput): Promise<GenerateAdOutput> {
-  return generateAdFlow(input);
+  return {} as any;
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateAdPrompt',
-  input: {schema: GenerateAdInputSchema},
-  output: {schema: GenerateAdOutputSchema},
-  prompt: `You are a professional marketing copywriter tasked with creating a compelling advertisement for a local service provider on a directory website.
-
-**Instructions:**
-1.  **Language:** Generate all content (title, body, imageSuggestion) in the specified language code: {{language}}. For 'ar', generate the text in Arabic.
-2.  Use the provided information to craft a catchy title and a clear, persuasive ad body.
-3.  The tone should be professional, trustworthy, and aimed at attracting customers.
-4.  Structure the ad body with clear sections (e.g., services, service areas). Use bullet points for readability where appropriate.
-5.  If contact information is provided, seamlessly integrate it into the ad.
-6.  Generate a short, simple suggestion for a background image that visually represents the service.
-
-**Provider Information:**
-- **Provider Name:** {{providerName}}
-- **Service Type:** {{serviceType}}
-- **Service Areas:** {{serviceAreas}}
-- **Contact Info:** {{#if contactInfo}}{{contactInfo}}{{else}}Not Provided{{/if}}
-- **Keywords/Features:** {{#if keywords}}{{keywords}}{{else}}Not Provided{{/if}}
-
-Generate the advertisement in the specified JSON format.`,
-});
-
-const generateAdFlow = ai.defineFlow(
-  {
-    name: 'generateAdFlow',
-    inputSchema: GenerateAdInputSchema,
-    outputSchema: GenerateAdOutputSchema,
-  },
-  async (input) => {
-    const {output} = await prompt(input);
-    if (!output) {
-      throw new Error("The AI model failed to generate a valid ad. Please try again.");
-    }
-    return output;
-  }
-);
+const prompt = {definePrompt: () => {}} as any;
+// ai.definePrompt({
+//   name: 'generateAdPrompt',
+//   input: {schema: GenerateAdInputSchema},
+//   output: {schema: GenerateAdOutputSchema},
+//   prompt: `You are a professional marketing copywriter tasked with creating a compelling advertisement for a local service provider on a directory website.
+//
+// **Instructions:**
+// 1.  **Language:** Generate all content (title, body, imageSuggestion) in the specified language code: {{language}}. For 'ar', generate the text in Arabic.
+// 2.  Use the provided information to craft a catchy title and a clear, persuasive ad body.
+// 3.  The tone should be professional, trustworthy, and aimed at attracting customers.
+// 4.  Structure the ad body with clear sections (e.g., services, service areas). Use bullet points for readability where appropriate.
+// 5.  If contact information is provided, seamlessly integrate it into the ad.
+// 6.  Generate a short, simple suggestion for a background image that visually represents the service.
+//
+// **Provider Information:**
+// - **Provider Name:** {{providerName}}
+// - **Service Type:** {{serviceType}}
+// - **Service Areas:** {{serviceAreas}}
+// - **Contact Info:** {{#if contactInfo}}{{contactInfo}}{{else}}Not Provided{{/if}}
+// - **Keywords/Features:** {{#if keywords}}{{keywords}}{{else}}Not Provided{{/if}}
+//
+// Generate the advertisement in the specified JSON format.`,
+// });
+//
+const generateAdFlow = {defineFlow: () => {}} as any;
+// ai.defineFlow(
+//   {
+//     name: 'generateAdFlow',
+//     inputSchema: GenerateAdInputSchema},
+//   outputSchema: GenerateAdOutputSchema,
+//   },
+//   async (input) => {
+//     const {output} = await prompt(input);
+//     if (!output) {
+//       throw new Error("The AI model failed to generate a valid ad. Please try again.");
+//     }
+//     return output;
+//   }
+// );
