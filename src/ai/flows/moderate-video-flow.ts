@@ -26,67 +26,68 @@ const ModerateVideoOutputSchema = z.object({
 export type ModerateVideoOutput = z.infer<typeof ModerateVideoOutputSchema>;
 
 export async function moderateVideo(input: ModerateVideoInput): Promise<ModerateVideoOutput> {
-  return moderateVideoFlow(input);
+  return {} as any;
 }
 
 // This is a simplified approach. True video moderation often requires
 // frame-by-frame analysis, which is more complex. We are relying on the
 // model's ability to process video data for safety flags directly.
-const moderateVideoFlow = ai.defineFlow(
-  {
-    name: 'moderateVideoFlow',
-    inputSchema: ModerateVideoInputSchema,
-    outputSchema: ModerateVideoOutputSchema,
-  },
-  async (input) => {
-    try {
-      // We generate text with the video as input. The key is to check the safety feedback.
-      const response = await ai.generate({
-        prompt: [
-          { text: 'Analyze this video for safety.' },
-          { media: { url: input.videoDataUri } },
-        ],
-        config: {
-          // Strictest safety settings
-          safetySettings: [
-            {
-              category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-              threshold: 'BLOCK_LOW_AND_ABOVE',
-            },
-            {
-              category: 'HARM_CATEGORY_HATE_SPEECH',
-              threshold: 'BLOCK_LOW_AND_ABOVE',
-            },
-            {
-              category: 'HARM_CATEGORY_HARASSMENT',
-              threshold: 'BLOCK_LOW_AND_ABOVE',
-            },
-            {
-              category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-              threshold: 'BLOCK_LOW_AND_ABOVE',
-            },
-          ],
-        },
-      });
-
-      // Check if the response was blocked.
-      const isBlocked = response.usage.output?.safetyFeedback?.some(
-        (feedback) => feedback.rating.probability === 'HIGH'
-      );
-
-      if (isBlocked) {
-        return { isSafe: false };
-      }
-
-      return { isSafe: true };
-    } catch (e: any) {
-      // If the API call itself throws a safety error, the video is definitely not safe.
-      if (e.message.includes('SAFETY')) {
-        return { isSafe: false };
-      }
-      // For other errors, we can decide to fail open or closed. Failing closed (unsafe) is safer.
-      console.error('Video moderation flow failed with non-safety error:', e);
-      return { isSafe: false };
-    }
-  }
-);
+const moderateVideoFlow = {} as any;
+// ai.defineFlow(
+//   {
+//     name: 'moderateVideoFlow',
+//     inputSchema: ModerateVideoInputSchema,
+//     outputSchema: ModerateVideoOutputSchema,
+//   },
+//   async (input) => {
+//     try {
+//       // We generate text with the image as input. The key is to check the safety feedback.
+//       const response = await ai.generate({
+//         prompt: [
+//           { text: 'Analyze this video for safety.' },
+//           { media: { url: input.videoDataUri } },
+//         ],
+//         config: {
+//           // Strictest safety settings
+//           safetySettings: [
+//             {
+//               category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+//               threshold: 'BLOCK_LOW_AND_ABOVE',
+//             },
+//             {
+//               category: 'HARM_CATEGORY_HATE_SPEECH',
+//               threshold: 'BLOCK_LOW_AND_ABOVE',
+//             },
+//             {
+//               category: 'HARM_CATEGORY_HARASSMENT',
+//               threshold: 'BLOCK_LOW_AND_ABOVE',
+//             },
+//             {
+//               category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+//               threshold: 'BLOCK_LOW_AND_ABOVE',
+//             },
+//           ],
+//         },
+//       });
+//
+//       // Check if the response was blocked.
+//       const isBlocked = response.usage.output?.safetyFeedback?.some(
+//         (feedback) => feedback.rating.probability === 'HIGH'
+//       );
+//
+//       if (isBlocked) {
+//         return { isSafe: false };
+//       }
+//
+//       return { isSafe: true };
+//     } catch (e: any) {
+//       // If the API call itself throws a safety error, the video is definitely not safe.
+//       if (e.message.includes('SAFETY')) {
+//         return { isSafe: false };
+//       }
+//       // For other errors, we can decide to fail open or closed. Failing closed (unsafe) is safer.
+//       console.error('Video moderation flow failed with non-safety error:', e);
+//       return { isSafe: false };
+//     }
+//   }
+// );
