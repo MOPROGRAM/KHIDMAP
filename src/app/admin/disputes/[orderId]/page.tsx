@@ -7,10 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
-import { auth, db } from '@/lib/firebase';
 import { Order, Message, getOrderById, resolveDispute, sendMessage, startOrGetChat } from '@/lib/data';
-import { Loader2, ArrowLeft, ShieldAlert, User, MessageSquare, Check, CheckCheck, Phone, PhoneMissed, PhoneOff, Video as VideoIcon, Send } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Loader2, ArrowLeft, ShieldAlert, User, MessageSquare, Phone, PhoneMissed, PhoneOff, Video as VideoIcon, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,8 +17,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { useSettings } from '@/contexts/SettingsContext';
-import { Timestamp, collection, onSnapshot, orderBy, query } from 'firebase/firestore';
-
 
 const formatCallDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -79,27 +75,6 @@ export default function DisputeDetailPage() {
     fetchDisputeDetails();
   }, [orderId, t]);
 
-  useEffect(() => {
-    if (!order?.chatId || !db) {
-      setMessages([]);
-      return;
-    }
-    
-    const messagesRef = collection(db, 'messages', order.chatId, 'messages');
-    const q = query(messagesRef, orderBy('createdAt'));
-
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const msgs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-      setMessages(msgs);
-    }, (err) => {
-      console.error(`Error fetching messages for dispute ${order.id}:`, err);
-      toast({ variant: "destructive", title: t.errorOccurred, description: t.couldNotLoadMessages });
-    });
-
-    return () => unsubscribe();
-  }, [order, toast, t]);
-
-
   const handleResolve = async (resolution: 'seeker' | 'provider') => {
     if (!orderId || !resolutionNotes.trim()) {
         toast({
@@ -127,13 +102,12 @@ export default function DisputeDetailPage() {
   
   const handleAdminSendMessage = async (e: FormEvent) => {
     e.preventDefault();
-    if (!adminMessage.trim() || !order?.chatId || !auth.currentUser) return;
+    if (!adminMessage.trim() || !order?.chatId) return;
 
     setIsSendingMessage(true);
     try {
         await sendMessage(order.chatId, adminMessage, 'text');
         
-        // No need to manually add message, onSnapshot will handle it.
         setAdminMessage('');
     } catch(err: any) {
         toast({
@@ -147,10 +121,6 @@ export default function DisputeDetailPage() {
   }
 
   const handleStartPrivateChat = async (targetUserId: string) => {
-    if (!auth.currentUser) {
-        toast({ variant: "destructive", title: t.authError, description: t.userNotAuthOrServiceUnavailable });
-        return;
-    }
     setIsStartingChat(targetUserId);
     try {
         const chatId = await startOrGetChat(targetUserId);
@@ -162,9 +132,9 @@ export default function DisputeDetailPage() {
     }
 };
 
-  const formatDate = (date: Timestamp | undefined): string => {
+  const formatDate = (date: Date | undefined): string => {
     if (!date) return 'N/A';
-    return date.toDate().toLocaleString();
+    return date.toLocaleString();
   };
 
   if (isLoading) {
