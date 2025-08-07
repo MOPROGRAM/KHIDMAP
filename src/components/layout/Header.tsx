@@ -11,8 +11,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Menu, UserCircle, LogIn, UserPlus, LogOutIcon } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
-import { auth } from '@/lib/firebase'; // auth can be undefined
-import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
+import { useSession, signOut } from "next-auth/react";
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,44 +19,13 @@ export default function Header() {
   const t = useTranslation();
   const router = useRouter();
   const { toast } = useToast();
-  const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: session, status } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    if (!auth) {
-      console.warn("Firebase Auth is not initialized. User authentication will not work.");
-      setIsLoading(false);
-      // Optionally, show a global error to the user if auth is critical for the app
-      // toast({ variant: "destructive", title: "Configuration Error", description: "Authentication service is unavailable." });
-      return;
-    }
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setAuthUser(user);
-        localStorage.setItem('isLoggedIn', 'true'); 
-      } else {
-        setAuthUser(null);
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('userId');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userRole');
-      }
-      setIsLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
 
   const handleLogout = async () => {
     if (isMobileMenuOpen) setIsMobileMenuOpen(false);
-    if (!auth) {
-      toast({ variant: "destructive", title: t.errorOccurred, description: t.authServiceUnavailable });
-      return;
-    }
     try {
-      await signOut(auth);
-      router.push('/login');
+      await signOut({ callbackUrl: '/login' });
     } catch (error) {
       console.error("Error signing out: ", error);
       toast({ variant: "destructive", title: t.logoutFailed, description: (error as Error).message });
@@ -76,7 +44,7 @@ export default function Header() {
           <Link href={link.href} onClick={() => mobile && setIsMobileMenuOpen(false)}>{link.label}</Link>
         </Button>
       ))}
-      {authUser ? (
+      {status === "authenticated" ? (
         <>
           <Button variant="ghost" asChild className={mobile ? "w-full justify-start" : ""}>
             <Link href="/dashboard" onClick={() => mobile && setIsMobileMenuOpen(false)}>
@@ -103,21 +71,6 @@ export default function Header() {
       )}
     </>
   );
-
-  if (isLoading && !auth) { // Show basic header if auth is not even defined
-     return (
-      <header className="sticky top-0 z-50 w-full border-b bg-card backdrop-blur supports-[backdrop-filter]:bg-card/60">
-        <div className="container flex h-16 items-center justify-between">
-          <Logo />
-          <div className="flex items-center gap-2">
-            <CurrencySwitcher />
-            <LanguageSwitcher />
-            <ThemeSwitcher />
-          </div>
-        </div>
-      </header>
-    );
-  }
 
 
   return (

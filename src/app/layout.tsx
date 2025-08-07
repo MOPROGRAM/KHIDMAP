@@ -2,6 +2,7 @@
 import type { Metadata } from 'next';
 import { Tajawal } from 'next/font/google';
 import './globals.css';
+import { SessionProvider } from "next-auth/react";
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -33,16 +34,18 @@ export default function RootLayout({
       <head>
       </head>
       <body className={`flex flex-col min-h-screen ${tajawal.variable} font-sans`}>
-        <SettingsProvider>
-          <AppInitializer />
-          <BackgroundShapes />
-          <Header />
-          <main className="flex-grow container mx-auto px-4 relative z-10">
-            {children}
-          </main>
-          <Footer />
-          <Toaster />
-        </SettingsProvider>
+        <SessionProvider>
+          <SettingsProvider>
+            <AppInitializer />
+            <BackgroundShapes />
+            <Header />
+            <main className="flex-grow container mx-auto px-4 relative z-10">
+              {children}
+            </main>
+            <Footer />
+            <Toaster />
+          </SettingsProvider>
+        </SessionProvider>
       </body>
     </html>
   );

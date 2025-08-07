@@ -12,9 +12,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Eye, EyeOff, Loader2, MailCheck, AlertTriangle } from 'lucide-react';
-import { auth, db } from '@/lib/firebase'; 
-import { createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, User as FirebaseUser, sendEmailVerification } from 'firebase/auth';
-import { doc, setDoc, Timestamp, writeBatch, getDoc } from 'firebase/firestore';
+import { signIn } from "next-auth/react";
 import { z } from "zod";
 import { ADMIN_EMAIL } from '@/lib/config';
 
@@ -46,7 +44,7 @@ export default function RegisterClient() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isAuthServiceAvailable, setIsAuthServiceAvailable] = useState(false);
+  const [isAuthServiceAvailable, setIsAuthServiceAvailable] = useState(true);
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
 
 
@@ -55,31 +53,11 @@ export default function RegisterClient() {
     if (initialRole === 'provider' || initialRole === 'seeker') {
       setRole(initialRole);
     }
-    if (auth && db) {
-      setIsAuthServiceAvailable(true);
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        // Optional: redirect if already logged in
-        // if (user) { router.push('/dashboard'); }
-      });
-      return () => unsubscribe();
-    } else {
-      setIsAuthServiceAvailable(false);
-      console.warn("Firebase Auth or DB is not initialized in RegisterPage.");
-    }
-  }, [searchParams, router]);
+  }, [searchParams]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !db) { 
-       toast({
-        variant: "destructive",
-        title: t.serviceUnavailableTitle,
-        description: t.serviceUnavailableMessage,
-      });
-      setIsLoading(false);
-      return;
-    }
     setIsLoading(true);
     setErrors({});
     setShowVerificationMessage(false);
@@ -99,75 +77,33 @@ export default function RegisterClient() {
       return;
     }
 
-    const isAdminRegistration = validationResult.data.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, validationResult.data.email, validationResult.data.password);
-      const firebaseUser = userCredential.user;
+      const result = await signIn("email", {
+        email: validationResult.data.email,
+        redirect: false,
+        callbackUrl: "/dashboard",
+      });
 
-      await updateProfile(firebaseUser, { displayName: validationResult.data.name });
-      
-      const userDocRef = doc(db, "users", firebaseUser.uid);
-      
-      const finalRole = isAdminRegistration ? 'admin' : validationResult.data.role;
-
-      const userDocData: any = {
-        uid: firebaseUser.uid,
-        name: validationResult.data.name,
-        email: firebaseUser.email,
-        role: finalRole,
-        createdAt: Timestamp.now(), 
-        emailVerified: firebaseUser.emailVerified,
-      };
-
-      if (finalRole === 'provider') {
-        Object.assign(userDocData, {
-            phoneNumber: '',
-            qualifications: '',
-            serviceCategories: [],
-            serviceAreas: [],
-            location: null,
-        });
-      }
-      
-      const batch = writeBatch(db);
-      batch.set(userDocRef, userDocData);
-
-      await batch.commit();
-
-      await sendEmailVerification(firebaseUser);
-      setShowVerificationMessage(true);
-      
-      if (isAdminRegistration) {
+      if (result?.error) {
         toast({
-          title: "Admin Account Created",
-          description: "Please verify your email, then you can log in.",
-          duration: 10000, 
+          variant: "destructive",
+          title: t.registrationFailedTitle,
+          description: result.error,
         });
       } else {
+        setShowVerificationMessage(true);
         toast({
           title: t.emailVerificationSent,
           description: t.checkYourEmailForVerification,
-          duration: 10000, 
+          duration: 10000,
         });
       }
-
-    } catch (error: any) {
-      console.error("Firebase registration error:", error);
-      let errorMessage = t.registrationFailedGeneric;
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = t.emailAlreadyInUse;
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = t.invalidEmail;
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = t.passwordTooWeak;
-      } else if (error.code === 'auth/network-request-failed'){
-        errorMessage = t.networkError;
-      }
+    } catch (error) {
+      console.error("Registration error:", error);
       toast({
         variant: "destructive",
         title: t.registrationFailedTitle,
-        description: errorMessage,
+        description: t.registrationFailedGeneric,
       });
     } finally {
       setIsLoading(false);

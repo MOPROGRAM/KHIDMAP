@@ -10,9 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, LogInIcon, Loader2, AlertTriangle } from 'lucide-react';
-import { auth, db } from '@/lib/firebase'; 
-import { signInWithEmailAndPassword, onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   const t = useTranslation();
@@ -22,89 +20,44 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isAuthServiceAvailable, setIsAuthServiceAvailable] = useState(false);
+  const [isAuthServiceAvailable, setIsAuthServiceAvailable] = useState(true);
 
 
   useEffect(() => {
-    if (auth && db) { // Check for db as well, as it's needed for user role fetching
-      setIsAuthServiceAvailable(true);
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        // Redirect logic handled by DashboardLayout or if login is successful
-      });
-      return () => unsubscribe();
-    } else {
-      setIsAuthServiceAvailable(false);
-      console.warn("Firebase Auth or DB is not initialized in LoginPage.");
-    }
+    // You can add any initial checks here if needed
   }, []);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !db) { // Redundant check, but good for safety
-      toast({
-        variant: "destructive",
-        title: t.serviceUnavailableTitle,
-        description: t.serviceUnavailableMessage,
-      });
-      setIsLoading(false);
-      return;
-    }
     setIsLoading(true);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-
-      const userDocRef = doc(db, "users", firebaseUser.uid);
-      const userDocSnap = await getDoc(userDocRef);
-
-      let userRole: 'provider' | 'seeker' | null = null;
-      let userNameFromDb: string | null = firebaseUser.displayName;
-      let userEmailFromDb: string | null = firebaseUser.email;
-
-      if (userDocSnap.exists()) {
-        const userData = userDocSnap.data();
-        userRole = userData.role as 'provider' | 'seeker';
-        userNameFromDb = userData.name || userNameFromDb;
-        userEmailFromDb = userData.email || userEmailFromDb;
-      } else {
-        console.warn("User document not found in Firestore. Role might be missing. User will be logged in, but dashboard might redirect or show warnings.");
-      }
-
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userId', firebaseUser.uid);
-      localStorage.setItem('userName', userNameFromDb || email.split('@')[0]);
-      localStorage.setItem('userEmail', userEmailFromDb || '');
-      if (userRole) {
-        localStorage.setItem('userRole', userRole);
-      } else {
-        localStorage.removeItem('userRole'); 
-      }
-      
-      toast({
-        title: t.loginSuccessful,
-        description: t.welcomeBackUser?.replace('{userName}', userNameFromDb || email.split('@')[0]),
+      const result = await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
       });
-      router.push('/dashboard');
-    } catch (error: any) {
-      console.error("Firebase login error:", error);
-      let errorMessage = t.loginFailedGeneric;
-      
-      // Per Firebase docs, auth/invalid-credential is now the standard error
-      // for wrong password, non-existent user, etc. to prevent user enumeration.
-      if (error.code === 'auth/invalid-credential') {
-        errorMessage = t.invalidCredentials;
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = t.invalidEmail;
-      } else if (error.code === 'auth/network-request-failed'){
-        errorMessage = t.networkError;
-      }
 
+      if (result?.error) {
+        toast({
+          variant: "destructive",
+          title: t.loginFailedTitle,
+          description: result.error,
+        });
+      } else {
+        toast({
+          title: t.loginSuccessful,
+          description: t.welcomeBackUser?.replace('{userName}', email.split('@')[0]),
+        });
+        router.push('/dashboard');
+      }
+    } catch (error) {
+      console.error("Login error:", error);
       toast({
         variant: "destructive",
         title: t.loginFailedTitle,
-        description: errorMessage,
+        description: t.loginFailedGeneric,
       });
     } finally {
       setIsLoading(false);
